@@ -26,15 +26,17 @@ typedef enum token_type {
   // more chars token
   IF,
   ELSE,
+  WHILE,
   IDENTIFIER,
   INTEGER,
 
   // special token
+  COMMENT,
   END_TOKEN,
   NULL_TOKEN,
 } token_type_t;
 
-static const char * const token_names[] = {
+static const char * const token_to_name[] = {
   [OPEN_CURLY] = "OPEN_CURLY",
   [CLOSE_CURLY] = "CLOSE_CURLY",
   [OPEN_PAREN] = "OPEN_PAREN",
@@ -49,12 +51,14 @@ static const char * const token_names[] = {
   [EQUAL_EQUAL] = "EQUAL_EQUAL",
   [IF] = "IF",
   [ELSE] = "ELSE",
+  [WHILE] = "WHILE",
   [SEMICOLON] = "SEMICOLON",
+  [COMMENT] = "COMMENT",
   [END_TOKEN] = "END_TOKEN",
   [NULL_TOKEN] = "NULL_TOKEN"
 };
 
-static const char token_symbols[] = {
+static const char token_to_char[] = {
   [OPEN_CURLY] = '{',
   [CLOSE_CURLY] = '}',
   [OPEN_PAREN] = '(',
@@ -62,9 +66,15 @@ static const char token_symbols[] = {
   [SEMICOLON] = ';',
 };
 
-#define token_symbols_size sizeof(token_symbols)
-#define token_names_size sizeof(token_symbols)/sizeof(char *)
+static const char * const keyword_token_to_string[] = {
+  [IF] = "if",
+  [ELSE] = "else",
+  [WHILE] = "while",
+};
 
+#define token_to_char_size sizeof(token_to_char)
+#define token_to_name_size sizeof(token_to_name)/sizeof(char *)
+#define keyword_token_to_string_size sizeof(keyword_token_to_string)/sizeof(char *)
 
 typedef struct token {
 
@@ -82,7 +92,7 @@ void token_print_data(token_t token) {
 
 void lxr_print_token(token_t token){
 
-  fprintf(stdout, "%s", token_names[token.type]);
+  fprintf(stdout, "%s", token_to_name[token.type]);
 
   if (token.data_length > 0){
     fprintf(stdout, ", data: ");
@@ -131,6 +141,22 @@ int eat_whitespace(lxr_t *lexer) {
   return eaten;
 }
 
+token_type_t lxr_get_keyword_token(const char *data, int start, int length) {
+  for (int i=0; i < keyword_token_to_string_size; i++) {
+    if (strlen(keyword_token_to_string[i]) == length) {
+      bool token_found=True;
+      for (int j=0; j<length; j++) {
+        if (data[start+j] != keyword_token_to_string[i][j]) {
+          token_found=False;
+          break;
+        }
+      }
+      if (token_found) 
+        return i;
+    }
+  }
+}
+
 lxr_t lxr_init(const char *data) {
 
   lxr_t lexer;
@@ -143,8 +169,8 @@ lxr_t lxr_init(const char *data) {
 
 bool lxr_check_one_char_token(lxr_t *lexer, token_t *token) {
 
-  for (int i=0; i<token_symbols_size; i++) {
-    if (token_symbols[i] != 0 && lxr_current_char(lexer) == token_symbols[i]) {
+  for (int i=0; i < token_to_char_size; i++) {
+    if (token_to_char[i] != 0 && lxr_current_char(lexer) == token_to_char[i]) {
       token->type = i;
       token->data_length = 1;
       token->position = lexer->current;
@@ -194,9 +220,10 @@ token_t lxr_next_token(lxr_t *lexer) {
       ++id_name_length;
       lxr_increment_current(lexer);
     }
-    token.type = IDENTIFIER;
+    token.type = lxr_get_keyword_token(lexer->data, starting_position, id_name_length);
     token.position = starting_position;
     token.data_length = id_name_length;
+
   }
   else if (is_integer_char(lxr_current_char(lexer))) {
     int starting_position = lexer->current;
@@ -211,13 +238,26 @@ token_t lxr_next_token(lxr_t *lexer) {
     token.position = starting_position;
     token.data_length = id_name_length;
   }
+  else if (lxr_current_char(lexer) == '#') {
+
+    token.type = COMMENT;
+    token.position = lexer->current;
+    token.data_length = 1;
+
+    lxr_increment_current(lexer);
+    while (lxr_current_char(lexer) != '\n') {
+      ++token.data_length;
+      lxr_increment_current(lexer);
+    }
+  } 
   else if (lxr_current_char(lexer) == '\0') {
 
     token.type = END_TOKEN;
     token.position = lexer->current;
     token.data_length = 1;
 
-  } else {
+  } 
+  else {
     fprintf(stdout, "ERROR: no possible token\n");
     lxr_increment_current(lexer);
   }
