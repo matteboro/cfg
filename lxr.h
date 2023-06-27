@@ -92,18 +92,18 @@ void token_print_data(token_t token) {
 
 void lxr_print_token(token_t token){
 
-  fprintf(stdout, "%s", token_to_name[token.type]);
+  fprintf(stdout, "%-14s", token_to_name[token.type]);
 
   if (token.data_length > 0){
-    fprintf(stdout, ", data: ");
+    fprintf(stdout, " data: ");
     token_print_data(token);
   }
 }
 
 typedef struct lxr {
   const char *data;
-  int current;
-  int data_length;
+  unsigned int current;
+  unsigned int data_length;
 } lxr_t;
 
 #define lxr_current_char(lexer) lexer->data[lexer->current]
@@ -132,6 +132,10 @@ bool is_integer_char(char c) {
   return (c >= '0' && c <= '9');
 }
 
+bool is_final_char(char c) {
+  return c == '\0' || c == 26;
+}
+
 int eat_whitespace(lxr_t *lexer) {
   int eaten = 0;
   while (is_whitespace(lxr_current_char(lexer))) {
@@ -141,11 +145,11 @@ int eat_whitespace(lxr_t *lexer) {
   return eaten;
 }
 
-token_type_t lxr_get_keyword_token(const char *data, int start, int length) {
-  for (int i=0; i < keyword_token_to_string_size; i++) {
+token_type_t lxr_get_keyword_token(const char *data, int start, unsigned int length) {
+  for (unsigned int i=0; i < keyword_token_to_string_size; i++) {
     if (strlen(keyword_token_to_string[i]) == length) {
       bool token_found=True;
-      for (int j=0; j<length; j++) {
+      for (unsigned int j=0; j<length; j++) {
         if (data[start+j] != keyword_token_to_string[i][j]) {
           token_found=False;
           break;
@@ -155,6 +159,7 @@ token_type_t lxr_get_keyword_token(const char *data, int start, int length) {
         return i;
     }
   }
+  return IDENTIFIER;
 }
 
 lxr_t lxr_init(const char *data) {
@@ -168,8 +173,7 @@ lxr_t lxr_init(const char *data) {
 }
 
 bool lxr_check_one_char_token(lxr_t *lexer, token_t *token) {
-
-  for (int i=0; i < token_to_char_size; i++) {
+  for (unsigned int i=0; i < token_to_char_size; i++) {
     if (token_to_char[i] != 0 && lxr_current_char(lexer) == token_to_char[i]) {
       token->type = i;
       token->data_length = 1;
@@ -199,7 +203,7 @@ token_t lxr_next_token(lxr_t *lexer) {
 
   eat_whitespace(lexer);
   token_t token;
-  int eaten = 0;
+  // int eaten = 0;
   token.data = lexer->data;
   token.type = NULL_TOKEN;
   token.position = 0;
@@ -250,12 +254,10 @@ token_t lxr_next_token(lxr_t *lexer) {
       lxr_increment_current(lexer);
     }
   } 
-  else if (lxr_current_char(lexer) == '\0') {
-
+  else if (is_final_char(lxr_current_char(lexer))) {
     token.type = END_TOKEN;
     token.position = lexer->current;
     token.data_length = 1;
-
   } 
   else {
     fprintf(stdout, "ERROR: no possible token\n");
