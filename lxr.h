@@ -118,12 +118,17 @@ bool is_identifier_char(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= '>') || (c >= '0' && c <= '9') || c == '_';
 }
 
+bool is_integer_char(char c) {
+  return (c >= '0' && c <= '9');
+}
+
 int eat_whitespace(lxr_t *lexer) {
   int eaten = 0;
   while (is_whitespace(lxr_current_char(lexer))) {
     ++eaten;
     lxr_increment_current(lexer);
   }
+  return eaten;
 }
 
 lxr_t lxr_init(const char *data) {
@@ -149,6 +154,21 @@ bool lxr_check_one_char_token(lxr_t *lexer, token_t *token) {
   return False;
 }
 
+#define lxr_ambiguous_one_or_two_chars_token(first_char, first_token, secnd_char, secnd_token) \
+else if (lxr_current_char(lexer) == first_char) { \
+  lxr_increment_current(lexer); \
+  if (lxr_current_char(lexer) == secnd_char) { \
+    token.type = secnd_token; \
+    token.position = lexer->current-1; \
+    token.data_length = 2; \
+  } else { \
+    token.type = first_token; \
+    token.position = lexer->current-1; \
+    token.data_length = 1; \
+  } \
+  lxr_increment_current(lexer); \
+}   \
+
 token_t lxr_next_token(lxr_t *lexer) {
 
   eat_whitespace(lexer);
@@ -160,67 +180,37 @@ token_t lxr_next_token(lxr_t *lexer) {
   token.data_length = 0;
 
   if (lxr_check_one_char_token(lexer, &token)) {
-
     lxr_increment_current(lexer);
-
   } 
-  else if (lxr_current_char(lexer) == '<') {
-
+  lxr_ambiguous_one_or_two_chars_token('<', LESS, '=', LESS_EQUAL)
+  lxr_ambiguous_one_or_two_chars_token('>', GREATER, '=', GREATER_EQUAL)
+  lxr_ambiguous_one_or_two_chars_token('=', EQUAL, '=', EQUAL_EQUAL)
+  else if (is_starter_identifier_char(lxr_current_char(lexer))) {
+    int starting_position = lexer->current;
+    int id_name_length = 1;
     lxr_increment_current(lexer);
-    eaten = eat_whitespace(lexer);
 
-    if (lxr_current_char(lexer) == '=') {
-
-      token.type = LESS_EQUAL;
-      token.position = lexer->current-1;
-      token.data_length = 2;
-
-    } else {
-
-      token.type = LESS;
-      token.position = lexer->current-1;
-      token.data_length = 1;
+    while(is_identifier_char(lxr_current_char(lexer))) {
+      ++id_name_length;
+      lxr_increment_current(lexer);
     }
-
-  } 
-  else if (lxr_current_char(lexer) == '>') {
-
+    token.type = IDENTIFIER;
+    token.position = starting_position;
+    token.data_length = id_name_length;
+  }
+  else if (is_integer_char(lxr_current_char(lexer))) {
+    int starting_position = lexer->current;
+    int id_name_length = 1;
     lxr_increment_current(lexer);
-    eaten = eat_whitespace(lexer);
 
-    if (lxr_current_char(lexer) == '=') {
-
-      token.type = GREATER_EQUAL;
-      token.position = lexer->current-1;
-      token.data_length = 2;
-
-    } else {
-      
-      token.type = GREATER;
-      token.position = lexer->current-1;
-      token.data_length = 1;
+    while(is_integer_char(lxr_current_char(lexer))) {
+      ++id_name_length;
+      lxr_increment_current(lexer);
     }
-
-  } 
-  else if (lxr_current_char(lexer) == '=') {
-
-    lxr_increment_current(lexer);
-    eaten = eat_whitespace(lexer);
-
-    if (lxr_current_char(lexer) == '=') {
-
-      token.type = EQUAL_EQUAL;
-      token.position = lexer->current-1;
-      token.data_length = 2;
-
-    } else {
-      
-      token.type = EQUAL;
-      token.position = lexer->current-1;
-      token.data_length = 1;
-    }
-
-  } 
+    token.type = INTEGER;
+    token.position = starting_position;
+    token.data_length = id_name_length;
+  }
   else if (lxr_current_char(lexer) == '\0') {
 
     token.type = END_TOKEN;
@@ -228,10 +218,9 @@ token_t lxr_next_token(lxr_t *lexer) {
     token.data_length = 1;
 
   } else {
-
+    fprintf(stdout, "ERROR: no possible token\n");
     lxr_increment_current(lexer);
   }
 
   return token;
 }
-

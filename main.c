@@ -4,7 +4,7 @@
 
 int main() {
 
-  lxr_t lexer = lxr_init("{bar = 7;}");
+  lxr_t lexer = lxr_init("{bar <= 7;}");
 
   lxr_dump_lexer(&lexer);
 
