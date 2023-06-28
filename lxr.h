@@ -7,90 +7,92 @@
 #define True 1
 #define False 0
 
-typedef enum token_type {
-  // one char token
-  OPEN_CURLY,
-  CLOSE_CURLY,
-  OPEN_PAREN,
-  CLOSE_PAREN,
-  EQUAL,
-  SEMICOLON,
-  LESS,
-  GREATER,
+typedef enum {
+  OPEN_CURLY_TOKEN,
+  CLOSE_CURLY_TOKEN,
+  OPEN_PAREN_TOKEN,
+  CLOSE_PAREN_TOKEN,
+  EQUAL_TOKEN,
+  SEMICOLON_TOKEN,
+  LESS_TOKEN,
+  GREATER_TOKEN,
 
-  // two chars token
-  EQUAL_EQUAL,
-  LESS_EQUAL,
-  GREATER_EQUAL,
+  EQUAL_EQUAL_TOKEN,
+  LESS_EQUAL_TOKEN,
+  GREATER_EQUAL_TOKEN,
 
-  // more chars token
-  IF,
-  ELSE,
-  WHILE,
-  IDENTIFIER,
-  INTEGER,
+  IF_TOKEN,
+  ELSE_TOKEN,
+  WHILE_TOKEN,
+  IDENTIFIER_TOKEN,
+  INTEGER_TOKEN,
+  AND_TOKEN, 
+  OR_TOKEN,
 
-  // special token
-  COMMENT,
+  COMMENT_TOKEN,
   END_TOKEN,
   NULL_TOKEN,
-} token_type_t;
+} TokenType;
 
 static const char * const token_to_name[] = {
-  [OPEN_CURLY] = "OPEN_CURLY",
-  [CLOSE_CURLY] = "CLOSE_CURLY",
-  [OPEN_PAREN] = "OPEN_PAREN",
-  [CLOSE_PAREN] = "CLOSE_PAREN",
-  [EQUAL] = "EQUAL",
-  [LESS_EQUAL] = "LESS_EQUAL",
-  [GREATER_EQUAL] = "GREATER_EQUAL",
-  [LESS] = "LESS",
-  [GREATER] = "GREATER",
-  [IDENTIFIER] = "IDENTIFIER",
-  [INTEGER] = "INTEGER",
-  [EQUAL_EQUAL] = "EQUAL_EQUAL",
-  [IF] = "IF",
-  [ELSE] = "ELSE",
-  [WHILE] = "WHILE",
-  [SEMICOLON] = "SEMICOLON",
-  [COMMENT] = "COMMENT",
+  [OPEN_CURLY_TOKEN] = "OPEN_CURLY",
+  [CLOSE_CURLY_TOKEN] = "CLOSE_CURLY",
+  [OPEN_PAREN_TOKEN] = "OPEN_PAREN",
+  [CLOSE_PAREN_TOKEN] = "CLOSE_PAREN",
+  [EQUAL_TOKEN] = "EQUAL",
+  [LESS_EQUAL_TOKEN] = "LESS_EQUAL",
+  [GREATER_EQUAL_TOKEN] = "GREATER_EQUAL",
+  [LESS_TOKEN] = "LESS",
+  [GREATER_TOKEN] = "GREATER",
+  [IDENTIFIER_TOKEN] = "IDENTIFIER",
+  [INTEGER_TOKEN] = "INTEGER",
+  [AND_TOKEN] = "AND",
+  [OR_TOKEN] = "OR",
+  [EQUAL_EQUAL_TOKEN] = "EQUAL_EQUAL",
+  [IF_TOKEN] = "IF",
+  [ELSE_TOKEN] = "ELSE",
+  [WHILE_TOKEN] = "WHILE",
+  [SEMICOLON_TOKEN] = "SEMICOLON",
+  [COMMENT_TOKEN] = "COMMENT",
   [END_TOKEN] = "END_TOKEN",
   [NULL_TOKEN] = "NULL_TOKEN"
 };
 
 static const char token_to_char[] = {
-  [OPEN_CURLY] = '{',
-  [CLOSE_CURLY] = '}',
-  [OPEN_PAREN] = '(',
-  [CLOSE_PAREN] = ')',
-  [SEMICOLON] = ';',
+  [OPEN_CURLY_TOKEN] = '{',
+  [CLOSE_CURLY_TOKEN] = '}',
+  [OPEN_PAREN_TOKEN] = '(',
+  [CLOSE_PAREN_TOKEN] = ')',
+  [SEMICOLON_TOKEN] = ';',
 };
 
 static const char * const keyword_token_to_string[] = {
-  [IF] = "if",
-  [ELSE] = "else",
-  [WHILE] = "while",
+  [IF_TOKEN] = "if",
+  [ELSE_TOKEN] = "else",
+  [WHILE_TOKEN] = "while",
+  [AND_TOKEN] = "and",
+  [OR_TOKEN] = "or",
 };
 
 #define token_to_char_size sizeof(token_to_char)
 #define token_to_name_size sizeof(token_to_name)/sizeof(char *)
 #define keyword_token_to_string_size sizeof(keyword_token_to_string)/sizeof(char *)
 
-typedef struct token {
+typedef struct {
 
-  token_type_t type;
+  TokenType type;
   const char* data;
   int data_length;
   int position;
 
-} token_t;
+} Token;
 
-void token_print_data(token_t token) {
+void token_print_data(Token token) {
   for (int i=0; i<token.data_length; i++)
     fprintf(stdout, "%c", token.data[token.position+i]);
 }
 
-void lxr_print_token(token_t token){
+void lxr_print_token(Token token){
 
   fprintf(stdout, "%-14s", token_to_name[token.type]);
 
@@ -100,16 +102,16 @@ void lxr_print_token(token_t token){
   }
 }
 
-typedef struct lxr {
+typedef struct {
   const char *data;
   unsigned int current;
   unsigned int data_length;
-} lxr_t;
+} Lexer;
 
 #define lxr_current_char(lexer) lexer->data[lexer->current]
 #define lxr_increment_current(lexer) ++lexer->current;
 
-void lxr_dump_lexer(lxr_t *lexer) {
+void lxr_dump_lexer(Lexer *lexer) {
   fprintf(stdout, "current: %d, current_char: %c\n", lexer->current, lexer->data[lexer->current]);
   fprintf(stdout, "data_length: %d\n", lexer->data_length);
   fprintf(stdout, "code: \n%s", lexer->data);
@@ -136,7 +138,7 @@ bool is_final_char(char c) {
   return c == '\0' || c == 26;
 }
 
-int eat_whitespace(lxr_t *lexer) {
+int eat_whitespace(Lexer *lexer) {
   int eaten = 0;
   while (is_whitespace(lxr_current_char(lexer))) {
     ++eaten;
@@ -145,9 +147,9 @@ int eat_whitespace(lxr_t *lexer) {
   return eaten;
 }
 
-token_type_t lxr_get_keyword_token(const char *data, int start, unsigned int length) {
+TokenType lxr_get_keyword_token(const char *data, int start, unsigned int length) {
   for (unsigned int i=0; i < keyword_token_to_string_size; i++) {
-    if (strlen(keyword_token_to_string[i]) == length) {
+    if (keyword_token_to_string[i] != NULL && strlen(keyword_token_to_string[i]) == length) {
       bool token_found=True;
       for (unsigned int j=0; j<length; j++) {
         if (data[start+j] != keyword_token_to_string[i][j]) {
@@ -156,15 +158,15 @@ token_type_t lxr_get_keyword_token(const char *data, int start, unsigned int len
         }
       }
       if (token_found) 
-        return i;
+        return (TokenType) i;
     }
   }
-  return IDENTIFIER;
+  return IDENTIFIER_TOKEN;
 }
 
-lxr_t lxr_init(const char *data) {
+Lexer lxr_init(const char *data) {
 
-  lxr_t lexer;
+  Lexer lexer;
   lexer.data = data;
   lexer.data_length = strlen(data);
   lexer.current = 0;
@@ -172,10 +174,10 @@ lxr_t lxr_init(const char *data) {
   return lexer;
 }
 
-bool lxr_check_one_char_token(lxr_t *lexer, token_t *token) {
+bool lxr_check_one_char_token(Lexer *lexer, Token *token) {
   for (unsigned int i=0; i < token_to_char_size; i++) {
     if (token_to_char[i] != 0 && lxr_current_char(lexer) == token_to_char[i]) {
-      token->type = i;
+      token->type = (TokenType) i;
       token->data_length = 1;
       token->position = lexer->current;
       return True;
@@ -199,10 +201,10 @@ else if (lxr_current_char(lexer) == first_char) { \
   lxr_increment_current(lexer); \
 }   \
 
-token_t lxr_next_token(lxr_t *lexer) {
+Token lxr_next_token(Lexer *lexer) {
 
   eat_whitespace(lexer);
-  token_t token;
+  Token token;
   // int eaten = 0;
   token.data = lexer->data;
   token.type = NULL_TOKEN;
@@ -212,9 +214,9 @@ token_t lxr_next_token(lxr_t *lexer) {
   if (lxr_check_one_char_token(lexer, &token)) {
     lxr_increment_current(lexer);
   } 
-  lxr_ambiguous_one_or_two_chars_token('<', LESS, '=', LESS_EQUAL)
-  lxr_ambiguous_one_or_two_chars_token('>', GREATER, '=', GREATER_EQUAL)
-  lxr_ambiguous_one_or_two_chars_token('=', EQUAL, '=', EQUAL_EQUAL)
+  lxr_ambiguous_one_or_two_chars_token('<', LESS_TOKEN, '=', LESS_EQUAL_TOKEN)
+  lxr_ambiguous_one_or_two_chars_token('>', GREATER_TOKEN, '=', GREATER_EQUAL_TOKEN)
+  lxr_ambiguous_one_or_two_chars_token('=', EQUAL_TOKEN, '=', EQUAL_EQUAL_TOKEN)
   else if (is_starter_identifier_char(lxr_current_char(lexer))) {
     int starting_position = lexer->current;
     int id_name_length = 1;
@@ -238,13 +240,13 @@ token_t lxr_next_token(lxr_t *lexer) {
       ++id_name_length;
       lxr_increment_current(lexer);
     }
-    token.type = INTEGER;
+    token.type = INTEGER_TOKEN;
     token.position = starting_position;
     token.data_length = id_name_length;
   }
   else if (lxr_current_char(lexer) == '#') {
 
-    token.type = COMMENT;
+    token.type = COMMENT_TOKEN;
     token.position = lexer->current;
     token.data_length = 1;
 
