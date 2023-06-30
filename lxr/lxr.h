@@ -1,8 +1,11 @@
+#ifndef LXR_HEADER
+#define LXR_HEADER
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#define TODO() fprintf(stdout, "TODO: %s is not implemented\n", __FUNCTION__);
+#define TODO() fprintf(stdout, "TODO: %s is not implemented\n", __FUNCTION__); exit(1);
 #define bool int
 #define True 1
 #define False 0
@@ -16,6 +19,10 @@ typedef enum {
   SEMICOLON_TOKEN,
   LESS_TOKEN,
   GREATER_TOKEN,
+  PLUS_TOKEN,
+  MINUS_TOKEN,
+  SLASH_TOKEN,
+  ASTERISK_TOKEN,
 
   EQUAL_EQUAL_TOKEN,
   LESS_EQUAL_TOKEN,
@@ -44,6 +51,10 @@ static const char * const token_to_name[] = {
   [GREATER_EQUAL_TOKEN] = "GREATER_EQUAL",
   [LESS_TOKEN] = "LESS",
   [GREATER_TOKEN] = "GREATER",
+  [PLUS_TOKEN] = "PLUS",
+  [MINUS_TOKEN] = "MINUS",
+  [SLASH_TOKEN] = "SLASH",
+  [ASTERISK_TOKEN] = "ASTERISK",
   [IDENTIFIER_TOKEN] = "IDENTIFIER",
   [INTEGER_TOKEN] = "INTEGER",
   [AND_TOKEN] = "AND",
@@ -64,6 +75,10 @@ static const char token_to_char[] = {
   [OPEN_PAREN_TOKEN] = '(',
   [CLOSE_PAREN_TOKEN] = ')',
   [SEMICOLON_TOKEN] = ';',
+  [PLUS_TOKEN] = '+',
+  [MINUS_TOKEN] = '-',
+  [SLASH_TOKEN] = '/',
+  [ASTERISK_TOKEN] = '*',
 };
 
 static const char * const keyword_token_to_string[] = {
@@ -90,6 +105,18 @@ typedef struct {
 void token_print_data(Token token) {
   for (int i=0; i<token.data_length; i++)
     fprintf(stdout, "%c", token.data[token.position+i]);
+}
+
+char *lxr_get_token_data_as_cstring(Token token){
+  // TODO: error handling
+  char *string = (char *) malloc(token.data_length+1);
+  memcpy(string, token.data + token.position, token.data_length);
+  string[token.data_length] = '\0';
+  return string;
+}
+
+void lxr_print_token_type(TokenType token_type){
+  fprintf(stdout, "%s", token_to_name[token_type]);
 }
 
 void lxr_print_token(Token token){
@@ -268,3 +295,5 @@ Token lxr_next_token(Lexer *lexer) {
 
   return token;
 }
+
+#endif // end LXR_HEADER
