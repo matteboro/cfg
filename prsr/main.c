@@ -4,17 +4,15 @@
 
 int main() {
 
-  const char *data = "2 + 4 * 5 * 6 - 7";
-  Expression *expr = prsr_parse_only_expression(data);
+  const char *data = "foo = 2 + bar * 5;";
+  ASTNode *ast = prsr_parse(data);
 
-  if (expr != NULL) 
+  if (ast != NULL) 
     fprintf(stdout, "%s parsed succesfully\n", data);
   else 
     fprintf(stdout, "%s parsed unsuccesfully\n", data);
 
-  expr_print_expression(expr, stdout);
-  fprintf(stdout, "\n");
-  expr_dealloc_expression(expr);
+  ast_print_node(ast, stdout);
 
   return 0;
 }

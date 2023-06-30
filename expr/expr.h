@@ -1,3 +1,6 @@
+#ifndef EXPR_HEADER
+#define EXPR_HEADER
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,6 +16,34 @@
 
 #define EXPR_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
 
+typedef struct {
+  char *name;
+} Identifier;
+
+Identifier expr_create_identifier(const char *name) {
+  Identifier id;
+  id.name = malloc(strlen(name)+1);
+  strcpy(id.name, name);
+  return id;
+}
+
+void expr_dealloc_identifier(Identifier *id) {
+  free(id->name);
+  free(id);
+}
+
+void expr_print_identifier(Identifier *id, FILE *file) {
+  fprintf(file, "id.%s", id->name);
+} 
+
+Identifier *expr_create_identifier_from_token(Token token) {
+  // TODO : error handling, assume (token.type == IDENTIFIER_TOKEN)
+
+  Identifier *id = (Identifier *)malloc(sizeof(Identifier));
+  id->name = malloc(token.data_length+1);
+  id->name = lxr_get_token_data_as_cstring(token);
+  return id;
+}
 
 typedef enum {
   BINARY_EXPRESSION_EXP_TYPE,
@@ -78,13 +109,13 @@ Operand expr_create_operand(OperandType type, void *data) {
   return operand;
 }
 
-Expression *expr_create_operand_expression(OperandType type, void *data) {
+Expression *expr_create_operand_expression(OperandType type, const char *data) {
   void *my_data = NULL;
 
   if (type == IDENTIFIER_OPERAND) {
-    int len = strlen(data);
-    my_data = malloc(len+1);
-    strcpy(my_data, data);
+    my_data = malloc(sizeof(Identifier));
+    Identifier *id_data = (Identifier *)my_data;
+    *id_data = expr_create_identifier(data);
   } 
   else if (type == INTEGER_OPERAND) {
     my_data = malloc(sizeof(int));
@@ -102,27 +133,17 @@ Expression *expr_create_operand_expression(OperandType type, void *data) {
 
 Expression *expr_create_operand_expression_from_token(Token token) {
   OperandType type;
-  void *data = NULL;
   char *token_data_string = lxr_get_token_data_as_cstring(token);
+
   switch (token.type) {
-  case IDENTIFIER_TOKEN: 
-    type = IDENTIFIER_OPERAND;
-    data = malloc(token.data_length+1);
-    strcpy(data, token_data_string);
-  break;
-  case INTEGER_TOKEN:
-    type = INTEGER_OPERAND;
-    data = malloc(sizeof(int)); 
-    int *int_data = (int *)data;
-    *int_data = expr_string_to_int(token_data_string);
-  break;
-  default:
-    EXPR_ERROR();
+  case IDENTIFIER_TOKEN: type = IDENTIFIER_OPERAND; break;
+  case INTEGER_TOKEN: type = INTEGER_OPERAND; break;
+  default: EXPR_ERROR();
   }
+
+  Expression* result = expr_create_operand_expression(type, token_data_string);
   free(token_data_string);
-  Operand *operand = (Operand *) malloc(sizeof(Operand));
-  *operand = expr_create_operand(type, data);
-  return expr_create_expression(OPERAND_EXP_TYPE, operand);
+  return result;
 }
 
 // DEALLOC
@@ -131,7 +152,11 @@ void expr_dealloc_operand(Operand *operand) {
   EXPR_DEBUG_PRINT()
   if (operand == NULL) 
     return;
-  free(operand->data);
+  
+  if (operand->type == IDENTIFIER_OPERAND) 
+    expr_dealloc_identifier((Identifier *) operand->data);
+  else
+    free(operand->data);
   free(operand);
 }
 
@@ -150,12 +175,12 @@ void expr_dealloc_expression(Expression *expression) {
   case OPERAND_EXP_TYPE:
     expr_dealloc_operand((Operand *) (expression->enclosed_expression));
   break;
-  case BINARY_EXPRESSION_EXP_TYPE:
-    // BinaryExpression *binary_expression = (BinaryExpression *) (expression->enclosed_expression);
-    expr_dealloc_expression(((BinaryExpression *) (expression->enclosed_expression))->left);
-    expr_dealloc_expression(((BinaryExpression *) (expression->enclosed_expression))->right);
+  case BINARY_EXPRESSION_EXP_TYPE: {
+    BinaryExpression *binary_expression = (BinaryExpression *) (expression->enclosed_expression);
+    expr_dealloc_expression(binary_expression->left);
+    expr_dealloc_expression(binary_expression->right);
     expr_dealloc_binary_expression((BinaryExpression *) (expression->enclosed_expression));
-  break;
+  } break;
   default:
     EXPR_ERROR();
   }
@@ -175,7 +200,7 @@ void expr_print_operand(Operand *operand, FILE *file) {
     fprintf(file, "%d", *((int *)operand->data));
   break;
   case IDENTIFIER_OPERAND:
-    fprintf(file, "%s", ((char *)operand->data));
+    expr_print_identifier((Identifier *)operand->data, file);
   break;
   default:
     EXPR_ERROR();
@@ -208,3 +233,5 @@ void expr_print_expression(Expression *expression, FILE *file) {
     EXPR_ERROR();
   }
 }
+
+#endif // end EXPR_HEADER

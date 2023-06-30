@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../lxr/lxr.h"
 #include "../expr/expr.h"
+#include "ast.h"
 
 /*
 
@@ -17,6 +18,7 @@ FACTOR     :: [ IDENDIFIER_TOKEN ],
               [ OPEN_PAREN_TOKEN - < EXPRESSION > - CLOSE_PAREN_TOKEN ]
 */
 
+// #define PRSR_DEBUG
 #ifdef PRSR_DEBUG
 #define PRSR_DEBUG_PRINT() fprintf(stdout, "%s\n", __FUNCTION__);
 #define PRSR_MATCH_DEBUG_PRINT() fprintf(stdout, "%s(", __FUNCTION__); lxr_print_token_type(token_type); fprintf(stdout, ")\n"); 
@@ -28,24 +30,8 @@ FACTOR     :: [ IDENDIFIER_TOKEN ],
 #endif
 #define PRSR_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
 
-void  prsr_parse_assignment();
+ASTNode *prsr_parse_assignment();
 Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor();
-
-typedef enum {
-  BYNARY_EXPRESSION,
-  ASSIGNMENT,
-} ASTNodeType;
-
-typedef struct {} *ASTNodeData;
-
-typedef struct {
-  
-} *AssignmentNodeData;
-
-typedef struct {
-  ASTNodeType type;
-  ASTNodeData data;
-} ASTNode;
 
 static Token lookhaed;
 Lexer *lexer_ptr;
@@ -107,27 +93,34 @@ Expression *prsr_parse_expression() {
   return root;
 }
 
-void prsr_parse_assignment() {
-  PRSR_DEBUG_PRINT();
-  prsr_match(IDENTIFIER_TOKEN);
-  prsr_match(EQUAL_TOKEN);
-  prsr_parse_expression();
-  prsr_match(SEMICOLON_TOKEN);
+ASTNode *prsr_parse_expression_node() {
+  Expression *expression = prsr_parse_expression();
+  return ast_create_expression_node(expression);
 }
 
-bool prsr_parse(const char *data) {
+ASTNode *prsr_parse_assignment() {
+  PRSR_DEBUG_PRINT();
+  Token id_token = lookhaed;
+  prsr_match(IDENTIFIER_TOKEN);
+  prsr_match(EQUAL_TOKEN);
+  ASTNode *expression_node = prsr_parse_expression_node();
+  prsr_match(SEMICOLON_TOKEN);
+  return ast_create_assignment_node(id_token, expression_node);
+}
+
+ASTNode *prsr_parse(const char *data) {
 
   Lexer lexer = lxr_init(data);
   lexer_ptr = &lexer;
 
   prsr_next_token();
 
-  prsr_parse_assignment();
+  ASTNode *ast = prsr_parse_assignment();
 
   if (lookhaed.type == END_TOKEN) 
-    return True;
+    return ast;
 
-  return False;
+  return NULL;
 }
 
 Expression *prsr_parse_only_expression(const char *data) {
