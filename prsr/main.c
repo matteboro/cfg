@@ -4,8 +4,8 @@
 
 int main() {
 
-/*
-  const char *data = "foo = 2 + bar * 5;";
+
+  const char *data = "foo = 2 + bar(4, (boo * 3 + z), 5) * 5;";
   ASTNode *ast = prsr_parse(data);
 
   if (ast != NULL) 
@@ -15,8 +15,9 @@ int main() {
 
   ast_print_node(ast, stdout);
   ast_dealloc_node(ast);
-*/
 
+
+/*
   ParameterList *list = prmt_list_create_empty();
   prmt_list_print(list, stdout); fprintf(stdout, "\n");
 
@@ -48,6 +49,6 @@ int main() {
 
   // funccall_print(func_call, stdout); fprintf(stdout, "\n");
   // funccall_dealloc(func_call);
-
+*/
   return 0;
 }

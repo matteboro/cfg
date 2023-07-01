@@ -45,12 +45,38 @@ void prsr_match(TokenType token_type) {
   PRSR_ERROR();
 }
 
+Expression *prsr_parse_funccall(Token token) {
+  char *func_name = lxr_get_token_data_as_cstring(token);
+  fprintf(stdout, "\n%s\n", func_name);
+  prsr_match(OPEN_PAREN_TOKEN);
+  ParameterList *params = prmt_list_create_empty();
+  if (lookhaed.type != CLOSE_PAREN_TOKEN) {
+    while (True){
+      Expression *tmp_expr = prsr_parse_expression();
+      Parameter *tmp_param = prmt_create_expression_param(tmp_expr);
+      prmt_list_append(params, tmp_param);
+      if (lookhaed.type != COMMA_TOKEN)
+        break;
+      prsr_match(COMMA_TOKEN);
+    }
+  }
+  FunctionCall *func_call = funccall_create(func_name, params);
+  Expression *result = expr_create_funccall_operand_expression(func_call);
+  free(func_name);
+  prsr_match(CLOSE_PAREN_TOKEN);  
+  return result;
+}
+
 Expression *prsr_parse_factor() {
   PRSR_DEBUG_PRINT();
   switch (lookhaed.type) {
   case IDENTIFIER_TOKEN: {
     Token token = lookhaed;
     prsr_match(IDENTIFIER_TOKEN);
+    if (lookhaed.type == OPEN_PAREN_TOKEN) {
+      Expression *result = prsr_parse_funccall(token);
+      return result;
+    }
     return expr_create_operand_expression_from_token(token);
   } 
   case INTEGER_TOKEN: {
