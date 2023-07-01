@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "../lxr/lxr.h"
 
 
@@ -15,6 +16,25 @@
 #endif
 
 #define EXPR_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
+
+// FORWARD DECLARATIONS
+
+typedef enum {
+  BINARY_EXPRESSION_EXP_TYPE,
+  OPERAND_EXP_TYPE,
+} ExpressionType;
+
+typedef void EnclosedExpression;
+
+typedef struct {
+  ExpressionType type;
+  EnclosedExpression *enclosed_expression;
+} Expression;
+
+void expr_dealloc_expression(Expression *expression);
+void expr_print_expression(Expression *expression, FILE *file);
+
+// IDENTIFIER
 
 typedef struct {
   char *name;
@@ -45,14 +65,221 @@ Identifier *expr_create_identifier_from_token(Token token) {
   return id;
 }
 
+// END IDENTIFIER
+
+// PARAMETER
+
 typedef enum {
-  BINARY_EXPRESSION_EXP_TYPE,
-  OPERAND_EXP_TYPE,
-} ExpressionType;
+  IDENTIFIER_PARAM,
+  INTEGER_PARAM,
+  EXPRESSION_PARAM,
+  FUNCCALL_PARAM,
+} ParameterType;
+
+typedef struct {
+  ParameterType type;
+  void* param;
+} Parameter;
+
+//// CREATE
+
+Parameter *prmt_create_identifer_param(Identifier *id) {
+  Parameter *param = (Parameter *) malloc(sizeof(Parameter));
+  param->type = IDENTIFIER_PARAM;
+  param->param = id;
+  return param;
+}
+
+Parameter *prmt_create_expression_param(Expression *expr) {
+  Parameter *param = (Parameter *) malloc(sizeof(Parameter));
+  param->type = EXPRESSION_PARAM;
+  param->param = expr;
+  return param;
+}
+
+Parameter *prmt_create_integer_param(int i) {
+  Parameter *param = (Parameter *) malloc(sizeof(Parameter));
+  param->type = INTEGER_PARAM;
+  param->param = malloc(sizeof(int));
+  *((int *)param->param) = i;
+  return param;
+}
+
+//// DEALLOC
+
+void prmt_dealloc_identifer_param(Parameter *param) {
+  Identifier *id = (Identifier *) param->param;
+  expr_dealloc_identifier(id);
+}
+
+void prmt_dealloc_expression_param(Parameter *param) {
+  Expression *expr = (Expression *) param->param;
+  expr_dealloc_expression(expr);
+}
+
+void prmt_dealloc_integer_param(Parameter *param) {
+  free(param->param);
+}
+
+void prmt_dealloc_param(Parameter *param) {
+  switch (param->type) {
+  case IDENTIFIER_PARAM:
+    prmt_dealloc_identifer_param(param); break;
+  case EXPRESSION_PARAM:
+    prmt_dealloc_expression_param(param); break;
+  case INTEGER_PARAM:
+    prmt_dealloc_integer_param(param); break;
+  default:
+    EXPR_ERROR();
+  }
+  free(param);
+}
+
+//// PRINT
+
+void prmt_print_identifer_param(Parameter *param, FILE *file) {
+  Identifier *id = (Identifier *) param->param;
+  expr_print_identifier(id, file);
+}
+
+void prmt_print_expression_param(Parameter *param, FILE *file) {
+  Expression *expr = (Expression *) param->param;
+  expr_print_expression(expr, file);
+}
+
+void prmt_print_integer_param(Parameter *param, FILE *file) {
+  fprintf(file, "%d", *((int *)param->param));
+}
+
+void prmt_print_param(Parameter *param, FILE *file) {
+  if (param == NULL) {
+    fprintf(file, "NULL");
+    return;
+  }
+  switch (param->type) {
+  case IDENTIFIER_PARAM:
+    prmt_print_identifer_param(param, file); break;
+  case EXPRESSION_PARAM:
+    prmt_print_expression_param(param, file); break;
+  case INTEGER_PARAM:
+    prmt_print_integer_param(param, file); break;
+  default:
+    EXPR_ERROR();
+  }
+}
+
+// END PARAMETER
+
+// PARAMTER LIST
+
+typedef struct ParameterList_s{
+  struct ParameterList_s *next;
+  Parameter *param;
+} ParameterList;
+
+//// CREATE EMPTY
+
+ParameterList *prmt_list_create_empty() {
+  ParameterList *list = (ParameterList *)malloc(sizeof(ParameterList));
+  list->next = NULL;
+  list->param = NULL;
+  return list;
+  // return NULL;
+}
+
+ParameterList *prmt_list_create(Parameter *param) {
+  ParameterList *list = (ParameterList *)malloc(sizeof(ParameterList));
+  list->next = NULL;
+  list->param = param;
+  return list;
+}
+
+//// APPEND
+
+void prmt_list_append(ParameterList *list, Parameter *param) {
+  if (list->next == NULL) {
+    if (list->param == NULL) {
+      list->param = param;
+    } else {
+      list->next = prmt_list_create(param);
+    }
+    return;
+  }
+
+  ParameterList *n = list->next;
+  while(n->next != NULL)
+    n = n->next;
+
+  n->next = prmt_list_create(param);
+  return;
+}
+
+//// DEALLOC
+
+void prmt_list_dealloc(ParameterList *list) {
+  if (list->next != NULL)
+    prmt_list_dealloc(list->next);
+  
+  if (list->param != NULL)
+    prmt_dealloc_param(list->param);
+  
+  free(list);
+}
+
+//// SIZE
+
+size_t prmt_list_size(ParameterList *list) {
+  if (list->next != NULL)
+    return prmt_list_size(list->next) + 1;
+  
+  if (list->param != NULL)
+    return 1;
+  
+  return 0;
+}
+
+//// GET AT
+
+Parameter *prmt_list_get_at(ParameterList *list, size_t index) {
+  if (list->next == NULL && list->param == NULL && index == 0)
+    return NULL;
+  assert(index < prmt_list_size(list));
+  ParameterList *n = list;
+  for (size_t i=0; i<index; ++i)
+    n = n->next;
+  return n->param;
+}
+
+//// PRINT
+
+void prmt_list_print(ParameterList *list, FILE *file) {
+  if (list->param != NULL)
+    prmt_print_param(list->param, file);
+  
+  if (list->next != NULL){
+    fprintf(file, ", ");
+    prmt_list_print(list->next, file);
+  }
+}
+
+// END PARAMETER LIST
+
+// FUNCCALL
+
+/*
+  - a Parameter can be a Integer, Identifier, FuncCall, Expression,
+  - a FuncCall has a list of Parameter,
+  - an Operand can be a FuncCall, Integer, Identifier
+*/
+
+// END FUNCCALL
+
+// DEFINITIONS
 
 typedef enum {
   IDENTIFIER_OPERAND,
   INTEGER_OPERAND,
+  FUNCCALL_OPERAND,
 } OperandType;
 
 typedef enum {
@@ -69,14 +296,6 @@ static const char operation_to_char[] = {
   [DIV_OPERATION] = '/',
 };
 
-typedef void EnclosedExpression;
-
-typedef struct {
-  ExpressionType type;
-  EnclosedExpression *enclosed_expression;
-} Expression;
-
-
 typedef struct {
   OperandType type;
   void *data;
@@ -86,6 +305,8 @@ typedef struct {
   Expression *left, *right;
   OperationType operation;
 } BinaryExpression;
+
+// CREATE
 
 Expression *expr_create_expression(ExpressionType type, void *enclosed_expression) {
   Expression *expression = (Expression *)malloc(sizeof(Expression));

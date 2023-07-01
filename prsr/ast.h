@@ -1,12 +1,22 @@
 #include "../expr/expr.h"
+#include <assert.h>
 
+// #define AST_DEBUG
+#ifdef AST_DEBUG
+#define AST_PRINT_DEBUG() fprintf(stdout, "%s\n", __FUNCTION__); 
+#else
+#define AST_PRINT_DEBUG()
+#endif
 #define AST_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
+
 #define print_spaces(n, file) {for (size_t spaces_counter=0; spaces_counter<n; ++spaces_counter) fprintf(file, " ");}
 
 typedef enum {
   EXPRESSION,
   ASSIGNMENT,
 } ASTNodeType;
+
+// DEFINITIONS
 
 typedef void ASTNodeData;
 
@@ -23,6 +33,8 @@ typedef struct {
   Identifier *id;
   ASTNode *expression;
 } AssignmentNodeData;
+
+// CREATE
 
 ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
   ASTNode *node = (ASTNode *) malloc(sizeof(ASTNode));
@@ -46,6 +58,8 @@ ASTNode *ast_create_expression_node(Expression *expression) {
   data->expression = expression;
   return ast_create_node(EXPRESSION, data);
 }
+
+// PRINT
 
 void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
   ExpressionNodeData *data = (ExpressionNodeData *) node->data;
@@ -81,4 +95,38 @@ void ast_print_node_aux(ASTNode *node, FILE *file, size_t ident) {
 
 void ast_print_node(ASTNode *node, FILE *file) {
   ast_print_node_aux(node, file, 0);
+}
+
+// DEALLOC
+
+void ast_dealloc_node(ASTNode *root);
+
+void ast_dealloc_expression_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == EXPRESSION);
+  ExpressionNodeData *data = (ExpressionNodeData *) node->data;
+  expr_dealloc_expression(data->expression);
+  free(data);
+}
+
+
+void ast_dealloc_assignment_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == ASSIGNMENT);
+  AssignmentNodeData *data = (AssignmentNodeData *) node->data;
+  ast_dealloc_node(data->expression);
+  expr_dealloc_identifier(data->id);
+  free(data);
+}
+
+void ast_dealloc_node(ASTNode *root) {
+  AST_PRINT_DEBUG();
+  if (root->type == ASSIGNMENT) {
+    ast_dealloc_assignment_node(root);
+  } else if (root->type == EXPRESSION) {
+    ast_dealloc_expression_node(root);
+  } else {
+    AST_ERROR();
+  }
+  free(root);
 }

@@ -123,7 +123,7 @@ ASTNode *prsr_parse(const char *data) {
   return NULL;
 }
 
-Expression *prsr_parse_only_expression(const char *data) {
+Expression *prsr_parse_expression_from_string(const char *data) {
 
   Lexer lexer = lxr_init(data);
   lexer_ptr = &lexer;

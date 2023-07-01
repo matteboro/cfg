@@ -23,6 +23,7 @@ typedef enum {
   MINUS_TOKEN,
   SLASH_TOKEN,
   ASTERISK_TOKEN,
+  COMMA_TOKEN,
 
   EQUAL_EQUAL_TOKEN,
   LESS_EQUAL_TOKEN,
@@ -35,6 +36,8 @@ typedef enum {
   INTEGER_TOKEN,
   AND_TOKEN, 
   OR_TOKEN,
+  VAR_TOKEN,
+  FUNC_TOKEN,
 
   COMMENT_TOKEN,
   END_TOKEN,
@@ -63,6 +66,9 @@ static const char * const token_to_name[] = {
   [IF_TOKEN] = "IF",
   [ELSE_TOKEN] = "ELSE",
   [WHILE_TOKEN] = "WHILE",
+  [COMMA_TOKEN] = "COMMA",
+  [VAR_TOKEN] = "VAR",
+  [FUNC_TOKEN] = "FUNC",
   [SEMICOLON_TOKEN] = "SEMICOLON",
   [COMMENT_TOKEN] = "COMMENT",
   [END_TOKEN] = "END_TOKEN",
@@ -79,6 +85,7 @@ static const char token_to_char[] = {
   [MINUS_TOKEN] = '-',
   [SLASH_TOKEN] = '/',
   [ASTERISK_TOKEN] = '*',
+  [COMMA_TOKEN] = ',',
 };
 
 static const char * const keyword_token_to_string[] = {
@@ -87,6 +94,8 @@ static const char * const keyword_token_to_string[] = {
   [WHILE_TOKEN] = "while",
   [AND_TOKEN] = "and",
   [OR_TOKEN] = "or",
+  [VAR_TOKEN] = "var",
+  [FUNC_TOKEN] = "func",
 };
 
 #define token_to_char_size sizeof(token_to_char)
