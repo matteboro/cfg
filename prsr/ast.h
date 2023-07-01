@@ -48,7 +48,7 @@ ASTNode *ast_create_assignment_node(Token identifier_token, ASTNode *expression_
     AST_ERROR();
   }
   AssignmentNodeData *data = (AssignmentNodeData *) malloc(sizeof(AssignmentNodeData));
-  data->id = expr_create_identifier_from_token(identifier_token);
+  data->id = idf_create_identifier_from_token(identifier_token);
   data->expression = expression_node;
   return ast_create_node(ASSIGNMENT, data);
 }
@@ -75,7 +75,7 @@ void ast_print_assignment_node(ASTNode *node, FILE *file, size_t ident) {
   fprintf(file, "Assignment: {\n");
   print_spaces(ident, file);
   fprintf(file, "  Idenfier: ");
-  expr_print_identifier(data->id, file);
+  idf_print_identifier(data->id, file);
   fprintf(file, ",\n");
   ast_print_expression_node(data->expression, file, ident+2);
   print_spaces(ident, file);
@@ -115,7 +115,7 @@ void ast_dealloc_assignment_node(ASTNode *node) {
   assert(node->type == ASSIGNMENT);
   AssignmentNodeData *data = (AssignmentNodeData *) node->data;
   ast_dealloc_node(data->expression);
-  expr_dealloc_identifier(data->id);
+  idf_dealloc_identifier(data->id);
   free(data);
 }
 

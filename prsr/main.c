@@ -19,25 +19,35 @@ int main() {
 
   ParameterList *list = prmt_list_create_empty();
   prmt_list_print(list, stdout); fprintf(stdout, "\n");
+
   prmt_list_append(list, prmt_create_integer_param(69));
   prmt_list_print(list, stdout); fprintf(stdout, "\n");
 
-  Identifier *id = (Identifier *)malloc(sizeof(Identifier));
-  *id = expr_create_identifier("foo");
-  prmt_list_append(list, prmt_create_identifer_param(id));
+  prmt_list_append(list, prmt_create_identifer_param(idf_create_identifier("foo")));
   prmt_list_print(list, stdout); fprintf(stdout, "\n");
 
-  Expression *expr = prsr_parse_expression_from_string("(foo - 6) * 7 + bar");
-  prmt_list_append(list, prmt_create_expression_param(expr));
-
+  prmt_list_append(list, prmt_create_expression_param(prsr_parse_expression_from_string("(foo - 6) * 7 + bar")));
   prmt_list_print(list, stdout); fprintf(stdout, "\n");
+
   fprintf(stdout, "size: %zu\n", prmt_list_size(list));
 
   fprintf(stdout, "param 0: "); prmt_print_param(prmt_list_get_at(list, 0), stdout); fprintf(stdout, "\n");
   fprintf(stdout, "param 1: "); prmt_print_param(prmt_list_get_at(list, 1), stdout); fprintf(stdout, "\n");
   fprintf(stdout, "param 2: "); prmt_print_param(prmt_list_get_at(list, 2), stdout); fprintf(stdout, "\n");
-  // fprintf(stdout, "param 3: "); prmt_print_param(prmt_list_get_at(list, 3), stdout); fprintf(stdout, "\n");
-  prmt_list_dealloc(list);
+
+  FunctionCall *func_call = funccall_create("baz", list);
+
+  Expression *expr = expr_create_binary_expression(
+    expr_create_funccall_operand_expression(func_call),
+    MULT_OPERATION,
+    expr_create_operand_expression(INTEGER_OPERAND, "69"));
+
+  fprintf(stdout, "expr: "); expr_print_expression(expr, stdout); fprintf(stdout, "\n");
+
+  expr_dealloc_expression(expr);
+
+  // funccall_print(func_call, stdout); fprintf(stdout, "\n");
+  // funccall_dealloc(func_call);
 
   return 0;
 }

@@ -16,6 +16,7 @@
 #endif
 
 #define EXPR_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
+#define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
 
 // FORWARD DECLARATIONS
 
@@ -40,25 +41,24 @@ typedef struct {
   char *name;
 } Identifier;
 
-Identifier expr_create_identifier(const char *name) {
-  Identifier id;
-  id.name = malloc(strlen(name)+1);
-  strcpy(id.name, name);
+Identifier *idf_create_identifier(const char *name) {
+  Identifier *id = (Identifier *)malloc(sizeof(Identifier));
+  id->name = malloc(strlen(name)+1);
+  strcpy(id->name, name);
   return id;
 }
 
-void expr_dealloc_identifier(Identifier *id) {
+void idf_dealloc_identifier(Identifier *id) {
   free(id->name);
   free(id);
 }
 
-void expr_print_identifier(Identifier *id, FILE *file) {
+void idf_print_identifier(Identifier *id, FILE *file) {
   fprintf(file, "id.%s", id->name);
 } 
 
-Identifier *expr_create_identifier_from_token(Token token) {
+Identifier *idf_create_identifier_from_token(Token token) {
   // TODO : error handling, assume (token.type == IDENTIFIER_TOKEN)
-
   Identifier *id = (Identifier *)malloc(sizeof(Identifier));
   id->name = malloc(token.data_length+1);
   id->name = lxr_get_token_data_as_cstring(token);
@@ -80,6 +80,11 @@ typedef struct {
   ParameterType type;
   void* param;
 } Parameter;
+
+//// FORWARD DECLARATIONS OF FUNCCALL PARAMETER
+
+void prmt_dealloc_funccall_param(Parameter *param);
+void prmt_print_funccall_param(Parameter *param, FILE *file);
 
 //// CREATE
 
@@ -109,7 +114,7 @@ Parameter *prmt_create_integer_param(int i) {
 
 void prmt_dealloc_identifer_param(Parameter *param) {
   Identifier *id = (Identifier *) param->param;
-  expr_dealloc_identifier(id);
+  idf_dealloc_identifier(id);
 }
 
 void prmt_dealloc_expression_param(Parameter *param) {
@@ -129,6 +134,8 @@ void prmt_dealloc_param(Parameter *param) {
     prmt_dealloc_expression_param(param); break;
   case INTEGER_PARAM:
     prmt_dealloc_integer_param(param); break;
+  case FUNCCALL_PARAM:
+    prmt_dealloc_funccall_param(param); break;
   default:
     EXPR_ERROR();
   }
@@ -139,7 +146,7 @@ void prmt_dealloc_param(Parameter *param) {
 
 void prmt_print_identifer_param(Parameter *param, FILE *file) {
   Identifier *id = (Identifier *) param->param;
-  expr_print_identifier(id, file);
+  idf_print_identifier(id, file);
 }
 
 void prmt_print_expression_param(Parameter *param, FILE *file) {
@@ -152,10 +159,7 @@ void prmt_print_integer_param(Parameter *param, FILE *file) {
 }
 
 void prmt_print_param(Parameter *param, FILE *file) {
-  if (param == NULL) {
-    fprintf(file, "NULL");
-    return;
-  }
+  if_null_print(param, file);
   switch (param->type) {
   case IDENTIFIER_PARAM:
     prmt_print_identifer_param(param, file); break;
@@ -163,6 +167,8 @@ void prmt_print_param(Parameter *param, FILE *file) {
     prmt_print_expression_param(param, file); break;
   case INTEGER_PARAM:
     prmt_print_integer_param(param, file); break;
+  case FUNCCALL_PARAM:
+    prmt_print_funccall_param(param, file); break;
   default:
     EXPR_ERROR();
   }
@@ -253,6 +259,7 @@ Parameter *prmt_list_get_at(ParameterList *list, size_t index) {
 //// PRINT
 
 void prmt_list_print(ParameterList *list, FILE *file) {
+  if_null_print(list, file);
   if (list->param != NULL)
     prmt_print_param(list->param, file);
   
@@ -266,6 +273,53 @@ void prmt_list_print(ParameterList *list, FILE *file) {
 
 // FUNCCALL
 
+typedef struct {
+  char *function_name;
+  ParameterList *parameters;
+} FunctionCall;
+
+FunctionCall *funccall_create(const char *name, ParameterList* params){
+  FunctionCall *func_call = (FunctionCall *)malloc(sizeof(FunctionCall));
+  func_call->function_name = (char *)malloc(sizeof(strlen(name))+1);
+  strcpy(func_call->function_name, name);
+  func_call->parameters = params;
+  return func_call;
+}
+
+void funccall_dealloc(FunctionCall *func_call) {
+  if (func_call == NULL)
+    return;
+  free(func_call->function_name);
+  prmt_list_dealloc(func_call->parameters);
+  free(func_call);
+}
+
+void funccall_print(FunctionCall *func_call, FILE *file) {
+  if_null_print(func_call, file);
+  fprintf(file, "%s(", func_call->function_name);
+  prmt_list_print(func_call->parameters, file);
+  fprintf(file, ")");
+}
+
+//// FUNCALL PARAMETER
+
+Parameter *prmt_create_funccall_param(FunctionCall *func_call) {
+  Parameter *param = (Parameter *) malloc(sizeof(Parameter));
+  param->type = FUNCCALL_PARAM;
+  param->param = func_call;
+  return param;
+}
+
+void prmt_dealloc_funccall_param(Parameter *param) {
+  FunctionCall *func_call = (FunctionCall *) param->param;
+  funccall_dealloc(func_call);
+}
+
+void prmt_print_funccall_param(Parameter *param, FILE *file) {
+  FunctionCall *func_call = (FunctionCall *) param->param;
+  funccall_print(func_call, file);
+}
+
 /*
   - a Parameter can be a Integer, Identifier, FuncCall, Expression,
   - a FuncCall has a list of Parameter,
@@ -276,11 +330,7 @@ void prmt_list_print(ParameterList *list, FILE *file) {
 
 // DEFINITIONS
 
-typedef enum {
-  IDENTIFIER_OPERAND,
-  INTEGER_OPERAND,
-  FUNCCALL_OPERAND,
-} OperandType;
+
 
 typedef enum {
   SUM_OPERATION,
@@ -296,15 +346,62 @@ static const char operation_to_char[] = {
   [DIV_OPERATION] = '/',
 };
 
-typedef struct {
-  OperandType type;
-  void *data;
-} Operand;
 
 typedef struct {
   Expression *left, *right;
   OperationType operation;
 } BinaryExpression;
+
+// OPERAND
+
+typedef enum {
+  IDENTIFIER_OPERAND,
+  INTEGER_OPERAND,
+  FUNCCALL_OPERAND,
+} OperandType;
+
+typedef struct {
+  OperandType type;
+  void *data;
+} Operand;
+ 
+Operand *oprnd_create_operand(OperandType type, void *data) {
+  Operand *operand = (Operand *)malloc(sizeof(Operand));
+  operand->type = type;
+  operand->data = data;
+  return operand;
+}
+
+void oprnd_dealloc_operand(Operand *operand) {
+  EXPR_DEBUG_PRINT()
+  if (operand == NULL) 
+    return;
+  if (operand->type == IDENTIFIER_OPERAND) 
+    idf_dealloc_identifier((Identifier *) operand->data);
+  else if (operand->type == FUNCCALL_OPERAND)
+    funccall_dealloc((FunctionCall *) operand->data);
+  else
+    free(operand->data);
+  free(operand);
+}
+
+void oprnd_print_operand(Operand *operand, FILE *file) {
+  EXPR_DEBUG_PRINT()
+  if (operand == NULL) 
+    return;
+  switch (operand->type) {
+  case INTEGER_OPERAND:
+    fprintf(file, "%d", *((int *)operand->data)); break;
+  case IDENTIFIER_OPERAND:
+    idf_print_identifier((Identifier *)operand->data, file); break;
+  case FUNCCALL_OPERAND:
+    funccall_print((FunctionCall *)operand->data, file); break;
+  default:
+    EXPR_ERROR();
+  }
+}
+
+// END OPERAND
 
 // CREATE
 
@@ -325,18 +422,16 @@ Expression *expr_create_binary_expression(Expression *left, OperationType op_typ
 
 #define expr_string_to_int(string) atoi(string)
 
-Operand expr_create_operand(OperandType type, void *data) {
-  Operand operand = {type, data};
-  return operand;
+Expression *expr_create_funccall_operand_expression(FunctionCall *func_call) {
+  Operand *operand = oprnd_create_operand(FUNCCALL_OPERAND, func_call);
+  return expr_create_expression(OPERAND_EXP_TYPE, operand);
 }
 
 Expression *expr_create_operand_expression(OperandType type, const char *data) {
   void *my_data = NULL;
 
   if (type == IDENTIFIER_OPERAND) {
-    my_data = malloc(sizeof(Identifier));
-    Identifier *id_data = (Identifier *)my_data;
-    *id_data = expr_create_identifier(data);
+    my_data = idf_create_identifier(data);
   } 
   else if (type == INTEGER_OPERAND) {
     my_data = malloc(sizeof(int));
@@ -347,8 +442,7 @@ Expression *expr_create_operand_expression(OperandType type, const char *data) {
     EXPR_ERROR();
   }
 
-  Operand *operand = (Operand *) malloc(sizeof(Operand));
-  *operand = expr_create_operand(type, my_data);
+  Operand *operand = oprnd_create_operand(type, my_data);
   return expr_create_expression(OPERAND_EXP_TYPE, operand);
 }
 
@@ -369,18 +463,6 @@ Expression *expr_create_operand_expression_from_token(Token token) {
 
 // DEALLOC
 
-void expr_dealloc_operand(Operand *operand) {
-  EXPR_DEBUG_PRINT()
-  if (operand == NULL) 
-    return;
-  
-  if (operand->type == IDENTIFIER_OPERAND) 
-    expr_dealloc_identifier((Identifier *) operand->data);
-  else
-    free(operand->data);
-  free(operand);
-}
-
 void expr_dealloc_binary_expression(BinaryExpression *expression) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
@@ -394,7 +476,7 @@ void expr_dealloc_expression(Expression *expression) {
     return;
   switch (expression->type) {
   case OPERAND_EXP_TYPE:
-    expr_dealloc_operand((Operand *) (expression->enclosed_expression));
+    oprnd_dealloc_operand((Operand *) (expression->enclosed_expression));
   break;
   case BINARY_EXPRESSION_EXP_TYPE: {
     BinaryExpression *binary_expression = (BinaryExpression *) (expression->enclosed_expression);
@@ -411,22 +493,6 @@ void expr_dealloc_expression(Expression *expression) {
 // PRINT
 
 void expr_print_expression(Expression *expression, FILE *file);
-
-void expr_print_operand(Operand *operand, FILE *file) {
-  EXPR_DEBUG_PRINT()
-  if (operand == NULL) 
-    return;
-  switch (operand->type) {
-  case INTEGER_OPERAND:
-    fprintf(file, "%d", *((int *)operand->data));
-  break;
-  case IDENTIFIER_OPERAND:
-    expr_print_identifier((Identifier *)operand->data, file);
-  break;
-  default:
-    EXPR_ERROR();
-  }
-}
 
 void expr_print_binary_expression(BinaryExpression *expression, FILE *file) {
   EXPR_DEBUG_PRINT()
@@ -445,7 +511,7 @@ void expr_print_expression(Expression *expression, FILE *file) {
     return;
   switch (expression->type) {
   case OPERAND_EXP_TYPE:
-    expr_print_operand((Operand *) expression->enclosed_expression, file);
+    oprnd_print_operand((Operand *) expression->enclosed_expression, file);
   break;
   case BINARY_EXPRESSION_EXP_TYPE:
     expr_print_binary_expression((BinaryExpression *) expression->enclosed_expression, file);
