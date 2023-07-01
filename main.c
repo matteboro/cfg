@@ -15,4 +15,20 @@ func foo(bar, zed) {
   var bar = 3 * lor(5);
 }
 
+Function: {
+  Name: foo
+  Params: [ bar, zed ]
+  Code: [
+    Assignment:  ...,
+    ...
+    Declaration: ...
+  ]
+}
+
+ASTNodeStatementsData
+  ASTNodeList
+
+ASTNodeFunctionDeclarationData:
+  char* name, ParamaterList params , ASTNodeList statements
+
 */

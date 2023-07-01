@@ -4,7 +4,33 @@
 
 int main() {
 
+  ASTNode *ass1 = 
+    ast_create_assignment_node(
+      idf_create_identifier("bar"), 
+      ast_create_expression_node(
+        prsr_parse_expression_from_string("bar * 69")
+      ));
 
+  ASTNode *ass2 = 
+    ast_create_assignment_node(
+      idf_create_identifier("foo"), 
+      ast_create_expression_node(
+        prsr_parse_expression_from_string("(baz - 420) * 69")
+      ));
+
+  ASTNodeList *node_list = ast_list_create_empty();
+  ast_list_append(node_list, ass1);
+  ast_list_append(node_list, ass2);
+
+  ASTNode *list_node = ast_create_node_list_node(node_list);
+  
+  ast_print_node(list_node, stdout); fprintf(stdout, "\n");
+  ast_dealloc_node(list_node);
+
+  // ast_list_print(node_list, stdout);
+  // ast_list_dealloc(node_list);
+
+  /*
   const char *data = "foo = 2 + bar(4, (boo * 3 + z), 5) * 5;";
   ASTNode *ast = prsr_parse(data);
 
@@ -15,8 +41,7 @@ int main() {
 
   ast_print_node(ast, stdout);
   ast_dealloc_node(ast);
-
-
+*/
 /*
   ParameterList *list = prmt_list_create_empty();
   prmt_list_print(list, stdout); fprintf(stdout, "\n");
