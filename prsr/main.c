@@ -4,6 +4,7 @@
 
 int main() {
 
+/*
   ASTNode *ass1 = 
     ast_create_assignment_node(
       idf_create_identifier("bar"), 
@@ -26,7 +27,7 @@ int main() {
   
   ast_print_node(list_node, stdout); fprintf(stdout, "\n");
   ast_dealloc_node(list_node);
-
+*/
   // ast_list_print(node_list, stdout);
   // ast_list_dealloc(node_list);
 
@@ -75,5 +76,11 @@ int main() {
   // funccall_print(func_call, stdout); fprintf(stdout, "\n");
   // funccall_dealloc(func_call);
 */
+
+  ASTNode *ast = prsr_parse("func baz(a, b, c) { var boo = (foo + 69) * 420; { var z = 10; } boo = 420 * 69; }");
+
+  ast_print_node(ast, stdout); fprintf(stdout, "\n");
+  ast_dealloc_node(ast);
+
   return 0;
 }

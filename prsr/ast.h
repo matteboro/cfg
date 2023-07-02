@@ -254,6 +254,8 @@ void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
   if (data->has_init) {
     fprintf(file, ",\n");
     ast_print_expression_node(data->expression, file, ident+2);
+  } else {
+    fprintf(file, "\n");
   }
   print_spaces(ident, file);
   fprintf(file, "}");
@@ -308,6 +310,7 @@ void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident) {
 
   ast_print_node_ident(data->statements, file, ident+2);
 
+  fprintf(file, "\n");
   print_spaces(ident, file);
   fprintf(file, "}");
 }

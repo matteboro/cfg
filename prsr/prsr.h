@@ -48,11 +48,15 @@ Lexer *lexer_ptr;
 void prsr_match(TokenType token_type)
 {
   PRSR_MATCH_DEBUG_PRINT();
-  if (lookhaed.type == token_type)
-  {
+  if (lookhaed.type == token_type) {
     prsr_next_token();
     return;
   }
+  fprintf(stdout, "expected: ");
+  lxr_print_token_type(token_type); 
+  fprintf(stdout, "\ngot: ");
+  lxr_print_token_type(lookhaed.type); 
+  fprintf(stdout, "\n");
   PRSR_ERROR();
 }
 
@@ -149,6 +153,20 @@ ASTNode *prsr_parse_expression_node()
   return ast_create_expression_node(expression);
 }
 
+ASTNode *prsr_parse_var_declaration() 
+{
+  PRSR_DEBUG_PRINT();
+  prsr_match(VAR_TOKEN);
+  Token id_token = lookhaed;
+  prsr_match(IDENTIFIER_TOKEN);
+  ASTNode *expression_node = NULL;
+  if (lookhaed.type == EQUAL_TOKEN){
+    prsr_match(EQUAL_TOKEN);
+    expression_node = prsr_parse_expression_node();
+  }
+  return ast_create_declaration_node(idf_create_identifier_from_token(id_token), expression_node);
+}
+
 ASTNode *prsr_parse_assignment()
 {
   PRSR_DEBUG_PRINT();
@@ -156,19 +174,83 @@ ASTNode *prsr_parse_assignment()
   prsr_match(IDENTIFIER_TOKEN);
   prsr_match(EQUAL_TOKEN);
   ASTNode *expression_node = prsr_parse_expression_node();
-  prsr_match(SEMICOLON_TOKEN);
   return ast_create_assignment_node(idf_create_identifier_from_token(id_token), expression_node);
+}
+
+ASTNode *prsr_parse_statements();
+
+ASTNode *prsr_parse_statement() 
+{
+  PRSR_DEBUG_PRINT();
+  ASTNode *statement;
+  if (lookhaed.type == VAR_TOKEN) {
+    statement = prsr_parse_var_declaration();
+  } 
+  else if (lookhaed.type == OPEN_CURLY_TOKEN){
+    return prsr_parse_statements();
+  }
+  else {
+    statement = prsr_parse_assignment();
+  }
+  prsr_match(SEMICOLON_TOKEN);
+  return statement;
+}
+
+ASTNode *prsr_parse_statements() 
+{
+  PRSR_DEBUG_PRINT();
+  ASTNodeList *node_list = ast_list_create_empty();
+  prsr_match(OPEN_CURLY_TOKEN);
+  while (lookhaed.type != CLOSE_CURLY_TOKEN) {
+    ASTNode *statement = prsr_parse_statement();
+    ast_list_append(node_list, statement);
+  }
+  prsr_match(CLOSE_CURLY_TOKEN);
+  return ast_create_node_list_node(node_list);
+}
+
+ParameterList *prsr_parse_func_declaration_params() 
+{
+  ParameterList *params = prmt_list_create_empty();
+  while (True) {
+    if (lookhaed.type != IDENTIFIER_TOKEN)
+      break;
+    Token id = lookhaed;
+    prsr_match(IDENTIFIER_TOKEN);
+
+    prmt_list_append(params, prmt_create_identifer_param(idf_create_identifier_from_token(id)));
+
+    if (lookhaed.type != COMMA_TOKEN)
+      break;
+    prsr_match(COMMA_TOKEN);
+  }
+  return params;
+}
+
+ASTNode *prsr_parse_func_declaration() 
+{
+  PRSR_DEBUG_PRINT();
+  prsr_match(FUNC_TOKEN);
+  Token func_name_id = lookhaed;
+  prsr_match(IDENTIFIER_TOKEN);
+  prsr_match(OPEN_PAREN_TOKEN);
+  ParameterList *params = prsr_parse_func_declaration_params();
+  prsr_match(CLOSE_PAREN_TOKEN);
+  ASTNode *body = prsr_parse_statements();
+  return ast_create_func_declaration_node(
+    idf_create_identifier_from_token(func_name_id),
+    params, 
+    body);
 }
 
 ASTNode *prsr_parse(const char *data)
 {
-
   Lexer lexer = lxr_init(data);
   lexer_ptr = &lexer;
 
   prsr_next_token();
 
-  ASTNode *ast = prsr_parse_assignment();
+  ASTNode *ast = prsr_parse_func_declaration();
 
   if (lookhaed.type == END_TOKEN)
     return ast;
@@ -178,7 +260,6 @@ ASTNode *prsr_parse(const char *data)
 
 Expression *prsr_parse_expression_from_string(const char *data)
 {
-
   Lexer lexer = lxr_init(data);
   lexer_ptr = &lexer;
 

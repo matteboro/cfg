@@ -55,12 +55,13 @@ DONE
 FunctionDeclarationNodeData:
   char* name, ParamaterList params, ASTNode statements
 
-
+DONE
 ParseAssignemnt():
   IDENTIFIER::id
   '='
   ParseExpression()::expression
 
+DONE
 ParseVariableDeclaration():
   VAR_TOKEN
   IDENTIFIER::id
@@ -69,20 +70,35 @@ ParseVariableDeclaration():
   else
     NULL::expression
 
+DONE
 ParseStatement():
   if (VAR_TOKEN) 
     ParseVariableDeclaration()::statement
+  else if ('{')
+    ParseStatements()::statements
+    ret statements
   else
     ParseAssignment()::statement
   ';'
   ret statement
 
+DONE
 ParseStatements(): (for the moment a list of variable declarations and assignments)
   '{'
   while (!'}')
     ParseStatement()::curr_statement
     statements.append(curr_statement)
   '}'
+
+ParseFuncDeclParams():
+  while (true)
+    IDENTIFIER::param
+    params.append(param)
+    if (',')
+      ','
+    else
+      break;
+  ret params
 
 ParseFunctionDeclaration():
   FUNC_TOKEN 
