@@ -31,6 +31,7 @@ typedef enum {
 
   IF_TOKEN,
   ELSE_TOKEN,
+  ELIF_TOKEN,
   WHILE_TOKEN,
   IDENTIFIER_TOKEN,
   INTEGER_TOKEN,
@@ -65,6 +66,7 @@ static const char * const token_to_name[] = {
   [EQUAL_EQUAL_TOKEN] = "EQUAL_EQUAL",
   [IF_TOKEN] = "IF",
   [ELSE_TOKEN] = "ELSE",
+  [ELIF_TOKEN] = "ELIF",
   [WHILE_TOKEN] = "WHILE",
   [COMMA_TOKEN] = "COMMA",
   [VAR_TOKEN] = "VAR",
@@ -96,6 +98,7 @@ static const char * const keyword_token_to_string[] = {
   [OR_TOKEN] = "or",
   [VAR_TOKEN] = "var",
   [FUNC_TOKEN] = "func",
+  [ELIF_TOKEN] = "elif",
 };
 
 #define token_to_char_size sizeof(token_to_char)

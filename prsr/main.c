@@ -87,6 +87,13 @@ int main() {
     if j * t - 420 { \
       var doodoo; \
       bich = 33 * tree; \
+    } elif j - the(tre, bu * 5, poopoo) + 1 { \
+      var booboo; \
+    } elif bo + 1 { \
+      var caca; \
+    } else { \
+      var toodoo; \
+      thot = 420 * you; \
     } \
   }");
 

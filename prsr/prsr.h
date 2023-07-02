@@ -178,7 +178,7 @@ ASTNode *prsr_parse_assignment()
 }
 
 ASTNode *prsr_parse_while_statement(); 
-ASTNode *prsr_parse_if_statement();
+ASTNode *prsr_parse_if_statement(bool first);
 ASTNode *prsr_parse_statements();
 
 ASTNode *prsr_parse_statement() 
@@ -190,7 +190,7 @@ ASTNode *prsr_parse_statement()
   } else if (lookhaed.type == OPEN_CURLY_TOKEN){
     return prsr_parse_statements();
   } else if (lookhaed.type == IF_TOKEN){
-    return prsr_parse_if_statement();
+    return prsr_parse_if_statement(True);
   } else if (lookhaed.type == WHILE_TOKEN){
     return prsr_parse_while_statement();
   } else {
@@ -248,12 +248,24 @@ ASTNode *prsr_parse_func_declaration()
 }
 
 // TODO: we should also parse the possible else and the chain of elif
-ASTNode *prsr_parse_if_statement() 
+ASTNode *prsr_parse_if_statement(bool first) 
 {
-  prsr_match(IF_TOKEN);
+  if (first)
+    prsr_match(IF_TOKEN);
+  else  
+    prsr_match(ELIF_TOKEN);
   ASTNode *expression = prsr_parse_expression_node();
-  ASTNode *body = prsr_parse_statements();
-  return ast_create_if_node(expression, body);
+  ASTNode *if_body = prsr_parse_statements();
+  if (lookhaed.type == ELSE_TOKEN) {
+    prsr_match(ELSE_TOKEN);
+    ASTNode *else_body = prsr_parse_statements();
+    return ast_create_if_else_node(expression, if_body, else_body);
+  } else if (lookhaed.type == ELIF_TOKEN) {
+    ASTNode *else_body = prsr_parse_if_statement(False);
+    return ast_create_if_else_node(expression, if_body, else_body);
+  } else {
+    return ast_create_if_node(expression, if_body);
+  }
 }
 
 ASTNode *prsr_parse_while_statement() 
