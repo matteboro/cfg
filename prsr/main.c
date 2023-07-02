@@ -77,7 +77,18 @@ int main() {
   // funccall_dealloc(func_call);
 */
 
-  ASTNode *ast = prsr_parse("func baz(a, b, c) { var boo = (foo + 69) * 420; { var z = 10; } boo = 420 * 69; }");
+  ASTNode *ast = prsr_parse(" \
+  func baz(a, b, c) { \
+    var boo = (foo + 69) * 420; \
+    while boo + 7 { \
+      var z = 10; \
+    } \
+    boo = 420 * 69; \
+    if j * t - 420 { \
+      var doodoo; \
+      bich = 33 * tree; \
+    } \
+  }");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");
   ast_dealloc_node(ast);

@@ -90,6 +90,7 @@ ParseStatements(): (for the moment a list of variable declarations and assignmen
     statements.append(curr_statement)
   '}'
 
+DONE
 ParseFuncDeclParams():
   while (true)
     IDENTIFIER::param
@@ -100,11 +101,39 @@ ParseFuncDeclParams():
       break;
   ret params
 
+DONE
 ParseFunctionDeclaration():
   FUNC_TOKEN 
   IDENTIFIER::func_name 
   '(' 
   ParseFuncDeclParams()::params 
   ')' 
-  ParseStatements()::statements 
+  ParseStatements()::body 
+
+DONE
+ConditionalStatementNodeData:
+  Expression *guard,
+  ASTNode *body
+
+TODO: add else and elif parsing
+ParseIf():
+  IF_TOKEN
+  ParseExpression()::expression
+  ParseStatements()::body
+
+DONE
+ParseWhile():
+  WHILE_TOKEN
+  ParseExpression()::expression
+  ParseStatements()::body
+
+IfElseNodeData:
+  ASTNode *guard,
+  ASTNode *if_body,
+  ASTNode *else_body,
+
+NOTE: in case of chains of elif in the else else_body attribute we 
+      will put another IfElseNode with the guard of the elif. We 
+      do that until we find an else, and that's where we stop.
+
 */

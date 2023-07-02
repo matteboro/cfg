@@ -177,6 +177,8 @@ ASTNode *prsr_parse_assignment()
   return ast_create_assignment_node(idf_create_identifier_from_token(id_token), expression_node);
 }
 
+ASTNode *prsr_parse_while_statement(); 
+ASTNode *prsr_parse_if_statement();
 ASTNode *prsr_parse_statements();
 
 ASTNode *prsr_parse_statement() 
@@ -185,11 +187,13 @@ ASTNode *prsr_parse_statement()
   ASTNode *statement;
   if (lookhaed.type == VAR_TOKEN) {
     statement = prsr_parse_var_declaration();
-  } 
-  else if (lookhaed.type == OPEN_CURLY_TOKEN){
+  } else if (lookhaed.type == OPEN_CURLY_TOKEN){
     return prsr_parse_statements();
-  }
-  else {
+  } else if (lookhaed.type == IF_TOKEN){
+    return prsr_parse_if_statement();
+  } else if (lookhaed.type == WHILE_TOKEN){
+    return prsr_parse_while_statement();
+  } else {
     statement = prsr_parse_assignment();
   }
   prsr_match(SEMICOLON_TOKEN);
@@ -241,6 +245,23 @@ ASTNode *prsr_parse_func_declaration()
     idf_create_identifier_from_token(func_name_id),
     params, 
     body);
+}
+
+// TODO: we should also parse the possible else and the chain of elif
+ASTNode *prsr_parse_if_statement() 
+{
+  prsr_match(IF_TOKEN);
+  ASTNode *expression = prsr_parse_expression_node();
+  ASTNode *body = prsr_parse_statements();
+  return ast_create_if_node(expression, body);
+}
+
+ASTNode *prsr_parse_while_statement() 
+{
+  prsr_match(WHILE_TOKEN);
+  ASTNode *expression = prsr_parse_expression_node();
+  ASTNode *body = prsr_parse_statements();
+  return ast_create_while_node(expression, body);
 }
 
 ASTNode *prsr_parse(const char *data)
