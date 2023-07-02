@@ -15,6 +15,8 @@ typedef enum {
   EXPRESSION,
   ASSIGNMENT,
   NODES,
+  DECLARATION,
+  FUNC_DECLARATION,
 } ASTNodeType;
 
 // DEFINITIONS
@@ -136,6 +138,15 @@ void ast_list_print_ident(ASTNodeList *list, FILE *file, size_t ident) {
 
 // END ASTNODE LIST
 
+/*
+to implement a new type of AST node you have to:
+  - the data structure holding the data of that node;
+  - the create function;
+  - the print function (and modify the general one to redirect there);
+  - the dealloc function (and modify the general one to redirect there);
+*/
+
+
 typedef struct {
   Expression *expression;
 } ExpressionNodeData;
@@ -149,6 +160,18 @@ typedef struct {
 typedef struct {
   ASTNodeList *nodes;
 } NodeListData;
+
+typedef struct {
+  Identifier *id;
+  bool has_init;
+  ASTNode *expression;
+} DeclarationNodeData;
+
+typedef struct {
+  Identifier *func_name;
+  ParameterList *params;
+  ASTNode *statements;
+} FunctionDeclarationNodeData;
 
 // CREATE
 
@@ -178,9 +201,27 @@ ASTNode *ast_create_node_list_node(ASTNodeList *list) {
   return ast_create_node(NODES, data);
 }
 
+// here expression could be NULL, if it is the value has_init should be false
+ASTNode *ast_create_declaration_node(Identifier *id, ASTNode *expression) {
+  DeclarationNodeData *data = (DeclarationNodeData *) malloc(sizeof(DeclarationNodeData));
+  data->id = id;
+  data->has_init = expression == NULL ? False : True;
+  data->expression = expression;
+  return ast_create_node(DECLARATION, data);
+}
+
+ASTNode *ast_create_func_declaration_node(Identifier *id, ParameterList *params, ASTNode *statements) {
+  FunctionDeclarationNodeData *data = (FunctionDeclarationNodeData *) malloc(sizeof(FunctionDeclarationNodeData));
+  data->func_name = id;
+  data->params = params;
+  data->statements = statements;
+  return ast_create_node(FUNC_DECLARATION, data);
+}
+
 // PRINT
 
 void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident);
+void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident);
 
 void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
   ExpressionNodeData *data = (ExpressionNodeData *) node->data;
@@ -203,6 +244,21 @@ void ast_print_assignment_node(ASTNode *node, FILE *file, size_t ident) {
   fprintf(file, "}");
 }
 
+void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
+  DeclarationNodeData *data = (DeclarationNodeData *) node->data;
+  print_spaces(ident, file);
+  fprintf(file, "Declaration: {\n");
+  print_spaces(ident, file);
+  fprintf(file, "  Idenfier: ");
+  idf_print_identifier(data->id, file);
+  if (data->has_init) {
+    fprintf(file, ",\n");
+    ast_print_expression_node(data->expression, file, ident+2);
+  }
+  print_spaces(ident, file);
+  fprintf(file, "}");
+}
+
 
 void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
   if (node->type == ASSIGNMENT) {
@@ -211,6 +267,10 @@ void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
     ast_print_expression_node(node, file, ident);
   } else if (node->type == NODES) {
     ast_print_node_list_node(node, file, ident);
+  } else if (node->type == DECLARATION) {
+    ast_print_declaration_node(node, file, ident);
+  } else if (node->type == FUNC_DECLARATION) {
+    ast_print_func_declaration_node(node, file, ident);
   } else {
     AST_ERROR();
   }
@@ -229,6 +289,29 @@ void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident) {
   print_spaces(ident, file);
   fprintf(file, "]");
 }
+
+void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident) {
+  FunctionDeclarationNodeData *data = (FunctionDeclarationNodeData *) node->data;
+
+  print_spaces(ident, file);
+  fprintf(file, "Function Declaration: {\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Name: ");
+  idf_print_identifier(data->func_name, file);
+  fprintf(file, ",\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Parameters: ");
+  prmt_list_print(data->params, file);
+  fprintf(file, ",\n");
+
+  ast_print_node_ident(data->statements, file, ident+2);
+
+  print_spaces(ident, file);
+  fprintf(file, "}");
+}
+
 
 // DEALLOC
 
@@ -249,6 +332,26 @@ void ast_dealloc_assignment_node(ASTNode *node) {
   free(data);
 }
 
+void ast_dealloc_declaration_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == DECLARATION);
+  DeclarationNodeData *data = (DeclarationNodeData *) node->data;
+  if (data->has_init)
+    ast_dealloc_node(data->expression);
+  idf_dealloc_identifier(data->id);
+  free(data);
+}
+
+void ast_dealloc_func_declaration_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == FUNC_DECLARATION);
+  FunctionDeclarationNodeData *data = (FunctionDeclarationNodeData *) node->data;
+  ast_dealloc_node(data->statements);
+  idf_dealloc_identifier(data->func_name);
+  prmt_list_dealloc(data->params);
+  free(data);
+}
+
 void ast_dealloc_node_list_node(ASTNode *node) {
   AST_PRINT_DEBUG();
   assert(node->type == NODES); 
@@ -265,6 +368,10 @@ void ast_dealloc_node(ASTNode *root) {
     ast_dealloc_expression_node(root);
   } else if (root->type == NODES) {
     ast_dealloc_node_list_node(root);
+  } else if (root->type == DECLARATION) {
+    ast_dealloc_declaration_node(root);
+  } else if (root->type == FUNC_DECLARATION) {
+    ast_dealloc_func_declaration_node(root);
   } else {
     AST_ERROR();
   }

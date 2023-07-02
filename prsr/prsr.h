@@ -59,7 +59,7 @@ void prsr_match(TokenType token_type)
 Expression *prsr_parse_funccall(Token token)
 {
   char *func_name = lxr_get_token_data_as_cstring(token);
-  fprintf(stdout, "\n%s\n", func_name);
+  // fprintf(stdout, "\n%s\n", func_name);
   prsr_match(OPEN_PAREN_TOKEN);
   ParameterList *params = prmt_list_create_empty();
   if (lookhaed.type != CLOSE_PAREN_TOKEN)
