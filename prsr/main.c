@@ -80,12 +80,12 @@ int main() {
   ASTNode *ast = prsr_parse(" \
   func baz(a, b, c) { \
     var boo = (foo + \"hello\") * 420; \
-    while boo + 7 { \
+    while boo + foo[7] { \
       var z = 10; \
       arr[10] z; \
     } \
   }\
-  var string = \"hello, world\"; \
+  var string = \"hello, world\" * ty[23 * boo - 7]; \
   ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");

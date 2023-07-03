@@ -197,18 +197,35 @@ STRING AND ARRAY TYPES
 
   Parsing array declaration:
 
+    DONE
     ParseArrayDeclaration():
       ARR_TOKEN
       OPEN_SQUARE_TOKEN
       INTEGER_TOKEN::size
       CLOSE_SQUARE_TOKEN
       IDENTIFIER::name
-    
+
+    DONE
     ArrayDeclarationNodeData:
       Identifier name;
       Int size;
-      ExpressionList init_values;
+      ASTNodeList init_values;  // to upgarde to ExpressionList
 
+    The next step is to add the possibility to initialize an array in this syntax:
+      arr[5] bar = [1, 2, "hello", 3, "foo"];
+    To do this i would use a list (or maybe an array because the size is known) of
+    expressions that would initialize the values in sequence.
 
+    DONE
+    Now i have to accept array dereference as an operand in an expression. The operand
+    has to store the identifier of the array and the index, this has to be an 
+    expression (that later will be checked to be an integer expression).
 
+    Should i create an AssignableElement data structure to hold data of elements that
+    can be put on the left hand side of an assignment (so a variable or an arrey
+    dereference)? I think so. If I do so the assignment statement has to change data.
+    The Identifier attribute need to go and i n its place an AssignableElement will
+    be placed. For the moment just two types of AssignableElement will be able: 
+      - VAR,
+      - ARRAY_DEREF.
 */

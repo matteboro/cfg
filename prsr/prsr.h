@@ -92,14 +92,23 @@ Expression *prsr_parse_factor()
   {
   case IDENTIFIER_TOKEN:
   {
-    Token token = lookhaed;
+    Token id_token = lookhaed;
     prsr_match(IDENTIFIER_TOKEN);
-    if (lookhaed.type == OPEN_PAREN_TOKEN)
+    if (lookhaed.type == OPEN_PAREN_TOKEN) 
     {
-      Expression *result = prsr_parse_funccall(token);
+      Expression *result = prsr_parse_funccall(id_token);
       return result;
+    } 
+    else if (lookhaed.type == OPEN_SQUARE_TOKEN) 
+    {
+      prsr_match(OPEN_SQUARE_TOKEN);
+      Expression *index_expr = prsr_parse_expression();
+      prsr_match(CLOSE_SQUARE_TOKEN);
+      return expr_create_array_deref_operand_expression(
+        idf_create_identifier_from_token(id_token),
+        index_expr);
     }
-    return expr_create_operand_expression_from_token(token);
+    return expr_create_operand_expression_from_token(id_token);
   }
   case INTEGER_TOKEN:
   {

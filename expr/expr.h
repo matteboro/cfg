@@ -357,12 +357,38 @@ typedef enum {
   INTEGER_OPERAND,
   STRING_OPERAND,
   FUNCCALL_OPERAND,
+  ARRAY_DEREF_OPERAND,
 } OperandType;
 
 typedef struct {
   OperandType type;
   void *data;
 } Operand;
+
+typedef struct {
+  Identifier *array_name;
+  Expression *index;
+} ArrayDereferenceOperandData;
+
+ArrayDereferenceOperandData *oprnd_create_array_deref_operand_data(Identifier *array_name, Expression *index) {
+  ArrayDereferenceOperandData *data = (ArrayDereferenceOperandData *) malloc(sizeof(ArrayDereferenceOperandData));
+  data->array_name = array_name;
+  data->index = index;
+  return data;
+}
+
+void oprnd_dealloc_array_deref_operand_data(ArrayDereferenceOperandData *data) {
+  idf_dealloc_identifier(data->array_name);
+  expr_dealloc_expression(data->index);
+  free(data);
+}
+
+void oprnd_print_array_deref_operand_data(ArrayDereferenceOperandData *data, FILE *file) {
+  idf_print_identifier(data->array_name, file);
+  fprintf(file, "[");
+  expr_print_expression(data->index, file);
+  fprintf(file, "]");
+}
  
 Operand *oprnd_create_operand(OperandType type, void *data) {
   Operand *operand = (Operand *)malloc(sizeof(Operand));
@@ -379,6 +405,8 @@ void oprnd_dealloc_operand(Operand *operand) {
     idf_dealloc_identifier((Identifier *) operand->data);
   else if (operand->type == FUNCCALL_OPERAND)
     funccall_dealloc((FunctionCall *) operand->data);
+  else if (operand->type == ARRAY_DEREF_OPERAND)
+    oprnd_dealloc_array_deref_operand_data((ArrayDereferenceOperandData *) operand->data);
   else
     free(operand->data);
   free(operand);
@@ -397,6 +425,8 @@ void oprnd_print_operand(Operand *operand, FILE *file) {
     funccall_print((FunctionCall *) operand->data, file); break;
   case STRING_OPERAND:
     fprintf(file, "\"%s\"", (char * )operand->data); break;
+  case ARRAY_DEREF_OPERAND:
+    oprnd_print_array_deref_operand_data((ArrayDereferenceOperandData *) operand->data, file); break;
   default:
     EXPR_ERROR();
   }
@@ -425,6 +455,14 @@ Expression *expr_create_binary_expression(Expression *left, OperationType op_typ
 
 Expression *expr_create_funccall_operand_expression(FunctionCall *func_call) {
   Operand *operand = oprnd_create_operand(FUNCCALL_OPERAND, func_call);
+  return expr_create_expression(OPERAND_EXP_TYPE, operand);
+}
+
+Expression *expr_create_array_deref_operand_expression(Identifier *id, Expression *index) {
+  Operand *operand = 
+    oprnd_create_operand(
+      ARRAY_DEREF_OPERAND, 
+      oprnd_create_array_deref_operand_data(id, index));
   return expr_create_expression(OPERAND_EXP_TYPE, operand);
 }
 
