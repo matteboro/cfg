@@ -4,7 +4,7 @@
 
 int main() {
 
-  Lexer lexer = lxr_init("{\n  if bar <= 7 and foo == 8; \n  # this is a comment\n}");
+  Lexer lexer = lxr_init("{\n  if bar <= 7 and foo == 8; \n \"this is a string\" # this is a comment\n}");
 
   lxr_dump_lexer(&lexer);
 

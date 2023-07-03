@@ -20,6 +20,7 @@ typedef enum {
   IF_STATEMENT,
   IF_ELSE_STATEMENT,
   WHILE_STATEMENT,
+  PROGRAM,
 } ASTNodeType;
 
 // DEFINITIONS
@@ -187,6 +188,11 @@ typedef struct {
   ASTNode *else_body;
 } IfElseStatementNodeData;
 
+typedef struct {
+  ASTNode *func_declarations;
+  ASTNode *global_statements;
+} ProgramNodeData;
+
 // CREATE
 
 ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
@@ -194,6 +200,13 @@ ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
   node->type = type;
   node->data = data;
   return node;
+}
+
+ASTNode *ast_create_program_node(ASTNode *func_declarations, ASTNode *global_statements) {
+  ProgramNodeData *data = (ProgramNodeData *) malloc(sizeof(ProgramNodeData));
+  data->func_declarations = func_declarations;
+  data->global_statements = global_statements;
+  return ast_create_node(PROGRAM, data);
 }
 
 ASTNode *ast_create_assignment_node(Identifier *id, ASTNode *expression_node) {
@@ -259,6 +272,36 @@ ASTNode *ast_create_func_declaration_node(Identifier *id, ParameterList *params,
 void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident);
 void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident);
 
+void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
+  ProgramNodeData *data = (ProgramNodeData *) node->data;
+
+  print_spaces(ident, file);
+  fprintf(file, "Program: {\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Functions: {\n");
+
+  //functions
+  ast_print_node_ident(data->func_declarations, file, ident+4);
+  fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  }\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Global Statements: {\n");
+
+  //statements
+  ast_print_node_ident(data->global_statements, file, ident+4);
+  fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  }\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "}");
+}
+
 void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
   ExpressionNodeData *data = (ExpressionNodeData *) node->data;
   print_spaces(ident, file);
@@ -299,15 +342,26 @@ void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
 
 void ast_print_if_node(ASTNode *node, FILE *file, size_t ident) {
   ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
+
   print_spaces(ident, file);
   fprintf(file, "If: {\n");
+
   print_spaces(ident, file);
-  fprintf(file, "  Guard: \n");
+  fprintf(file, "  Guard: {\n");
   ast_print_node_ident(data->expression, file, ident+4);
+
   print_spaces(ident, file);
-  fprintf(file, "  Body: \n");
+  fprintf(file, "  }\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Body: {\n");
+
   ast_print_node_ident(data->body, file, ident+4);
   fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  }\n");
+
   print_spaces(ident, file);
   fprintf(file, "}");
 }
@@ -319,18 +373,27 @@ void ast_print_if_else_node(ASTNode *node, FILE *file, size_t ident) {
   fprintf(file, "IfElse: {\n");
 
   print_spaces(ident, file);
-  fprintf(file, "  Guard: \n");
+  fprintf(file, "  Guard: {\n");
   ast_print_node_ident(data->expression, file, ident+4);
 
   print_spaces(ident, file);
-  fprintf(file, "  If Body: \n");
+  fprintf(file, "  }\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  If Body: {\n");
   ast_print_node_ident(data->if_body, file, ident+4);
   fprintf(file, "\n");
 
   print_spaces(ident, file);
-  fprintf(file, "  Else Body: \n");
+  fprintf(file, "  }\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Else Body: {\n");
   ast_print_node_ident(data->else_body, file, ident+4);
   fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  }\n");
 
   print_spaces(ident, file);
   fprintf(file, "}");
@@ -338,15 +401,25 @@ void ast_print_if_else_node(ASTNode *node, FILE *file, size_t ident) {
 
 void ast_print_while_node(ASTNode *node, FILE *file, size_t ident) {
   ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
+
   print_spaces(ident, file);
   fprintf(file, "While: {\n");
+
   print_spaces(ident, file);
-  fprintf(file, "  Guard: \n");
+  fprintf(file, "  Guard: {\n");
   ast_print_node_ident(data->expression, file, ident+4);
+
   print_spaces(ident, file);
-  fprintf(file, "  Body: \n");
+  fprintf(file, "  }\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Body: {\n");
   ast_print_node_ident(data->body, file, ident+4);
   fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  }\n");
+
   print_spaces(ident, file);
   fprintf(file, "}");
 }
@@ -369,6 +442,8 @@ void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
     ast_print_if_else_node(node, file, ident);
   } else if (node->type == WHILE_STATEMENT) {
     ast_print_while_node(node, file, ident);
+  } else if (node->type == PROGRAM) {
+    ast_print_program_node(node, file, ident);
   } else {
     AST_ERROR();
   }
@@ -413,6 +488,15 @@ void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident) {
 
 
 // DEALLOC
+
+void ast_dealloc_program_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == PROGRAM);
+  ProgramNodeData *data = (ProgramNodeData *) node->data;
+  ast_dealloc_node(data->func_declarations);
+  ast_dealloc_node(data->global_statements);
+  free(data);
+}
 
 void ast_dealloc_expression_node(ASTNode *node) {
   AST_PRINT_DEBUG();
@@ -494,6 +578,8 @@ void ast_dealloc_node(ASTNode *root) {
     ast_dealloc_conditional_statement_node(root);
   } else if (root->type == IF_ELSE_STATEMENT) {
     ast_dealloc_if_else_node(root);
+  } else if (root->type == PROGRAM) {
+    ast_dealloc_program_node(root);
   } else {
     AST_ERROR();
   }

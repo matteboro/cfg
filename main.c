@@ -152,4 +152,49 @@ all program, and a series of global statements. There is a special function
 called main() that is called at the end of the run of all the global 
 statements. The global statements are called in the order they are written.
 The variable declared in the global space are visible inside every function.
+
+DONE
+ProgramNodeData:
+  ASTNode *func_declarations;
+  ASTNode *global_statements;
+
+DONE
+ParseProgram():
+  while (!END_TOKEN)
+    if (FUNC_TOKEN)
+      functions.append(ParseFunctionDeclaration())
+    else 
+      statements.append(ParseStatement())
+  ret ProgramNode(functions, statements)
+
+
+STRING AND ARRAY TYPES
+
+  Now i want to add two new data types: array and string:
+    - for string i have to be able to parse string literals (meaning somethign between "");
+    - for arrays what i want to do is having instead of var keyword the arr keyword and to 
+      declare an array of size 10 you have to write arr[10] my_array;
+
+  Having that i would have new types of operands and params (STRING and ARRAY_DEREF), and i 
+  would have to distinguish between variables declaration and array declaration. Also in an
+  assignment the left hand side could be a variable or a array dereference. In the case of
+  a variable is sufficient to store the identifier, in the case of array we will need to 
+  store both the identifer and the integer index of the dereference. So now the assignment 
+  store a left value (variable identifier or array dereference) and right value (meaning
+  an expression).
+
+  Notes on the implementation of string data type:
+
+    I have added the possibility to have string literals as values of variables or operands. 
+    The possibility to accept string as values in certain expression will resolve in a 
+    later stage of compilation. There will be operands and operations on strings [1]. The matter
+    of having the string param type is still not resolved. The idea is that we only need two
+    type of parameters, the ones used in function declarations (just identifiers, for the moment),
+    and the ones used in a function call, which are all expressions. So it is a consequence to
+    think that neither the integer nor the string parameter type are necessary.  
+
+    [1]: such as concat, len, prefix, etc ...
+
+  
+
 */

@@ -35,10 +35,12 @@ typedef enum {
   WHILE_TOKEN,
   IDENTIFIER_TOKEN,
   INTEGER_TOKEN,
+  STRING_TOKEN,
   AND_TOKEN, 
   OR_TOKEN,
   VAR_TOKEN,
   FUNC_TOKEN,
+  ARR_TOKEN,
 
   COMMENT_TOKEN,
   END_TOKEN,
@@ -61,6 +63,7 @@ static const char * const token_to_name[] = {
   [ASTERISK_TOKEN] = "ASTERISK",
   [IDENTIFIER_TOKEN] = "IDENTIFIER",
   [INTEGER_TOKEN] = "INTEGER",
+  [STRING_TOKEN] = "STRING",
   [AND_TOKEN] = "AND",
   [OR_TOKEN] = "OR",
   [EQUAL_EQUAL_TOKEN] = "EQUAL_EQUAL",
@@ -70,6 +73,7 @@ static const char * const token_to_name[] = {
   [WHILE_TOKEN] = "WHILE",
   [COMMA_TOKEN] = "COMMA",
   [VAR_TOKEN] = "VAR",
+  [ARR_TOKEN] = "ARR",
   [FUNC_TOKEN] = "FUNC",
   [SEMICOLON_TOKEN] = "SEMICOLON",
   [COMMENT_TOKEN] = "COMMENT",
@@ -99,6 +103,7 @@ static const char * const keyword_token_to_string[] = {
   [VAR_TOKEN] = "var",
   [FUNC_TOKEN] = "func",
   [ELIF_TOKEN] = "elif",
+  [ARR_TOKEN] = "arr",
 };
 
 #define token_to_char_size sizeof(token_to_char)
@@ -121,6 +126,13 @@ void token_print_data(Token token) {
 
 char *lxr_get_token_data_as_cstring(Token token){
   // TODO: error handling
+  // TODO: what should be returned in case of STRING_TOKEN --> DONE
+  if (token.type == STRING_TOKEN) {
+    char *string = (char *) malloc(token.data_length-1);
+    memcpy(string, token.data + token.position + 1, token.data_length - 2);
+    string[token.data_length - 2] = '\0';
+    return string;
+  }
   char *string = (char *) malloc(token.data_length+1);
   memcpy(string, token.data + token.position, token.data_length);
   string[token.data_length] = '\0';
@@ -295,6 +307,19 @@ Token lxr_next_token(Lexer *lexer) {
       lxr_increment_current(lexer);
     }
   } 
+  else if (lxr_current_char(lexer) == '"') {
+    token.type = STRING_TOKEN;
+    token.position = lexer->current;
+    token.data_length = 1;
+
+    lxr_increment_current(lexer);
+    while (lxr_current_char(lexer) != '"') {
+      ++token.data_length;
+      lxr_increment_current(lexer);
+    }
+    ++token.data_length;
+    lxr_increment_current(lexer);
+  }
   else if (is_final_char(lxr_current_char(lexer))) {
     token.type = END_TOKEN;
     token.position = lexer->current;

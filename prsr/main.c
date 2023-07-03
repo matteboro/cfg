@@ -79,23 +79,13 @@ int main() {
 
   ASTNode *ast = prsr_parse(" \
   func baz(a, b, c) { \
-    var boo = (foo + 69) * 420; \
+    var boo = (foo + \"hello\") * 420; \
     while boo + 7 { \
       var z = 10; \
     } \
-    boo = 420 * 69; \
-    if j * t - 420 { \
-      var doodoo; \
-      bich = 33 * tree; \
-    } elif j - the(tre, bu * 5, poopoo) + 1 { \
-      var booboo; \
-    } elif bo + 1 { \
-      var caca; \
-    } else { \
-      var toodoo; \
-      thot = 420 * you; \
-    } \
-  }");
+  }\
+  var string = \"hello, world\"; \
+  ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");
   ast_dealloc_node(ast);

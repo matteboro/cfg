@@ -330,8 +330,6 @@ void prmt_print_funccall_param(Parameter *param, FILE *file) {
 
 // DEFINITIONS
 
-
-
 typedef enum {
   SUM_OPERATION,
   SUB_OPERATION,
@@ -357,6 +355,7 @@ typedef struct {
 typedef enum {
   IDENTIFIER_OPERAND,
   INTEGER_OPERAND,
+  STRING_OPERAND,
   FUNCCALL_OPERAND,
 } OperandType;
 
@@ -391,11 +390,13 @@ void oprnd_print_operand(Operand *operand, FILE *file) {
     return;
   switch (operand->type) {
   case INTEGER_OPERAND:
-    fprintf(file, "%d", *((int *)operand->data)); break;
+    fprintf(file, "%d", *((int *) operand->data)); break;
   case IDENTIFIER_OPERAND:
-    idf_print_identifier((Identifier *)operand->data, file); break;
+    idf_print_identifier((Identifier *) operand->data, file); break;
   case FUNCCALL_OPERAND:
-    funccall_print((FunctionCall *)operand->data, file); break;
+    funccall_print((FunctionCall *) operand->data, file); break;
+  case STRING_OPERAND:
+    fprintf(file, "\"%s\"", (char * )operand->data); break;
   default:
     EXPR_ERROR();
   }
@@ -438,6 +439,10 @@ Expression *expr_create_operand_expression(OperandType type, const char *data) {
     int *int_data = (int *)my_data;
     *int_data = expr_string_to_int(data);
   } 
+  else if (type == STRING_OPERAND) {
+    my_data = (char *) malloc(strlen(data)+1);
+    strcpy(my_data, data);
+  } 
   else {
     EXPR_ERROR();
   }
@@ -453,6 +458,7 @@ Expression *expr_create_operand_expression_from_token(Token token) {
   switch (token.type) {
   case IDENTIFIER_TOKEN: type = IDENTIFIER_OPERAND; break;
   case INTEGER_TOKEN: type = INTEGER_OPERAND; break;
+  case STRING_TOKEN: type = STRING_OPERAND; break;
   default: EXPR_ERROR();
   }
 

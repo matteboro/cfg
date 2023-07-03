@@ -107,6 +107,12 @@ Expression *prsr_parse_factor()
     prsr_match(INTEGER_TOKEN);
     return expr_create_operand_expression_from_token(token);
   }
+  case STRING_TOKEN:
+  {
+    Token token = lookhaed;
+    prsr_match(STRING_TOKEN);
+    return expr_create_operand_expression_from_token(token);
+  }
   case OPEN_PAREN_TOKEN:
   {
     prsr_match(OPEN_PAREN_TOKEN);
@@ -276,6 +282,22 @@ ASTNode *prsr_parse_while_statement()
   return ast_create_while_node(expression, body);
 }
 
+ASTNode *prsr_parse_program()
+{
+  ASTNodeList *functions = ast_list_create_empty();
+  ASTNodeList *global_stmnts = ast_list_create_empty();
+
+  while (lookhaed.type != END_TOKEN) {
+    if (lookhaed.type == FUNC_TOKEN)
+      ast_list_append(functions, prsr_parse_func_declaration());
+    else
+      ast_list_append(global_stmnts, prsr_parse_statement());
+  }
+  return ast_create_program_node(
+    ast_create_node_list_node(functions), 
+    ast_create_node_list_node(global_stmnts));
+}
+
 ASTNode *prsr_parse(const char *data)
 {
   Lexer lexer = lxr_init(data);
@@ -283,7 +305,7 @@ ASTNode *prsr_parse(const char *data)
 
   prsr_next_token();
 
-  ASTNode *ast = prsr_parse_func_declaration();
+  ASTNode *ast = prsr_parse_program();
 
   if (lookhaed.type == END_TOKEN)
     return ast;
