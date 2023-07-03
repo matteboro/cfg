@@ -162,9 +162,42 @@ Expression *prsr_parse_expression()
   return root;
 }
 
+OperationType prsr_token_type_to_operation_type(TokenType type) 
+{
+  if (type == EQUAL_EQUAL_TOKEN)
+    return EQ_OPERATION;
+  if (type == NOT_EQUAL_TOKEN)
+    return NEQ_OPERATION;
+  if (type == GREATER_EQUAL_TOKEN)
+    return GEQ_OPERATION;
+  if (type == LESS_EQUAL_TOKEN)
+    return LEQ_OPERATION;
+  if (type == GREATER_TOKEN)
+    return GE_OPERATION;
+  if (type == LESS_TOKEN)
+    return LE_OPERATION;
+  PRSR_ERROR();
+}
+
+Expression *prsr_parse_equation()
+{
+  PRSR_DEBUG_PRINT();
+  Expression *left = prsr_parse_expression();
+  Token op = lookhaed;
+  if (lookhaed.type == EQUAL_EQUAL_TOKEN || lookhaed.type == GREATER_EQUAL_TOKEN ||
+      lookhaed.type == LESS_EQUAL_TOKEN || lookhaed.type == NOT_EQUAL_TOKEN ||
+      lookhaed.type == GREATER_TOKEN || lookhaed.type == LESS_TOKEN) {
+    prsr_match(op.type);
+    Expression *right = prsr_parse_expression();
+    return expr_create_binary_expression(left, prsr_token_type_to_operation_type(op.type), right);
+  } else {
+    return left;
+  }
+}
+
 ASTNode *prsr_parse_expression_node()
 {
-  Expression *expression = prsr_parse_expression();
+  Expression *expression = prsr_parse_equation();
   return ast_create_expression_node(expression);
 }
 

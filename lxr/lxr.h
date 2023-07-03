@@ -27,7 +27,9 @@ typedef enum {
   SLASH_TOKEN,
   ASTERISK_TOKEN,
   COMMA_TOKEN,
+  EXCL_POINT_TOKEN,
 
+  NOT_EQUAL_TOKEN,
   EQUAL_EQUAL_TOKEN,
   LESS_EQUAL_TOKEN,
   GREATER_EQUAL_TOKEN,
@@ -77,6 +79,8 @@ static const char * const token_to_name[] = {
   [ELIF_TOKEN] = "ELIF",
   [WHILE_TOKEN] = "WHILE",
   [COMMA_TOKEN] = "COMMA",
+  [EXCL_POINT_TOKEN] = "EXCL_POINT",
+  [NOT_EQUAL_TOKEN] = "NOT_EQUAL",
   [VAR_TOKEN] = "VAR",
   [ARR_TOKEN] = "ARR",
   [FUNC_TOKEN] = "FUNC",
@@ -280,9 +284,10 @@ Token lxr_next_token(Lexer *lexer) {
   if (lxr_check_one_char_token(lexer, &token)) {
     lxr_increment_current(lexer);
   } 
-  lxr_ambiguous_one_or_two_chars_token('<', LESS_TOKEN, '=', LESS_EQUAL_TOKEN)
-  lxr_ambiguous_one_or_two_chars_token('>', GREATER_TOKEN, '=', GREATER_EQUAL_TOKEN)
-  lxr_ambiguous_one_or_two_chars_token('=', EQUAL_TOKEN, '=', EQUAL_EQUAL_TOKEN)
+  lxr_ambiguous_one_or_two_chars_token('<', LESS_TOKEN,       '=', LESS_EQUAL_TOKEN)
+  lxr_ambiguous_one_or_two_chars_token('>', GREATER_TOKEN,    '=', GREATER_EQUAL_TOKEN)
+  lxr_ambiguous_one_or_two_chars_token('=', EQUAL_TOKEN,      '=', EQUAL_EQUAL_TOKEN)
+  lxr_ambiguous_one_or_two_chars_token('!', EXCL_POINT_TOKEN, '=', NOT_EQUAL_TOKEN)
   else if (is_starter_identifier_char(lxr_current_char(lexer))) {
     int starting_position = lexer->current;
     int id_name_length = 1;

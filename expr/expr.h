@@ -335,13 +335,25 @@ typedef enum {
   SUB_OPERATION,
   MULT_OPERATION,
   DIV_OPERATION,
+  LE_OPERATION,
+  LEQ_OPERATION,
+  GE_OPERATION,
+  GEQ_OPERATION,
+  EQ_OPERATION,
+  NEQ_OPERATION,
 } OperationType;
 
-static const char operation_to_char[] = {
-  [SUM_OPERATION] = '+',
-  [SUB_OPERATION] = '-',
-  [MULT_OPERATION] = '*',
-  [DIV_OPERATION] = '/',
+static const char *operation_to_char[] = {
+  [SUM_OPERATION] = "+",
+  [SUB_OPERATION] = "-",
+  [MULT_OPERATION] = "*",
+  [DIV_OPERATION] = "/",
+  [LE_OPERATION] = "<",
+  [LEQ_OPERATION] = "<=",
+  [GE_OPERATION] = ">",
+  [GEQ_OPERATION] = ">=",
+  [EQ_OPERATION] = "==",
+  [NEQ_OPERATION] = "!=",
 };
 
 
@@ -544,7 +556,7 @@ void expr_print_binary_expression(BinaryExpression *expression, FILE *file) {
     return;
   fprintf(file, "(");
   expr_print_expression(expression->left, file);
-  fprintf(file, " %c ", operation_to_char[expression->operation]);
+  fprintf(file, " %s ", operation_to_char[expression->operation]);
   expr_print_expression(expression->right, file);
   fprintf(file, ")");
 }

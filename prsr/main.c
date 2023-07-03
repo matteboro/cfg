@@ -80,7 +80,7 @@ int main() {
   ASTNode *ast = prsr_parse(" \
   func baz(a, b, c) { \
     var boo = (foo + \"hello\") * 420; \
-    while boo + foo[7] { \
+    while boo + foo[7] <= 16 * foo() - ty[12] { \
       var z = 10; \
       arr[10] z; \
     } \
