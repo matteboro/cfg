@@ -195,6 +195,20 @@ STRING AND ARRAY TYPES
 
     [1]: such as concat, len, prefix, etc ...
 
-  
+  Parsing array declaration:
+
+    ParseArrayDeclaration():
+      ARR_TOKEN
+      OPEN_SQUARE_TOKEN
+      INTEGER_TOKEN::size
+      CLOSE_SQUARE_TOKEN
+      IDENTIFIER::name
+    
+    ArrayDeclarationNodeData:
+      Identifier name;
+      Int size;
+      ExpressionList init_values;
+
+
 
 */

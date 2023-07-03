@@ -56,7 +56,7 @@ void prsr_match(TokenType token_type)
   lxr_print_token_type(token_type); 
   fprintf(stdout, "\ngot: ");
   lxr_print_token_type(lookhaed.type); 
-  fprintf(stdout, "\n");
+  fprintf(stdout, " at position: %d\n", lookhaed.position);
   PRSR_ERROR();
 }
 
@@ -173,6 +173,23 @@ ASTNode *prsr_parse_var_declaration()
   return ast_create_declaration_node(idf_create_identifier_from_token(id_token), expression_node);
 }
 
+ASTNode *prsr_parse_arr_declaration() 
+{
+  PRSR_DEBUG_PRINT();
+  prsr_match(ARR_TOKEN);
+  prsr_match(OPEN_SQUARE_TOKEN);
+  Token size_token = lookhaed;
+  prsr_match(INTEGER_TOKEN);
+  prsr_match(CLOSE_SQUARE_TOKEN);
+  Token id_token = lookhaed;
+  prsr_match(IDENTIFIER_TOKEN);
+  return ast_create_array_declaration_node(
+    idf_create_identifier_from_token(id_token),
+    lxr_get_integer_value_of_integer_token(size_token),
+    NULL  // for the moment we do not support init values for arrays declaration
+  );
+}
+
 ASTNode *prsr_parse_assignment()
 {
   PRSR_DEBUG_PRINT();
@@ -199,6 +216,8 @@ ASTNode *prsr_parse_statement()
     return prsr_parse_if_statement(True);
   } else if (lookhaed.type == WHILE_TOKEN){
     return prsr_parse_while_statement();
+  } else if (lookhaed.type == ARR_TOKEN){
+    statement = prsr_parse_arr_declaration();
   } else {
     statement = prsr_parse_assignment();
   }

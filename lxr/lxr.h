@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #define TODO() fprintf(stdout, "TODO: %s is not implemented\n", __FUNCTION__); exit(1);
 #define bool int
@@ -15,6 +16,8 @@ typedef enum {
   CLOSE_CURLY_TOKEN,
   OPEN_PAREN_TOKEN,
   CLOSE_PAREN_TOKEN,
+  OPEN_SQUARE_TOKEN,
+  CLOSE_SQUARE_TOKEN,
   EQUAL_TOKEN,
   SEMICOLON_TOKEN,
   LESS_TOKEN,
@@ -52,6 +55,8 @@ static const char * const token_to_name[] = {
   [CLOSE_CURLY_TOKEN] = "CLOSE_CURLY",
   [OPEN_PAREN_TOKEN] = "OPEN_PAREN",
   [CLOSE_PAREN_TOKEN] = "CLOSE_PAREN",
+  [OPEN_SQUARE_TOKEN] = "OPEN_SQUARE",
+  [CLOSE_SQUARE_TOKEN] = "CLOSE_SQUARE",
   [EQUAL_TOKEN] = "EQUAL",
   [LESS_EQUAL_TOKEN] = "LESS_EQUAL",
   [GREATER_EQUAL_TOKEN] = "GREATER_EQUAL",
@@ -86,6 +91,8 @@ static const char token_to_char[] = {
   [CLOSE_CURLY_TOKEN] = '}',
   [OPEN_PAREN_TOKEN] = '(',
   [CLOSE_PAREN_TOKEN] = ')',
+  [OPEN_SQUARE_TOKEN] = '[',
+  [CLOSE_SQUARE_TOKEN] = ']',
   [SEMICOLON_TOKEN] = ';',
   [PLUS_TOKEN] = '+',
   [MINUS_TOKEN] = '-',
@@ -139,13 +146,21 @@ char *lxr_get_token_data_as_cstring(Token token){
   return string;
 }
 
+int lxr_get_integer_value_of_integer_token(Token token) {
+  assert(token.type == INTEGER_TOKEN);
+  char *data = lxr_get_token_data_as_cstring(token);
+  int val = atoi(data);
+  free(data);
+  return val;
+}
+
 void lxr_print_token_type(TokenType token_type){
   fprintf(stdout, "%s", token_to_name[token_type]);
 }
 
 void lxr_print_token(Token token){
 
-  fprintf(stdout, "%-14s", token_to_name[token.type]);
+  fprintf(stdout, "%-14s at %-5d", token_to_name[token.type], token.position);
 
   if (token.data_length > 0){
     fprintf(stdout, " data: ");

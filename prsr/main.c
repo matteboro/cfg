@@ -82,6 +82,7 @@ int main() {
     var boo = (foo + \"hello\") * 420; \
     while boo + 7 { \
       var z = 10; \
+      arr[10] z; \
     } \
   }\
   var string = \"hello, world\"; \

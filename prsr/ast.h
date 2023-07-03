@@ -21,6 +21,7 @@ typedef enum {
   IF_ELSE_STATEMENT,
   WHILE_STATEMENT,
   PROGRAM,
+  ARR_DECLARATION,
 } ASTNodeType;
 
 // DEFINITIONS
@@ -193,6 +194,14 @@ typedef struct {
   ASTNode *global_statements;
 } ProgramNodeData;
 
+typedef struct {
+  Identifier *name;
+  int size;
+  // this should be a list of expression, for the moment i do no tuse it
+  // so it is a pointer to a node list of expression nodes
+  ASTNode *init_values; 
+} ArrayDeclarationNodeData;
+
 // CREATE
 
 ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
@@ -200,6 +209,14 @@ ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
   node->type = type;
   node->data = data;
   return node;
+}
+
+ASTNode *ast_create_array_declaration_node(Identifier *name, int size, ASTNode *init_values) {
+  ArrayDeclarationNodeData *data = (ArrayDeclarationNodeData *) malloc(sizeof(ArrayDeclarationNodeData));
+  data->init_values = init_values;
+  data->size = size;
+  data->name = name;  
+  return ast_create_node(ARR_DECLARATION, data);
 }
 
 ASTNode *ast_create_program_node(ASTNode *func_declarations, ASTNode *global_statements) {
@@ -272,7 +289,32 @@ ASTNode *ast_create_func_declaration_node(Identifier *id, ParameterList *params,
 void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident);
 void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident);
 
+void ast_print_array_declaration_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == ARR_DECLARATION);
+  ArrayDeclarationNodeData *data = (ArrayDeclarationNodeData *) node->data;
+
+  print_spaces(ident, file);
+  fprintf(file, "Array Declaration: {\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Idenfier: ");
+  idf_print_identifier(data->name, file);
+  fprintf(file, ",\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Size: %d, \n", data->size);
+
+  print_spaces(ident, file);
+  fprintf(file, "  Init Values: not implemented yet\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "}");
+}
+
 void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == PROGRAM);
   ProgramNodeData *data = (ProgramNodeData *) node->data;
 
   print_spaces(ident, file);
@@ -303,6 +345,8 @@ void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
 }
 
 void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == EXPRESSION);
   ExpressionNodeData *data = (ExpressionNodeData *) node->data;
   print_spaces(ident, file);
   fprintf(file, "Expression: < ");
@@ -311,6 +355,8 @@ void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
 }
 
 void ast_print_assignment_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == ASSIGNMENT);
   AssignmentNodeData *data = (AssignmentNodeData *) node->data;
   print_spaces(ident, file);
   fprintf(file, "Assignment: {\n");
@@ -324,6 +370,8 @@ void ast_print_assignment_node(ASTNode *node, FILE *file, size_t ident) {
 }
 
 void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == DECLARATION);
   DeclarationNodeData *data = (DeclarationNodeData *) node->data;
   print_spaces(ident, file);
   fprintf(file, "Declaration: {\n");
@@ -341,6 +389,8 @@ void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
 }
 
 void ast_print_if_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == IF_STATEMENT);
   ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
 
   print_spaces(ident, file);
@@ -367,6 +417,8 @@ void ast_print_if_node(ASTNode *node, FILE *file, size_t ident) {
 }
 
 void ast_print_if_else_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == IF_ELSE_STATEMENT);
   IfElseStatementNodeData *data = (IfElseStatementNodeData *) node->data;
 
   print_spaces(ident, file);
@@ -400,6 +452,8 @@ void ast_print_if_else_node(ASTNode *node, FILE *file, size_t ident) {
 }
 
 void ast_print_while_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == WHILE_STATEMENT);
   ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
 
   print_spaces(ident, file);
@@ -444,6 +498,8 @@ void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
     ast_print_while_node(node, file, ident);
   } else if (node->type == PROGRAM) {
     ast_print_program_node(node, file, ident);
+  } else if (node->type == ARR_DECLARATION) {
+    ast_print_array_declaration_node(node, file, ident);
   } else {
     AST_ERROR();
   }
@@ -454,6 +510,8 @@ void ast_print_node(ASTNode *node, FILE *file) {
 }
 
 void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == NODES);
   NodeListData *data = (NodeListData *) node->data;
   print_spaces(ident, file);
   fprintf(file, "Nodes: [\n");
@@ -464,6 +522,8 @@ void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident) {
 }
 
 void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == FUNC_DECLARATION);
   FunctionDeclarationNodeData *data = (FunctionDeclarationNodeData *) node->data;
 
   print_spaces(ident, file);
@@ -488,6 +548,15 @@ void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident) {
 
 
 // DEALLOC
+
+void ast_dealloc_array_declaration_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == ARR_DECLARATION);
+  ArrayDeclarationNodeData *data = (ArrayDeclarationNodeData *) node->data;
+  idf_dealloc_identifier(data->name);
+  ast_dealloc_node(data->init_values);
+  free(data);
+}
 
 void ast_dealloc_program_node(ASTNode *node) {
   AST_PRINT_DEBUG();
@@ -564,6 +633,8 @@ void ast_dealloc_if_else_node(ASTNode *node) {
 
 void ast_dealloc_node(ASTNode *root) {
   AST_PRINT_DEBUG();
+  if (root == NULL)
+    return;
   if (root->type == ASSIGNMENT) {
     ast_dealloc_assignment_node(root);
   } else if (root->type == EXPRESSION) {
@@ -580,6 +651,8 @@ void ast_dealloc_node(ASTNode *root) {
     ast_dealloc_if_else_node(root);
   } else if (root->type == PROGRAM) {
     ast_dealloc_program_node(root);
+  } else if (root->type == ARR_DECLARATION) {
+    ast_dealloc_array_declaration_node(root);
   } else {
     AST_ERROR();
   }
