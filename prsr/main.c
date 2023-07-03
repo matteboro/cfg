@@ -82,10 +82,12 @@ int main() {
     var boo = (foo + \"hello\") * 420; \
     while boo + foo[7] <= 16 * foo() - ty[12] { \
       var z = 10; \
+      foo = 10 * biss(3) > 0; \
       arr[10] z; \
     } \
   }\
   var string = \"hello, world\" * ty[23 * boo - 7]; \
+  string[10 * tre] = bobo - foo(54); \
   ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");

@@ -237,9 +237,24 @@ ASTNode *prsr_parse_assignment()
   PRSR_DEBUG_PRINT();
   Token id_token = lookhaed;
   prsr_match(IDENTIFIER_TOKEN);
-  prsr_match(EQUAL_TOKEN);
-  ASTNode *expression_node = prsr_parse_expression_node();
-  return ast_create_assignment_node(idf_create_identifier_from_token(id_token), expression_node);
+  if (lookhaed.type == OPEN_SQUARE_TOKEN) {
+    prsr_match(OPEN_SQUARE_TOKEN);
+    Expression *index = prsr_parse_expression();
+    prsr_match(CLOSE_SQUARE_TOKEN);
+    prsr_match(EQUAL_TOKEN);
+    ASTNode *expression_node = prsr_parse_expression_node();
+    return ast_create_assignment_node(
+      assgnbl_create_arr_deref_assignable(
+        idf_create_identifier_from_token(id_token),
+        index), 
+      expression_node);
+  } else {
+    prsr_match(EQUAL_TOKEN);
+    ASTNode *expression_node = prsr_parse_expression_node();
+    return ast_create_assignment_node(
+      assgnbl_create_var_assignable(idf_create_identifier_from_token(id_token)), 
+      expression_node);
+  }
 }
 
 ASTNode *prsr_parse_while_statement(); 
