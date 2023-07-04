@@ -7,6 +7,7 @@
 #include <assert.h>
 #include "../lxr/lxr.h"
 #include "idf.h"
+#include "nt_bind.h"
 
 
 // #define EXPR_DEBUG
@@ -576,8 +577,8 @@ Expression *expr_create_operand_expression(OperandType type, const char *data) {
     *int_data = expr_string_to_int(data);
   } 
   else if (type == STRING_OPERAND) {
-    my_data = (char *) malloc(strlen(data)+1);
-    strcpy(my_data, data);
+    my_data = malloc(strlen(data)+1);
+    strcpy((char *) my_data, data);
   } 
   else {
     EXPR_ERROR();

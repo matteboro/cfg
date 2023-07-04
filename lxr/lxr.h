@@ -28,7 +28,9 @@ typedef enum {
   ASTERISK_TOKEN,
   COMMA_TOKEN,
   EXCL_POINT_TOKEN,
+  COLON_TOKEN,
 
+  DOUBLE_COLON_TOKEN,
   NOT_EQUAL_TOKEN,
   EQUAL_EQUAL_TOKEN,
   LESS_EQUAL_TOKEN,
@@ -89,6 +91,8 @@ static const char * const token_to_name[] = {
   [INT_TYPE_TOKEN] = "INT_TYPE",
   [STRING_TYPE_TOKEN] = "STRING_TYPE",
   [SEMICOLON_TOKEN] = "SEMICOLON",
+  [COLON_TOKEN] = "COLON",
+  [DOUBLE_COLON_TOKEN] = "DOUBLE_COLON",
   [COMMENT_TOKEN] = "COMMENT",
   [END_TOKEN] = "END_TOKEN",
   [NULL_TOKEN] = "NULL_TOKEN"
@@ -294,6 +298,7 @@ Token lxr_next_token(Lexer *lexer) {
   lxr_ambiguous_one_or_two_chars_token('>', GREATER_TOKEN,    '=', GREATER_EQUAL_TOKEN)
   lxr_ambiguous_one_or_two_chars_token('=', EQUAL_TOKEN,      '=', EQUAL_EQUAL_TOKEN)
   lxr_ambiguous_one_or_two_chars_token('!', EXCL_POINT_TOKEN, '=', NOT_EQUAL_TOKEN)
+  lxr_ambiguous_one_or_two_chars_token(':', COLON_TOKEN,      ':', DOUBLE_COLON_TOKEN)
   else if (is_starter_identifier_char(lxr_current_char(lexer))) {
     int starting_position = lexer->current;
     int id_name_length = 1;

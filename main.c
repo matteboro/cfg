@@ -269,6 +269,27 @@ I want:
   variable/attribute/parameter and the type is the type of that entity. Thid object 
   will be called NameTypeBinding { Identifier *name, Type *type }.
 
+Now we have to parse types as a separate method:
+  grammar for declaration: 
+    DECLARATION: TYPE "::" IDENTIFIER ( '=' EXPRESSION ) ';'
+  ex:
+    int arr[5] :: int_array = [1, 2, 3, 4, 5];
+
+  # let say we know we are inside a declaration of some sort(var, param or attribute)
+  ParseType(start_type):
+    ParseArrayType()::array_type
+    if (array_type)
+      # add start_type to end of array_type chain
+    else
+      ret Type(INT_TYPE)
+
+  ParseDeclaration():
+    ParseType()::type
+    "::"
+    IDENTIFIER::name
+    if ('=')
+      ParseExpression()::init_value
+    ret DeclarationNode(NameTypeBinding(name, type), init_value)
 
 TODO list:
   [x] array initialization;

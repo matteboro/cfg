@@ -77,18 +77,28 @@ int main() {
   // funccall_dealloc(func_call);
 */
 
+/*
   ASTNode *ast = prsr_parse(" \
   func baz(a, b, c) { \
-    var boo = (foo + \"hello\") * 420; \
+    int::boo = (foo + \"hello\") * 420; \
     while boo + foo[7] <= -(16 * foo()) - ty[12] { \
-      var z = 10; \
+      string z = 10; \
       foo = 10 * biss(3) > 0; \
-      arr[10] z = [4, \"foo\", b(33), 69 * 420 - 42]; \
-      arr[5]  t; \
+      # arr[10] z = [4, \"foo\", b(33), 69 * 420 - 42]; \
+      # arr[5]  t; \
     } \
   }\
-  var str = \"hello, world\" * -ty[23 * boo - 7]; \
+  int::str = \"hello, world\" * -ty[23 * boo - 7]; \
   str[10 * tre] = bobo - foo(54); \
+  ");
+*/
+
+  ASTNode *ast = prsr_parse(" \
+  int::str = 42; \
+  str[10 * tre] = 69; \
+  int arr[5]::array = [1, 2, 3, 4, 5]; \
+  string arr[10]::s_arr; \
+  struct arr[5]::structs = [\"1, 2, 3, 4, 5\"]; \
   ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");

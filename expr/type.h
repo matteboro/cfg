@@ -1,11 +1,9 @@
 
-#include "../expr/idf.h"
-#include "../expr/expr.h"
+#include "idf.h"
 
 #define TYPE_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
 #define typed_data(type) type *data = (type *) malloc(sizeof(type))
 #define casted_data(type, elem) type *data = (type *) elem->data
-
 
 #define TYPE_DEALLOC( infix, data_type, dealloc_code) \
   void type_dealloc_##infix##_type(Type *type) \
@@ -63,14 +61,14 @@ Type *type_create_string_type() {
 Type *type_create_struct_type(Identifier *name) {
   typed_data(StructTypeData);
   data->name = name;
-  return type_create(STRING_TYPE, data);
+  return type_create(STRUCT_TYPE, data);
 }
 
 Type *type_create_array_type(int size, Type *type) {
   typed_data(ArrayTypeData);
   data->size = size;
   data->type = type;
-  return type_create(STRING_TYPE, data);
+  return type_create(ARR_TYPE, data);
 }
 
 // PRINT

@@ -169,9 +169,9 @@ typedef struct {
 } NodeListData;
 
 typedef struct {
-  Identifier *id;
+  NameTypeBinding *nt_bind;
   bool has_init;
-  ASTNode *expression;
+  ExpressionList *init_values;
 } DeclarationNodeData;
 
 typedef struct {
@@ -246,11 +246,11 @@ ASTNode *ast_create_node_list_node(ASTNodeList *list) {
 }
 
 // here expression could be NULL, if it is the value has_init should be false
-ASTNode *ast_create_declaration_node(Identifier *id, ASTNode *expression) {
+ASTNode *ast_create_declaration_node(NameTypeBinding *nt_bind, ExpressionList *init_values) {
   DeclarationNodeData *data = (DeclarationNodeData *) malloc(sizeof(DeclarationNodeData));
-  data->id = id;
-  data->has_init = expression == NULL ? False : True;
-  data->expression = expression;
+  data->nt_bind = nt_bind;
+  data->has_init = init_values == NULL ? False : True;
+  data->init_values = init_values;
   return ast_create_node(DECLARATION, data);
 }
 
@@ -384,13 +384,22 @@ void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
   fprintf(file, "Declaration: {\n");
   print_spaces(ident, file);
   fprintf(file, "  Idenfier: ");
-  idf_print_identifier(data->id, file);
+  nt_bind_print(data->nt_bind, file);
+  //idf_print_identifier(data->id, file);
   if (data->has_init) {
-    fprintf(file, ",\n");
-    ast_print_expression_node(data->expression, file, ident+2);
+    fprintf(file, ", \n");
+    print_spaces(ident, file);
+    fprintf(file, "  Init Value/s: ");
+    if (expr_list_size(data->init_values) > 1)
+      fprintf(file, "[ ");
+    expr_list_print(data->init_values, file);
+    if (expr_list_size(data->init_values) > 1)
+      fprintf(file, " ]");
+    fprintf(file, "\n");
   } else {
     fprintf(file, "\n");
   }
+  
   print_spaces(ident, file);
   fprintf(file, "}");
 }
@@ -598,8 +607,10 @@ void ast_dealloc_declaration_node(ASTNode *node) {
   assert(node->type == DECLARATION);
   DeclarationNodeData *data = (DeclarationNodeData *) node->data;
   if (data->has_init)
-    ast_dealloc_node(data->expression);
-  idf_dealloc_identifier(data->id);
+    expr_list_dealloc(data->init_values);
+  // ast_dealloc_node(data->expression);
+  // idf_dealloc_identifier(data->id);
+  nt_bind_dealloc(data->nt_bind);
   free(data);
 }
 
