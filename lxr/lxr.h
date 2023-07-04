@@ -46,6 +46,8 @@ typedef enum {
   VAR_TOKEN,
   FUNC_TOKEN,
   ARR_TOKEN,
+  INT_TYPE_TOKEN,
+  STRING_TYPE_TOKEN,
 
   COMMENT_TOKEN,
   END_TOKEN,
@@ -84,6 +86,8 @@ static const char * const token_to_name[] = {
   [VAR_TOKEN] = "VAR",
   [ARR_TOKEN] = "ARR",
   [FUNC_TOKEN] = "FUNC",
+  [INT_TYPE_TOKEN] = "INT_TYPE",
+  [STRING_TYPE_TOKEN] = "STRING_TYPE",
   [SEMICOLON_TOKEN] = "SEMICOLON",
   [COMMENT_TOKEN] = "COMMENT",
   [END_TOKEN] = "END_TOKEN",
@@ -115,6 +119,8 @@ static const char * const keyword_token_to_string[] = {
   [FUNC_TOKEN] = "func",
   [ELIF_TOKEN] = "elif",
   [ARR_TOKEN] = "arr",
+  [INT_TYPE_TOKEN] = "int",
+  [STRING_TYPE_TOKEN] = "string",
 };
 
 #define token_to_char_size sizeof(token_to_char)

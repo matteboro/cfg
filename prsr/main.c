@@ -87,8 +87,8 @@ int main() {
       arr[5]  t; \
     } \
   }\
-  var string = \"hello, world\" * -ty[23 * boo - 7]; \
-  string[10 * tre] = bobo - foo(54); \
+  var str = \"hello, world\" * -ty[23 * boo - 7]; \
+  str[10 * tre] = bobo - foo(54); \
   ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");

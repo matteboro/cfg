@@ -237,11 +237,50 @@ Pointers:
     ptr var k2 = ptr(f);     declaration with initialization
     var foo = val(1k);       pointer dereference
 
+Struct
+  Syntax
+    arr[20] f;
+    data point { 
+      var t, 
+      var p, 
+      arr[20] f 
+    };
+    var p = point{ 20, 4, f };
+
+NOTE: i should give types to the parameters accepted by a function. For example:
+  foo(var t, var p, arr[20] f) { ... }
+
+I now want to change the type system in my language. I want types. I'll get rid of
+var keyword and I will have 2 basics type: int, string, and 2 ways to declare
+new types: data { ... } and <type> arr[size].
+Steps:
+  1) add to the lexer the appropriate keywords;
+  2) modify the AST to have types in the declarations;
+  3) modify the parser to generate the appropriate AST;
+
+DONE
+TODO: i have to change how funccall works, i want them to have a list of expression,
+not a list of parameters. 
+
+
+I want:
+  variable declarations, function definition parameters and struct attributes to hold 
+  an instance of an object of the form < name, type >, where name is the name of that 
+  variable/attribute/parameter and the type is the type of that entity. Thid object 
+  will be called NameTypeBinding { Identifier *name, Type *type }.
+
+
 TODO list:
-  [ ] array initialization;
+  [x] array initialization;
   [x] AssignableElement;
   [x] left unary operations (such as - and !);
   [ ] string operations;
-  [ ] struct;
+  [ ] data struct;
   [ ] pointers;
+  [x] change funccall to have list of exprs;
+  [ ] add types;
+   |-[x] Type;
+   |-[ ] NameTypeBinding;
+   |-[ ] add NameTypeBinding to func declarations params, var declaration;
+
 */

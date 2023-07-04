@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include "../lxr/lxr.h"
+#include "idf.h"
 
 
 // #define EXPR_DEBUG
@@ -133,38 +134,6 @@ void expr_list_print(ExpressionList *list, FILE *file) {
 }
 
 // END EXPRESSION LIST
-
-// IDENTIFIER
-
-typedef struct {
-  char *name;
-} Identifier;
-
-Identifier *idf_create_identifier(const char *name) {
-  Identifier *id = (Identifier *)malloc(sizeof(Identifier));
-  id->name = malloc(strlen(name)+1);
-  strcpy(id->name, name);
-  return id;
-}
-
-void idf_dealloc_identifier(Identifier *id) {
-  free(id->name);
-  free(id);
-}
-
-void idf_print_identifier(Identifier *id, FILE *file) {
-  fprintf(file, "id.%s", id->name);
-} 
-
-Identifier *idf_create_identifier_from_token(Token token) {
-  // TODO : error handling, assume (token.type == IDENTIFIER_TOKEN)
-  Identifier *id = (Identifier *)malloc(sizeof(Identifier));
-  id->name = malloc(token.data_length+1);
-  id->name = lxr_get_token_data_as_cstring(token);
-  return id;
-}
-
-// END IDENTIFIER
 
 // PARAMETER
 
@@ -376,14 +345,14 @@ void prmt_list_print(ParameterList *list, FILE *file) {
 
 typedef struct {
   char *function_name;
-  ParameterList *parameters;
+  ExpressionList *params_values;
 } FunctionCall;
 
-FunctionCall *funccall_create(const char *name, ParameterList* params){
+FunctionCall *funccall_create(const char *name, ExpressionList *params_values){
   FunctionCall *func_call = (FunctionCall *)malloc(sizeof(FunctionCall));
   func_call->function_name = (char *)malloc(sizeof(strlen(name))+1);
   strcpy(func_call->function_name, name);
-  func_call->parameters = params;
+  func_call->params_values = params_values;
   return func_call;
 }
 
@@ -391,14 +360,14 @@ void funccall_dealloc(FunctionCall *func_call) {
   if (func_call == NULL)
     return;
   free(func_call->function_name);
-  prmt_list_dealloc(func_call->parameters);
+  expr_list_dealloc(func_call->params_values);
   free(func_call);
 }
 
 void funccall_print(FunctionCall *func_call, FILE *file) {
   if_null_print(func_call, file);
   fprintf(file, "%s(", func_call->function_name);
-  prmt_list_print(func_call->parameters, file);
+  expr_list_print(func_call->params_values, file);
   fprintf(file, ")");
 }
 
@@ -421,13 +390,14 @@ void prmt_print_funccall_param(Parameter *param, FILE *file) {
   funccall_print(func_call, file);
 }
 
+// END FUNCCALL
+
+
 /*
   - a Parameter can be a Integer, Identifier, FuncCall, Expression,
   - a FuncCall has a list of Parameter,
   - an Operand can be a FuncCall, Integer, Identifier
 */
-
-// END FUNCCALL
 
 // DEFINITIONS
 
