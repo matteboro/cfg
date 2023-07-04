@@ -40,7 +40,7 @@ FACTOR     :: [ IDENDIFIER_TOKEN ],
   exit(1);
 
 ASTNode *prsr_parse_assignment();
-Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor();
+Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor(), *prsr_parse_equation();
 
 static Token lookhaed;
 Lexer *lexer_ptr;
@@ -125,9 +125,21 @@ Expression *prsr_parse_factor()
   case OPEN_PAREN_TOKEN:
   {
     prsr_match(OPEN_PAREN_TOKEN);
-    Expression *expression = prsr_parse_expression();
+    Expression *expression = prsr_parse_equation();
     prsr_match(CLOSE_PAREN_TOKEN);
     return expression;
+  }
+  case MINUS_TOKEN:
+  {
+    prsr_match(MINUS_TOKEN);
+    Expression *expression = prsr_parse_factor();
+    return expr_create_unary_expression(expression, MINUS_UNARY_OPERATION);
+  }
+  case EXCL_POINT_TOKEN:
+  {
+    prsr_match(EXCL_POINT_TOKEN);
+    Expression *expression = prsr_parse_factor();
+    return expr_create_unary_expression(expression, NOT_UNARY_OPERATION);
   }
   default:
     PRSR_ERROR();

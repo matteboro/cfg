@@ -22,6 +22,7 @@
 
 typedef enum {
   BINARY_EXPRESSION_EXP_TYPE,
+  UNARY_EXPRESSION_EXP_TYPE,
   OPERAND_EXP_TYPE,
 } ExpressionType;
 
@@ -341,6 +342,8 @@ typedef enum {
   GEQ_OPERATION,
   EQ_OPERATION,
   NEQ_OPERATION,
+  MINUS_UNARY_OPERATION,
+  NOT_UNARY_OPERATION,
 } OperationType;
 
 static const char *operation_to_char[] = {
@@ -354,13 +357,19 @@ static const char *operation_to_char[] = {
   [GEQ_OPERATION] = ">=",
   [EQ_OPERATION] = "==",
   [NEQ_OPERATION] = "!=",
+  [MINUS_UNARY_OPERATION] = "-",
+  [NOT_UNARY_OPERATION] = "!",
 };
-
 
 typedef struct {
   Expression *left, *right;
   OperationType operation;
 } BinaryExpression;
+
+typedef struct {
+  Expression *operand;
+  OperationType operation;
+} UnaryExpression;
 
 // OPERAND
 
@@ -463,6 +472,13 @@ Expression *expr_create_binary_expression(Expression *left, OperationType op_typ
   return expr_create_expression(BINARY_EXPRESSION_EXP_TYPE, binary_expression);
 }
 
+Expression *expr_create_unary_expression(Expression *operand, OperationType op_type) {
+  UnaryExpression *unary_expression = (UnaryExpression *)malloc(sizeof(UnaryExpression));
+  unary_expression->operand = operand;
+  unary_expression->operation = op_type;
+  return expr_create_expression(UNARY_EXPRESSION_EXP_TYPE, unary_expression);
+}
+
 #define expr_string_to_int(string) atoi(string)
 
 Expression *expr_create_funccall_operand_expression(FunctionCall *func_call) {
@@ -519,10 +535,22 @@ Expression *expr_create_operand_expression_from_token(Token token) {
 
 // DEALLOC
 
+void expr_dealloc_expression(Expression *expression);
+
 void expr_dealloc_binary_expression(BinaryExpression *expression) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
     return;
+  expr_dealloc_expression(expression->left);
+  expr_dealloc_expression(expression->right);
+  free(expression);
+}
+
+void expr_dealloc_unary_expression(UnaryExpression *expression) {
+  EXPR_DEBUG_PRINT()
+  if (expression == NULL) 
+    return;
+  expr_dealloc_expression(expression->operand);
   free(expression);
 }
 
@@ -535,10 +563,10 @@ void expr_dealloc_expression(Expression *expression) {
     oprnd_dealloc_operand((Operand *) (expression->enclosed_expression));
   break;
   case BINARY_EXPRESSION_EXP_TYPE: {
-    BinaryExpression *binary_expression = (BinaryExpression *) (expression->enclosed_expression);
-    expr_dealloc_expression(binary_expression->left);
-    expr_dealloc_expression(binary_expression->right);
     expr_dealloc_binary_expression((BinaryExpression *) (expression->enclosed_expression));
+  } break;
+  case UNARY_EXPRESSION_EXP_TYPE: {
+    expr_dealloc_unary_expression((UnaryExpression *) (expression->enclosed_expression));
   } break;
   default:
     EXPR_ERROR();
@@ -561,6 +589,16 @@ void expr_print_binary_expression(BinaryExpression *expression, FILE *file) {
   fprintf(file, ")");
 }
 
+void expr_print_unary_expression(UnaryExpression *expression, FILE *file) {
+  EXPR_DEBUG_PRINT()
+  if (expression == NULL) 
+    return;
+  fprintf(file, "(");
+  fprintf(file, "%s ", operation_to_char[expression->operation]);
+  expr_print_expression(expression->operand, file);
+  fprintf(file, ")");
+}
+
 void expr_print_expression(Expression *expression, FILE *file) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
@@ -571,6 +609,9 @@ void expr_print_expression(Expression *expression, FILE *file) {
   break;
   case BINARY_EXPRESSION_EXP_TYPE:
     expr_print_binary_expression((BinaryExpression *) expression->enclosed_expression, file);
+  break;
+  case UNARY_EXPRESSION_EXP_TYPE:
+    expr_print_unary_expression((UnaryExpression *) expression->enclosed_expression, file);
   break;
   default:
     EXPR_ERROR();
