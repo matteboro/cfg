@@ -36,6 +36,104 @@ typedef struct {
 void expr_dealloc_expression(Expression *expression);
 void expr_print_expression(Expression *expression, FILE *file);
 
+// EXPRESSION LIST
+
+typedef struct ExpressionList_s{
+  struct ExpressionList_s *next;
+  Expression *expression;
+} ExpressionList;
+
+//// CREATE EMPTY
+
+ExpressionList *expr_list_create_empty() {
+  ExpressionList *list = (ExpressionList *)malloc(sizeof(ExpressionList));
+  list->next = NULL;
+  list->expression = NULL;
+  return list;
+  // return NULL;
+}
+
+ExpressionList *expr_list_create(Expression *expression) {
+  ExpressionList *list = (ExpressionList *)malloc(sizeof(ExpressionList));
+  list->next = NULL;
+  list->expression = expression;
+  return list;
+}
+
+//// APPEND
+
+void expr_list_append(ExpressionList *list, Expression *expression) {
+  if (list->next == NULL) {
+    if (list->expression == NULL) {
+      list->expression = expression;
+    } else {
+      list->next = expr_list_create(expression);
+    }
+    return;
+  }
+
+  ExpressionList *n = list->next;
+  while(n->next != NULL)
+    n = n->next;
+
+  n->next = expr_list_create(expression);
+  return;
+}
+
+//// DEALLOC
+
+void expr_list_dealloc(ExpressionList *list) {
+  if (list == NULL)
+    return;
+
+  if (list->next != NULL)
+    expr_list_dealloc(list->next);
+  
+  if (list->expression != NULL)
+    expr_dealloc_expression(list->expression);
+  
+  free(list);
+}
+
+//// SIZE
+
+size_t expr_list_size(ExpressionList *list) {
+  if (list->next != NULL)
+    return expr_list_size(list->next) + 1;
+  
+  if (list->expression != NULL)
+    return 1;
+  
+  return 0;
+}
+
+//// GET AT
+
+Expression *expr_list_get_at(ExpressionList *list, size_t index) {
+  if (list->next == NULL && list->expression == NULL && index == 0)
+    return NULL;
+  assert(index < expr_list_size(list));
+  ExpressionList *n = list;
+  for (size_t i=0; i<index; ++i)
+    n = n->next;
+  return n->expression;
+}
+
+//// PRINT
+
+void expr_list_print(ExpressionList *list, FILE *file) {
+  if_null_print(list, file);
+  if (list->expression != NULL)
+    expr_print_expression(list->expression, file);
+  
+  if (list->next != NULL){
+    fprintf(file, ", ");
+    expr_list_print(list->next, file);
+  }
+}
+
+// END EXPRESSION LIST
+
 // IDENTIFIER
 
 typedef struct {
@@ -224,6 +322,8 @@ void prmt_list_append(ParameterList *list, Parameter *param) {
 //// DEALLOC
 
 void prmt_list_dealloc(ParameterList *list) {
+  if (list == NULL)
+    return;
   if (list->next != NULL)
     prmt_list_dealloc(list->next);
   

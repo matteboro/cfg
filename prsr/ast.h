@@ -84,6 +84,8 @@ void ast_list_append(ASTNodeList *list, ASTNode *node) {
 //// DEALLOC
 
 void ast_list_dealloc(ASTNodeList *list) {
+  if (list == NULL)
+    return;
   if (list->next != NULL)
     ast_list_dealloc(list->next);
   
@@ -300,7 +302,7 @@ typedef struct {
   int size;
   // this should be a list of expression, for the moment i do no tuse it
   // so it is a pointer to a node list of expression nodes
-  ASTNode *init_values; 
+  ExpressionList *init_values; 
 } ArrayDeclarationNodeData;
 
 // CREATE
@@ -312,7 +314,7 @@ ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
   return node;
 }
 
-ASTNode *ast_create_array_declaration_node(Identifier *name, int size, ASTNode *init_values) {
+ASTNode *ast_create_array_declaration_node(Identifier *name, int size, ExpressionList *init_values) {
   ArrayDeclarationNodeData *data = (ArrayDeclarationNodeData *) malloc(sizeof(ArrayDeclarationNodeData));
   data->init_values = init_values;
   data->size = size;
@@ -403,11 +405,17 @@ void ast_print_array_declaration_node(ASTNode *node, FILE *file, size_t ident) {
   idf_print_identifier(data->name, file);
   fprintf(file, ",\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  Size: %d, \n", data->size);
-
-  print_spaces(ident, file);
-  fprintf(file, "  Init Values: not implemented yet\n");
+  if (data->init_values != NULL) {
+    print_spaces(ident, file);
+    fprintf(file, "  Size: %d, \n", data->size);
+    print_spaces(ident, file);
+    fprintf(file, "  Init Values: [ ");
+    expr_list_print(data->init_values, file);
+    fprintf(file, " ]\n");
+  } else {
+    print_spaces(ident, file);
+    fprintf(file, "  Size: %d \n", data->size);
+  }
 
   print_spaces(ident, file);
   fprintf(file, "}");
@@ -656,7 +664,8 @@ void ast_dealloc_array_declaration_node(ASTNode *node) {
   assert(node->type == ARR_DECLARATION);
   ArrayDeclarationNodeData *data = (ArrayDeclarationNodeData *) node->data;
   idf_dealloc_identifier(data->name);
-  ast_dealloc_node(data->init_values);
+  expr_list_dealloc(data->init_values);
+  // ast_dealloc_node(data->init_values);
   free(data);
 }
 

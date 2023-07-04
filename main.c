@@ -230,6 +230,13 @@ be placed. For the moment just two types of AssignableElement will be able:
   - VAR,
   - ARRAY_DEREF.
 
+Pointers:
+
+  Syntax: 
+    ptr var k1;              declaration
+    ptr var k2 = ptr(f);     declaration with initialization
+    var foo = val(1k);       pointer dereference
+
 TODO list:
   [ ] array initialization;
   [x] AssignableElement;

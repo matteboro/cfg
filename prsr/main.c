@@ -83,7 +83,8 @@ int main() {
     while boo + foo[7] <= -(16 * foo()) - ty[12] { \
       var z = 10; \
       foo = 10 * biss(3) > 0; \
-      arr[10] z; \
+      arr[10] z = [4, \"foo\", b(33), 69 * 420 - 42]; \
+      arr[5]  t; \
     } \
   }\
   var string = \"hello, world\" * -ty[23 * boo - 7]; \

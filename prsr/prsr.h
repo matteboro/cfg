@@ -227,6 +227,22 @@ ASTNode *prsr_parse_var_declaration()
   return ast_create_declaration_node(idf_create_identifier_from_token(id_token), expression_node);
 }
 
+ExpressionList *prsr_parse_arr_initializations_values() {
+  ExpressionList *init_values = expr_list_create_empty();
+  if (lookhaed.type != CLOSE_SQUARE_TOKEN)
+  {
+    while(True) 
+    {
+      Expression *expr = prsr_parse_expression();
+      expr_list_append(init_values, expr);
+      if (lookhaed.type != COMMA_TOKEN)
+        break;
+      prsr_match(COMMA_TOKEN);
+    }
+  }
+  return init_values;
+}
+
 ASTNode *prsr_parse_arr_declaration() 
 {
   PRSR_DEBUG_PRINT();
@@ -237,11 +253,18 @@ ASTNode *prsr_parse_arr_declaration()
   prsr_match(CLOSE_SQUARE_TOKEN);
   Token id_token = lookhaed;
   prsr_match(IDENTIFIER_TOKEN);
+  ExpressionList *init_values = NULL;
+  if (lookhaed.type == EQUAL_TOKEN) 
+  {
+    prsr_match(EQUAL_TOKEN);
+    prsr_match(OPEN_SQUARE_TOKEN);
+    init_values = prsr_parse_arr_initializations_values();
+    prsr_match(CLOSE_SQUARE_TOKEN); 
+  }
   return ast_create_array_declaration_node(
     idf_create_identifier_from_token(id_token),
     lxr_get_integer_value_of_integer_token(size_token),
-    NULL  // for the moment we do not support init values for arrays declaration
-  );
+    init_values);
 }
 
 ASTNode *prsr_parse_assignment()
