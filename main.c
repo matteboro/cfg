@@ -354,7 +354,7 @@ TODO list:
   [ ] string operations;
   [ ] data struct;
    |  [x] Attribute and AttributeList;
-   |  [ ] ASTStructDeclarationNode;
+   |  [x] ASTStructDeclarationNode;
    |  [ ] parsing of structs;
   [ ] ObjectDereference (and move it where it is used);
   [ ] pointers;

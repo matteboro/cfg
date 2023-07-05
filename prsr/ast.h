@@ -1,5 +1,6 @@
 #include "../expr/expr.h"
 #include "assgnbl.h"
+#include "attrb.h"
 #include <assert.h>
 
 // #define AST_DEBUG
@@ -23,6 +24,7 @@ typedef enum {
   WHILE_STATEMENT,
   PROGRAM,
   ARR_DECLARATION,
+  STRUCT_DECLARATION,
 } ASTNodeType;
 
 // DEFINITIONS
@@ -202,6 +204,11 @@ typedef struct {
   ExpressionList *init_values; 
 } ArrayDeclarationNodeData;
 
+typedef struct {
+  Identifier *name;
+  AttributeList *attributes;
+} StructDeclarationNodeData;
+
 // CREATE
 
 ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
@@ -209,6 +216,13 @@ ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
   node->type = type;
   node->data = data;
   return node;
+}
+
+ASTNode *ast_create_struct_declaration_node(Identifier *name, AttributeList *attributes) {
+  StructDeclarationNodeData *data = (StructDeclarationNodeData *) malloc(sizeof(StructDeclarationNodeData));
+  data->name = name;
+  data->attributes = attributes;
+  return ast_create_node(STRUCT_DECLARATION, data);
 }
 
 ASTNode *ast_create_array_declaration_node(Identifier *name, int size, ExpressionList *init_values) {
@@ -288,6 +302,28 @@ ASTNode *ast_create_func_declaration_node(Identifier *id, ParameterList *params,
 
 void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident);
 void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident);
+
+void ast_print_struct_declaration_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == STRUCT_DECLARATION);
+  StructDeclarationNodeData *data = (StructDeclarationNodeData *) node->data;
+
+  print_spaces(ident, file);
+  fprintf(file, "Struct Declaration: {\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Name: ");
+  idf_print_identifier(data->name, file);
+  fprintf(file, ",\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Attributes: ");
+  attrb_list_print(data->attributes, file);
+  fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "}");
+}
 
 void ast_print_array_declaration_node(ASTNode *node, FILE *file, size_t ident) {
   AST_PRINT_DEBUG();
@@ -516,6 +552,8 @@ void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
     ast_print_program_node(node, file, ident);
   } else if (node->type == ARR_DECLARATION) {
     ast_print_array_declaration_node(node, file, ident);
+  } else if (node->type == STRUCT_DECLARATION) {
+    ast_print_struct_declaration_node(node, file, ident);
   } else {
     AST_ERROR();
   }
@@ -564,6 +602,15 @@ void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident) {
 
 
 // DEALLOC
+
+void ast_dealloc_struct_declaration_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == STRUCT_DECLARATION);
+  StructDeclarationNodeData *data = (StructDeclarationNodeData *) node->data;
+  idf_dealloc_identifier(data->name);
+  attrb_list_dealloc(data->attributes);
+  free(data);
+}
 
 void ast_dealloc_array_declaration_node(ASTNode *node) {
   AST_PRINT_DEBUG();
@@ -673,6 +720,8 @@ void ast_dealloc_node(ASTNode *root) {
     ast_dealloc_program_node(root);
   } else if (root->type == ARR_DECLARATION) {
     ast_dealloc_array_declaration_node(root);
+  } else if (root->type == STRUCT_DECLARATION) {
+    ast_dealloc_struct_declaration_node(root);
   } else {
     AST_ERROR();
   }
