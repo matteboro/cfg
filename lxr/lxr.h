@@ -29,6 +29,7 @@ typedef enum {
   COMMA_TOKEN,
   EXCL_POINT_TOKEN,
   COLON_TOKEN,
+  POINT_TOKEN,
 
   DOUBLE_COLON_TOKEN,
   NOT_EQUAL_TOKEN,
@@ -73,6 +74,7 @@ static const char * const token_to_name[] = {
   [MINUS_TOKEN] = "MINUS",
   [SLASH_TOKEN] = "SLASH",
   [ASTERISK_TOKEN] = "ASTERISK",
+  [POINT_TOKEN] = "POINT",
   [IDENTIFIER_TOKEN] = "IDENTIFIER",
   [INTEGER_TOKEN] = "INTEGER",
   [STRING_TOKEN] = "STRING",
@@ -113,6 +115,7 @@ static const char token_to_char[] = {
   [SLASH_TOKEN] = '/',
   [ASTERISK_TOKEN] = '*',
   [COMMA_TOKEN] = ',',
+  [POINT_TOKEN] = '.',
 };
 
 static const char * const keyword_token_to_string[] = {

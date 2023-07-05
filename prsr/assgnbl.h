@@ -1,4 +1,5 @@
 #include "../expr/expr.h"
+#include "obj_drf.h"
 
 // ASSIGNABLE ELEMENT
 
@@ -11,6 +12,7 @@
 typedef enum {
   VAR_ASSGNBL,
   ARR_DEREF_ASSGNBL,
+  DEREF_LIST_ASSGNBL,
 } AssignableElementType;
 
 typedef struct {
@@ -27,6 +29,10 @@ typedef struct {
   Expression *index;
 } ArrayDerefAssignableData;
 
+typedef struct {
+  ObjectDerefList *derefs;
+} ObjectDerefListAssignableData;
+
 //// CREATE
 
 AssignableElement *assgnbl_create(AssignableElementType type, void *data){
@@ -34,6 +40,12 @@ AssignableElement *assgnbl_create(AssignableElementType type, void *data){
   assgnbl->type = type;
   assgnbl->data = data;
   return assgnbl;
+}
+
+AssignableElement *assgnbl_create_deref_list_assignable(ObjectDerefList *derefs) {
+  typed_data(ObjectDerefListAssignableData);
+  data->derefs = derefs;
+  return assgnbl_create(DEREF_LIST_ASSGNBL, data);
 }
 
 AssignableElement *assgnbl_create_var_assignable(Identifier *var_name) {
@@ -64,11 +76,18 @@ void assgnbl_print_arr_deref_assignable(AssignableElement *element, FILE *file) 
   fprintf(file, "]");
 }
 
+void assgnbl_print_deref_list_assignable(AssignableElement *element, FILE *file) {
+  casted_data(ObjectDerefListAssignableData, element);
+  obj_drf_list_print(data->derefs, file);
+}
+
 void assgnbl_print(AssignableElement *element, FILE *file) {
   if (element->type == VAR_ASSGNBL) 
     assgnbl_print_var_assignable(element, file);
   else if (element->type == ARR_DEREF_ASSGNBL)
     assgnbl_print_arr_deref_assignable(element, file);
+  else if (element->type == DEREF_LIST_ASSGNBL)
+    assgnbl_print_deref_list_assignable(element, file);
   else {
     ASSGNBL_ERROR();
   }
@@ -82,6 +101,13 @@ void assgnbl_dealloc_var_assignable(AssignableElement *element) {
   free(data);
 }
 
+void assgnbl_dealloc_deref_list_assignable(AssignableElement *element) {
+  casted_data(ObjectDerefListAssignableData, element);
+  obj_drf_list_dealloc(data->derefs);
+  free(data);
+}
+
+
 void assgnbl_dealloc_arr_deref_assignable(AssignableElement *element) {
   casted_data(ArrayDerefAssignableData, element);
   idf_dealloc_identifier(data->arr_name);
@@ -94,6 +120,8 @@ void assgnbl_dealloc(AssignableElement *element) {
     assgnbl_dealloc_var_assignable(element);
   else if (element->type == ARR_DEREF_ASSGNBL)
     assgnbl_dealloc_arr_deref_assignable(element);
+  else if (element->type == DEREF_LIST_ASSGNBL)
+    assgnbl_dealloc_deref_list_assignable(element);
   else {
     ASSGNBL_ERROR();
   }

@@ -94,15 +94,7 @@ int main() {
 */
 
   ASTNode *ast = prsr_parse(" \
-  int::str = 42; \
-  str[10 * tre] = 69; \
-  int arr[5]::array = [1, 2, 3, 4, 5]; \
-  string arr[10]::s_arr; \
-  struct arr[5]::structs = [\"1, 2, 3, 4, 5\"]; \
-  func foo(int::i, string arr[5]::boo, struct::s) { \
-    string arr[10]::s_arr; \
-  } \
-  data struct { int::x, int arr[10]::y, string::name } \
+  f1.f2[10 * foo - baz(10, \"heyy\")].tee = 69; \
   ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");

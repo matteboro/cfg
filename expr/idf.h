@@ -31,7 +31,7 @@ void idf_dealloc_identifier(Identifier *id) {
 }
 
 void idf_print_identifier(Identifier *id, FILE *file) {
-  fprintf(file, "id.%s", id->name);
+  fprintf(file, "id::%s", id->name);
 } 
 
 Identifier *idf_create_identifier_from_token(Token token) {

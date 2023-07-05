@@ -2,10 +2,11 @@
 #define OBJ_DRF_HEADER
 
 #include "../expr/idf.h"
+#include "../expr/expr.h"
 
 #define typed_data(type) type *data = (type *) malloc(sizeof(type))
 #define casted_data(type, elem) type *data = (type *) elem->data
-#define OBJ_DRF_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
+#define OBJ_DRF_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
 #define OBJ_DRF_DEALLOC(infix, data_type, dealloc_code) \
   void obj_drf_dealloc_##infix##_type_deref(ObjectDeref *obj_drf) \
@@ -28,7 +29,7 @@ typedef struct {
 
 typedef struct { 
   Identifier *name; 
-  int index;
+  Expression *index;
 } ArrayTypeObjectDerefData; 
 
 // CREATE
@@ -40,7 +41,7 @@ ObjectDeref *obj_drf_create(ObjectDerefType type, void *data) {
   return obj_drf;
 }
 
-ObjectDeref *obj_drf_create_array_type_deref(Identifier *name, int index) {
+ObjectDeref *obj_drf_create_array_type_deref(Identifier *name, Expression *index) {
   typed_data(ArrayTypeObjectDerefData);
   data->name = name;
   data->index = index;
@@ -65,7 +66,9 @@ void obj_drf_print_array_type_deref(ObjectDeref *obj_drf, FILE *file) {
   casted_data(ArrayTypeObjectDerefData, obj_drf);
   if_null_print(data, file);
   idf_print_identifier(data->name, file);
-  fprintf(file, "[%d]", data->index);
+  fprintf(file, "[");
+  expr_print_expression(data->index, file);
+  fprintf(file, "]");
 }
 
 void obj_drf_print(ObjectDeref *obj_drf, FILE *file) {
@@ -80,8 +83,20 @@ void obj_drf_print(ObjectDeref *obj_drf, FILE *file) {
 
 // DEALLOC
 
-OBJ_DRF_DEALLOC(struct_or_basic, StructOrBasicTypeObjectDerefData, {idf_dealloc_identifier(data->name);})
-OBJ_DRF_DEALLOC(array, StructOrBasicTypeObjectDerefData, {idf_dealloc_identifier(data->name);})
+OBJ_DRF_DEALLOC(
+  array,
+  ArrayTypeObjectDerefData, 
+  {
+    idf_dealloc_identifier(data->name);
+    expr_dealloc_expression(data->index);
+  })
+
+OBJ_DRF_DEALLOC(
+  struct_or_basic, 
+  StructOrBasicTypeObjectDerefData, 
+  {
+    idf_dealloc_identifier(data->name); 
+  })
 
 void obj_drf_dealloc(ObjectDeref *obj_drf) {
   if (obj_drf == NULL)
