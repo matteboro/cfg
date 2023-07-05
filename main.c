@@ -309,7 +309,7 @@ TODO: another thing we should do is to permit to have function parameters to be 
 Struct:
 
   The moment is arrived to parse user defined data structure. This will change the things 
-  a bit. For example we will need struct dereferencing. We have to able that given a struct:
+  a bit. For example we will need struct dereferencing. We have to able to, given a struct:
     data my_data { int :: x, string :: s }
   and an object: 
     my_data :: o; 
@@ -317,20 +317,47 @@ Struct:
     o.x = 10;
     o.s = "Hello, World";
 
+  Syntax:
+    data data_name {
+      # battributes: type :: name,
+      int :: x,
+      string arr[5] :: ns
+    }
+  
+  Attributes: I think that for future expansions and clarity i should create the Attribute
+    data structure, and the AttributeList. An Attribute, for the moment, just hold a 
+    NameTypeBinding. A struct declaration is an ASTNode that holds a list of attributes and
+    the name of the structure.
+
+  Struct deref: to have dereferencing of structure attributes I first need to parse the point.
+    Then i have to create some sort of StructDeref data structure that holds an identifier and
+    one of these three things:
+      - Identifier,
+      - StructDeref,
+      - ArrayDeref;
+
+    So I maybe need an object called ObjectDeref that holds this possible chain of derefrences,
+    and that is used in multiple places, such as in an Assignable, in an expression-s operand and
+    possibly somewhere else.
+
 ============================================================================================
 
 TODO list:
   [x] array initialization;
   [x] AssignableElement;
   [x] left unary operations (such as - and !);
-  [ ] string operations;
-  [ ] data struct;
-  [ ] pointers;
   [x] change funccall to have list of exprs;
   [x] add types;
    |  [x] Type;
    |  [x] NameTypeBinding;
    |  [x] add NameTypeBinding to func declarations params, var declaration;
+  [ ] string operations;
+  [ ] data struct;
+   |  [x] Attribute and AttributeList;
+   |  [ ] ASTStructDeclarationNode;
+   |  [ ] parsing of structs;
+  [ ] ObjectDereference (and move it where it is used);
+  [ ] pointers;
   [ ] undefined arr sizes in function declaration parameters
 
 ============================================================================================
