@@ -1,8 +1,8 @@
 #ifndef OBJ_DRF_HEADER
 #define OBJ_DRF_HEADER
 
-#include "../expr/idf.h"
-#include "../expr/expr.h"
+#include "idf.h"
+#include "expr_interface.h"
 
 #define typed_data(type) type *data = (type *) malloc(sizeof(type))
 #define casted_data(type, elem) type *data = (type *) elem->data
@@ -11,7 +11,6 @@
 #define OBJ_DRF_DEALLOC(infix, data_type, dealloc_code) \
   void obj_drf_dealloc_##infix##_type_deref(ObjectDeref *obj_drf) \
     { if (!obj_drf->data) return; data_type *data = (data_type *)obj_drf->data; dealloc_code; free(data); }
-
 
 typedef enum {
   ARR_DEREF,
@@ -82,6 +81,7 @@ void obj_drf_print(ObjectDeref *obj_drf, FILE *file) {
 }
 
 // DEALLOC
+
 
 OBJ_DRF_DEALLOC(
   array,

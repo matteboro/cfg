@@ -67,6 +67,7 @@ Token prsr_match(TokenType token_type)
 
 Expression *prsr_parse_funccall(Token token)
 {
+  PRSR_DEBUG_PRINT();
   char *func_name = lxr_get_token_data_as_cstring(token);
   prsr_match(OPEN_PAREN_TOKEN);
   ExpressionList *params_values = expr_list_create_empty();
@@ -88,6 +89,42 @@ Expression *prsr_parse_funccall(Token token)
   return result;
 }
 
+ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
+  PRSR_DEBUG_PRINT();
+  bool first = True;
+  ObjectDerefList *obj_derefs = obj_drf_list_create_empty();
+  while (True) {
+    Token id_token;
+    if (first) {
+      first = False;
+      id_token = start_deref;
+    } 
+    else
+      id_token = prsr_match(IDENTIFIER_TOKEN);
+
+    if (lookhaed.type == OPEN_SQUARE_TOKEN) {
+      prsr_match(OPEN_SQUARE_TOKEN);
+      Expression *index_expr = prsr_parse_expression();
+      obj_drf_list_append(
+        obj_derefs, 
+        obj_drf_create_array_type_deref(
+          idf_create_identifier_from_token(id_token), 
+          index_expr));
+      prsr_match(CLOSE_SQUARE_TOKEN);
+    } else {
+      obj_drf_list_append(
+        obj_derefs, 
+        obj_drf_create_struct_or_basic_type_deref(
+          idf_create_identifier_from_token(id_token)));
+    }
+    if (lookhaed.type == POINT_TOKEN)
+      prsr_match(POINT_TOKEN);
+    else
+      break;
+  }
+  return obj_derefs;
+}
+
 Expression *prsr_parse_factor()
 {
   PRSR_DEBUG_PRINT();
@@ -95,13 +132,16 @@ Expression *prsr_parse_factor()
   {
   case IDENTIFIER_TOKEN:
   {
-    Token id_token = lookhaed;
-    prsr_match(IDENTIFIER_TOKEN);
+    Token start_deref = prsr_match(IDENTIFIER_TOKEN);
     if (lookhaed.type == OPEN_PAREN_TOKEN) 
     {
-      Expression *result = prsr_parse_funccall(id_token);
+      Expression *result = prsr_parse_funccall(start_deref);
       return result;
     } 
+    ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
+    return expr_create_object_deref_operand_expression(derefs);
+    /*
+
     else if (lookhaed.type == OPEN_SQUARE_TOKEN) 
     {
       prsr_match(OPEN_SQUARE_TOKEN);
@@ -112,6 +152,7 @@ Expression *prsr_parse_factor()
         index_expr);
     }
     return expr_create_operand_expression_from_token(id_token);
+    */
   }
   case INTEGER_TOKEN:
   {
@@ -277,71 +318,12 @@ ExpressionList *prsr_parse_arr_initializations_values() {
 ASTNode *prsr_parse_assignment(Token start_deref)
 {
   PRSR_DEBUG_PRINT();
-  bool first = True;
-  ObjectDerefList *obj_derefs = obj_drf_list_create_empty();
-  while (True) 
-  {
-    Token id_token;
-    if (first) 
-    {
-      first = False;
-      id_token = start_deref;
-    } 
-    else
-      id_token = prsr_match(IDENTIFIER_TOKEN);
-
-    if (lookhaed.type == OPEN_SQUARE_TOKEN) 
-    {
-      prsr_match(OPEN_SQUARE_TOKEN);
-      Expression *index_expr = prsr_parse_expression();
-      obj_drf_list_append(
-        obj_derefs, 
-        obj_drf_create_array_type_deref(
-          idf_create_identifier_from_token(id_token), 
-          index_expr));
-      prsr_match(CLOSE_SQUARE_TOKEN);
-    } 
-    else 
-    {
-      obj_drf_list_append(
-        obj_derefs, 
-        obj_drf_create_struct_or_basic_type_deref(
-          idf_create_identifier_from_token(id_token)));
-    }
-
-    if (lookhaed.type == POINT_TOKEN)
-      prsr_match(POINT_TOKEN);
-    else
-      break;
-  }
+  ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
   prsr_match(EQUAL_TOKEN);
   ASTNode *expression_node = prsr_parse_expression_node();
   return ast_create_assignment_node(
-    assgnbl_create_deref_list_assignable(obj_derefs), 
+    assgnbl_create_deref_list_assignable(derefs), 
     expression_node);
-
-  /*
-  // Token id_token = lookhaed;
-  //prsr_match(IDENTIFIER_TOKEN);
-  if (lookhaed.type == OPEN_SQUARE_TOKEN) {
-    prsr_match(OPEN_SQUARE_TOKEN);
-    Expression *index = prsr_parse_expression();
-    prsr_match(CLOSE_SQUARE_TOKEN);
-    prsr_match(EQUAL_TOKEN);
-    ASTNode *expression_node = prsr_parse_expression_node();
-    return ast_create_assignment_node(
-      assgnbl_create_arr_deref_assignable(
-        idf_create_identifier_from_token(start_deref),
-        index), 
-      expression_node);
-  } else {
-    prsr_match(EQUAL_TOKEN);
-    ASTNode *expression_node = prsr_parse_expression_node();
-    return ast_create_assignment_node(
-      assgnbl_create_var_assignable(idf_create_identifier_from_token(start_deref)), 
-      expression_node);
-  }
-  */
 }
 
 Type *prsr_parse_type(Token start_type) {

@@ -341,6 +341,7 @@ Struct:
     and that is used in multiple places, such as in an Assignable, in an expression-s operand and
     possibly somewhere else.
 
+  DONE
   Let's think about object dereferencing. We could have something like:
     strc_attrb1.arr_attrb1[5].arr_attrb2[3].int_attrb = 5;
   and i want a data structure of this kind:
@@ -361,6 +362,8 @@ Struct:
     StructOrBasicTypeObjectDeref { Identfier::name }
     ArrayTypeObjectDeref { Identifier::name, int index }
 
+  I then decided to create this structure as a list of ObjectDeref. Now I have to create an 
+  expression operand for this type of structure.
   
 
 ============================================================================================

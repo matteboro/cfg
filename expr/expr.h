@@ -8,6 +8,8 @@
 #include "../lxr/lxr.h"
 #include "idf.h"
 #include "nt_bind.h"
+#include "expr_interface.h"
+#include "obj_drf.h"
 
 
 // #define EXPR_DEBUG
@@ -19,24 +21,6 @@
 
 #define EXPR_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
-
-// FORWARD DECLARATIONS
-
-typedef enum {
-  BINARY_EXPRESSION_EXP_TYPE,
-  UNARY_EXPRESSION_EXP_TYPE,
-  OPERAND_EXP_TYPE,
-} ExpressionType;
-
-typedef void EnclosedExpression;
-
-typedef struct {
-  ExpressionType type;
-  EnclosedExpression *enclosed_expression;
-} Expression;
-
-void expr_dealloc_expression(Expression *expression);
-void expr_print_expression(Expression *expression, FILE *file);
 
 // EXPRESSION LIST
 
@@ -397,7 +381,7 @@ void funccall_dealloc(FunctionCall *func_call) {
 
 void funccall_print(FunctionCall *func_call, FILE *file) {
   if_null_print(func_call, file);
-  fprintf(file, "%s(", func_call->function_name);
+  fprintf(file, "func:%s(", func_call->function_name);
   expr_list_print(func_call->params_values, file);
   fprintf(file, ")");
 }
@@ -480,6 +464,7 @@ typedef enum {
   STRING_OPERAND,
   FUNCCALL_OPERAND,
   ARRAY_DEREF_OPERAND,
+  OBJ_DEREF_OPERAND,
 } OperandType;
 
 typedef struct {
@@ -491,6 +476,16 @@ typedef struct {
   Identifier *array_name;
   Expression *index;
 } ArrayDereferenceOperandData;
+
+typedef struct {
+  ObjectDerefList *derefs;
+} ObjectDerefOperandData;
+
+ObjectDerefOperandData *oprnd_create_object_deref_operand_data(ObjectDerefList *derefs){
+  ObjectDerefOperandData *data = (ObjectDerefOperandData *) malloc(sizeof(ObjectDerefOperandData));
+  data->derefs = derefs;
+  return data;
+}
 
 ArrayDereferenceOperandData *oprnd_create_array_deref_operand_data(Identifier *array_name, Expression *index) {
   ArrayDereferenceOperandData *data = (ArrayDereferenceOperandData *) malloc(sizeof(ArrayDereferenceOperandData));
@@ -505,11 +500,20 @@ void oprnd_dealloc_array_deref_operand_data(ArrayDereferenceOperandData *data) {
   free(data);
 }
 
+void oprnd_dealloc_object_deref_operand_data(ObjectDerefOperandData *data) {
+  obj_drf_list_dealloc(data->derefs);
+  free(data);
+}
+
 void oprnd_print_array_deref_operand_data(ArrayDereferenceOperandData *data, FILE *file) {
   idf_print_identifier(data->array_name, file);
   fprintf(file, "[");
   expr_print_expression(data->index, file);
   fprintf(file, "]");
+}
+
+void oprnd_print_object_deref_operand_data(ObjectDerefOperandData *data, FILE *file) {
+  obj_drf_list_print(data->derefs, file);
 }
  
 Operand *oprnd_create_operand(OperandType type, void *data) {
@@ -529,6 +533,8 @@ void oprnd_dealloc_operand(Operand *operand) {
     funccall_dealloc((FunctionCall *) operand->data);
   else if (operand->type == ARRAY_DEREF_OPERAND)
     oprnd_dealloc_array_deref_operand_data((ArrayDereferenceOperandData *) operand->data);
+  else if (operand->type == OBJ_DEREF_OPERAND)
+    oprnd_dealloc_object_deref_operand_data((ObjectDerefOperandData *) operand->data);
   else
     free(operand->data);
   free(operand);
@@ -549,6 +555,8 @@ void oprnd_print_operand(Operand *operand, FILE *file) {
     fprintf(file, "\"%s\"", (char * )operand->data); break;
   case ARRAY_DEREF_OPERAND:
     oprnd_print_array_deref_operand_data((ArrayDereferenceOperandData *) operand->data, file); break;
+  case OBJ_DEREF_OPERAND:
+    oprnd_print_object_deref_operand_data((ObjectDerefOperandData *) operand->data, file); break;
   default:
     EXPR_ERROR();
   }
@@ -592,6 +600,14 @@ Expression *expr_create_array_deref_operand_expression(Identifier *id, Expressio
     oprnd_create_operand(
       ARRAY_DEREF_OPERAND, 
       oprnd_create_array_deref_operand_data(id, index));
+  return expr_create_expression(OPERAND_EXP_TYPE, operand);
+}
+
+Expression *expr_create_object_deref_operand_expression(ObjectDerefList *derefs) {
+  Operand *operand = 
+    oprnd_create_operand(
+      OBJ_DEREF_OPERAND, 
+      oprnd_create_object_deref_operand_data(derefs));
   return expr_create_expression(OPERAND_EXP_TYPE, operand);
 }
 

@@ -94,7 +94,7 @@ int main() {
 */
 
   ASTNode *ast = prsr_parse(" \
-  f1.f2[10 * foo - baz(10, \"heyy\")].tee = 69; \
+  f1.f2[10 * foo - baz(10 * f.g.h[10 - x], \"hello\")].tee = 69; \
   ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");
