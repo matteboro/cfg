@@ -406,13 +406,22 @@ ParameterList *prsr_parse_func_declaration_params()
 {
   ParameterList *params = prmt_list_create_empty();
   while (True) {
-    if (lookhaed.type != IDENTIFIER_TOKEN)
-      break;
-    Token id = lookhaed;
+    // TODO: factorize, this is kind of the same code as in declaration
+    Token start_type = lookhaed;
+    prsr_match(lookhaed.type);
+    Type *type = prsr_parse_type(start_type);
+    prsr_match(DOUBLE_COLON_TOKEN);
+    Token name_token = lookhaed;
     prsr_match(IDENTIFIER_TOKEN);
-
-    prmt_list_append(params, prmt_create_identifer_param(idf_create_identifier_from_token(id)));
-
+    prmt_list_append(
+      params,
+      prmt_create_funcdec_param(
+        nt_bind_create(
+          idf_create_identifier_from_token(name_token),
+          type
+        )
+      )
+    );
     if (lookhaed.type != COMMA_TOKEN)
       break;
     prsr_match(COMMA_TOKEN);
@@ -427,7 +436,11 @@ ASTNode *prsr_parse_func_declaration()
   Token func_name_id = lookhaed;
   prsr_match(IDENTIFIER_TOKEN);
   prsr_match(OPEN_PAREN_TOKEN);
-  ParameterList *params = prsr_parse_func_declaration_params();
+  ParameterList *params = NULL;
+  if (lookhaed.type != CLOSE_PAREN_TOKEN)
+    params = prsr_parse_func_declaration_params();
+  else
+    params = prmt_list_create_empty();
   prsr_match(CLOSE_PAREN_TOKEN);
   ASTNode *body = prsr_parse_statements();
   return ast_create_func_declaration_node(

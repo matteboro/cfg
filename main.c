@@ -269,12 +269,14 @@ I want:
   variable/attribute/parameter and the type is the type of that entity. Thid object 
   will be called NameTypeBinding { Identifier *name, Type *type }.
 
+DONE
 Now we have to parse types as a separate method:
   grammar for declaration: 
     DECLARATION: TYPE "::" IDENTIFIER ( '=' EXPRESSION ) ';'
   ex:
     int arr[5] :: int_array = [1, 2, 3, 4, 5];
 
+  DONE
   # let say we know we are inside a declaration of some sort(var, param or attribute)
   ParseType(start_type):
     ParseArrayType()::array_type
@@ -283,6 +285,7 @@ Now we have to parse types as a separate method:
     else
       ret Type(INT_TYPE)
 
+  DONE
   ParseDeclaration():
     ParseType()::type
     "::"
@@ -290,6 +293,31 @@ Now we have to parse types as a separate method:
     if ('=')
       ParseExpression()::init_value
     ret DeclarationNode(NameTypeBinding(name, type), init_value)
+
+DONE
+I've implemented the parsing of types in variable declaration, now i have to do it
+also for function declaration params. To do that before i have to add NameTypeBinding 
+somewhere inside Paramater. 
+
+NOTE: for the moment I do not implement multiple dimension arrays, not because it is
+difficoult to parse the type, that's trivial, the hard part i think would be to create
+and manage the data structure to hold the possible initial values. 
+
+TODO: another thing we should do is to permit to have function parameters to be array
+      of undeclared sizes. Such as: func foo(int arr[?], int size) { ... }
+
+Struct:
+
+  The moment is arrived to parse user defined data structure. This will change the things 
+  a bit. For example we will need struct dereferencing. We have to able that given a struct:
+    data my_data { int :: x, string :: s }
+  and an object: 
+    my_data :: o; 
+  to dereference the single attributes of the o object in this manner:
+    o.x = 10;
+    o.s = "Hello, World";
+
+============================================================================================
 
 TODO list:
   [x] array initialization;
@@ -299,9 +327,11 @@ TODO list:
   [ ] data struct;
   [ ] pointers;
   [x] change funccall to have list of exprs;
-  [ ] add types;
-   |-[x] Type;
-   |-[ ] NameTypeBinding;
-   |-[ ] add NameTypeBinding to func declarations params, var declaration;
+  [x] add types;
+   |  [x] Type;
+   |  [x] NameTypeBinding;
+   |  [x] add NameTypeBinding to func declarations params, var declaration;
+  [ ] undefined arr sizes in function declaration parameters
 
+============================================================================================
 */
