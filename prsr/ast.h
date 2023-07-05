@@ -196,6 +196,7 @@ typedef struct {
 typedef struct {
   ASTNode *func_declarations;
   ASTNode *global_statements;
+  ASTNode *struct_declarations;
 } ProgramNodeData;
 
 typedef struct {
@@ -233,10 +234,14 @@ ASTNode *ast_create_array_declaration_node(Identifier *name, int size, Expressio
   return ast_create_node(ARR_DECLARATION, data);
 }
 
-ASTNode *ast_create_program_node(ASTNode *func_declarations, ASTNode *global_statements) {
+ASTNode *ast_create_program_node(
+  ASTNode *func_declarations, 
+  ASTNode *global_statements, 
+  ASTNode *struct_declarations) {
   ProgramNodeData *data = (ProgramNodeData *) malloc(sizeof(ProgramNodeData));
   data->func_declarations = func_declarations;
   data->global_statements = global_statements;
+  data->struct_declarations = struct_declarations;
   return ast_create_node(PROGRAM, data);
 }
 
@@ -367,6 +372,16 @@ void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
 
   //functions
   ast_print_node_ident(data->func_declarations, file, ident+4);
+  fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  }\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "  Data Structs: {\n");
+
+  //structs
+  ast_print_node_ident(data->struct_declarations, file, ident+4);
   fprintf(file, "\n");
 
   print_spaces(ident, file);
@@ -628,6 +643,7 @@ void ast_dealloc_program_node(ASTNode *node) {
   ProgramNodeData *data = (ProgramNodeData *) node->data;
   ast_dealloc_node(data->func_declarations);
   ast_dealloc_node(data->global_statements);
+  ast_dealloc_node(data->struct_declarations);
   free(data);
 }
 

@@ -101,7 +101,9 @@ int main() {
   struct arr[5]::structs = [\"1, 2, 3, 4, 5\"]; \
   func foo(int::i, string arr[5]::boo, struct::s) { \
     string arr[10]::s_arr; \
-  }");
+  } \
+  data struct { int::x, int arr[10]::y, string::name } \
+  ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");
   ast_dealloc_node(ast);

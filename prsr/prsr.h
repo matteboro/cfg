@@ -48,12 +48,13 @@ Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor(), *
 static Token lookhaed;
 Lexer *lexer_ptr;
 
-void prsr_match(TokenType token_type)
+Token prsr_match(TokenType token_type)
 {
   PRSR_MATCH_DEBUG_PRINT();
   if (lookhaed.type == token_type) {
+    Token result = lookhaed;
     prsr_next_token();
-    return;
+    return result;
   }
   fprintf(stdout, "expected: ");
   lxr_print_token_type(token_type); 
@@ -61,6 +62,7 @@ void prsr_match(TokenType token_type)
   lxr_print_token_type(lookhaed.type); 
   fprintf(stdout, " at position: %d\n", lookhaed.position);
   PRSR_ERROR();
+  return lxr_create_null_token();
 }
 
 Expression *prsr_parse_funccall(Token token)
@@ -478,20 +480,50 @@ ASTNode *prsr_parse_while_statement()
   return ast_create_while_node(expression, body);
 }
 
+ASTNode *prsr_parse_struct_declaration() {
+  prsr_match(DATA_TOKEN);
+  Token name = prsr_match(IDENTIFIER_TOKEN);
+  AttributeList *attributes = attrb_list_create_empty();  
+  prsr_match(OPEN_CURLY_TOKEN);
+  while (True) {
+    Type *type = prsr_parse_type(prsr_match(lookhaed.type));
+    prsr_match(DOUBLE_COLON_TOKEN);
+    Token attr_name = prsr_match(IDENTIFIER_TOKEN);
+    attrb_list_append(
+      attributes, 
+      attrb_create(
+        nt_bind_create(
+          idf_create_identifier_from_token(attr_name),
+          type)));
+    if (lookhaed.type == COMMA_TOKEN)
+      prsr_match(COMMA_TOKEN);
+    else
+      break;
+  }
+  prsr_match(CLOSE_CURLY_TOKEN);
+  return ast_create_struct_declaration_node(
+    idf_create_identifier_from_token(name),
+    attributes);
+}
+
 ASTNode *prsr_parse_program()
 {
   ASTNodeList *functions = ast_list_create_empty();
   ASTNodeList *global_stmnts = ast_list_create_empty();
+  ASTNodeList *struct_declarations = ast_list_create_empty();
 
   while (lookhaed.type != END_TOKEN) {
     if (lookhaed.type == FUNC_TOKEN)
       ast_list_append(functions, prsr_parse_func_declaration());
+    else if (lookhaed.type == DATA_TOKEN)
+      ast_list_append(struct_declarations, prsr_parse_struct_declaration());
     else
       ast_list_append(global_stmnts, prsr_parse_statement());
   }
   return ast_create_program_node(
     ast_create_node_list_node(functions), 
-    ast_create_node_list_node(global_stmnts));
+    ast_create_node_list_node(global_stmnts),
+    ast_create_node_list_node(struct_declarations));
 }
 
 ASTNode *prsr_parse(const char *data)

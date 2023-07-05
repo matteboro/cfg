@@ -323,7 +323,8 @@ Struct:
       int :: x,
       string arr[5] :: ns
     }
-  
+
+  DONE
   Attributes: I think that for future expansions and clarity i should create the Attribute
     data structure, and the AttributeList. An Attribute, for the moment, just hold a 
     NameTypeBinding. A struct declaration is an ASTNode that holds a list of attributes and
@@ -351,11 +352,11 @@ TODO list:
    |  [x] Type;
    |  [x] NameTypeBinding;
    |  [x] add NameTypeBinding to func declarations params, var declaration;
-  [ ] string operations;
-  [ ] data struct;
+  [x] parse data struct;
    |  [x] Attribute and AttributeList;
    |  [x] ASTStructDeclarationNode;
-   |  [ ] parsing of structs;
+   |  [x] parsing of structs;
+  [ ] string operations;
   [ ] ObjectDereference (and move it where it is used);
   [ ] pointers;
   [ ] undefined arr sizes in function declaration parameters
