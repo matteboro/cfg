@@ -116,4 +116,4 @@ void attrb_list_print(AttributeList *list, FILE *file) {
   }
 }
 
-// END PARAMETER LIST
+// END ATTRIBUTE LIST

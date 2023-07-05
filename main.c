@@ -341,6 +341,26 @@ Struct:
     and that is used in multiple places, such as in an Assignable, in an expression-s operand and
     possibly somewhere else.
 
+  Let's think about object dereferencing. We could have something like:
+    strc_attrb1.arr_attrb1[5].arr_attrb2[3].int_attrb = 5;
+  and i want a data structure of this kind:
+    id::strc_attrb1;
+    | 
+    |---> id::arr_attrb1, index::5;
+          |
+          |---> id::arr_attrb2, index::3;
+                |
+                |---> id::int_attrb;
+                      |
+                      |---> NULL;
+
+  On this structure we later could run some checks, for example internal elements of this list
+  could only be array or struct types, while the end element can only be one of the basics 
+  types (for the moment int or string).
+  So there should only be two types of ObjectDereference:
+    StructOrBasicTypeObjectDeref { Identfier::name }
+    ArrayTypeObjectDeref { Identifier::name, int index }
+
 ============================================================================================
 
 TODO list:
