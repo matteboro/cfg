@@ -364,6 +364,14 @@ Struct:
 
   I then decided to create this structure as a list of ObjectDeref. Now I have to create an 
   expression operand for this type of structure.
+
+Last thing I want to add before we pass to the new step of checking for errors in code are the
+string operations:
+  - |string|            : string length,           string --> int
+  - string1 <> string1  : concatenation,  string X string --> string
+
+Then the next step, as seen from very far above, are:
+  code checking --[ and then ]--> CFG generation;
   
 
 ============================================================================================
@@ -381,8 +389,8 @@ TODO list:
    |  [x] Attribute and AttributeList;
    |  [x] ASTStructDeclarationNode;
    |  [x] parsing of structs;
+  [x] ObjectDereference (and move it where it is used);
   [ ] string operations;
-  [ ] ObjectDereference (and move it where it is used);
   [ ] pointers;
   [ ] undefined arr sizes in function declaration parameters
 
