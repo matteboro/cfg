@@ -94,11 +94,16 @@ int main() {
 */
 
   ASTNode *ast = prsr_parse(" \
-  f1.f2[10 * foo - baz(10 * f.g.h[10 - x], \"hello\")].tee = 69; \
+f1.f2[10 * foo - baz(10 * f.g.h[10 - x], < str >, < \"bla\" > ,< \"hello\" | < str2 > | 102 >)].tee = 69; \
   ");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");
   ast_dealloc_node(ast);
+
+
+  // Expression *expr = prsr_parse_expression_from_string("<\"bla\">");
+  // expr_print_expression(expr, stdout);
+  // expr_dealloc_expression(expr);
 
   return 0;
 }

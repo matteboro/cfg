@@ -312,16 +312,18 @@ void expr_print_unary_expression(UnaryExpression *expression, FILE *file) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
     return;
-  fprintf(file, "(");
+  
   if (expression->operation == STR_LEN_UNARY_OPERATION) {
     fprintf(file, "< ");
     expr_print_expression(expression->operand, file);
     fprintf(file, " >");
   } else {
+    fprintf(file, "(");
     fprintf(file, "%s ", operation_to_char[expression->operation]);
     expr_print_expression(expression->operand, file);
+    fprintf(file, ")");
   }
-  fprintf(file, ")");
+ 
 }
 
 void expr_print_expression(Expression *expression, FILE *file) {

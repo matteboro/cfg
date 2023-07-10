@@ -30,6 +30,7 @@ typedef enum {
   EXCL_POINT_TOKEN,
   COLON_TOKEN,
   POINT_TOKEN,
+  BAR_TOKEN,
 
   DOUBLE_COLON_TOKEN,
   NOT_EQUAL_TOKEN,
@@ -75,6 +76,7 @@ static const char * const token_to_name[] = {
   [SLASH_TOKEN] = "SLASH",
   [ASTERISK_TOKEN] = "ASTERISK",
   [POINT_TOKEN] = "POINT",
+  [BAR_TOKEN] = "BAR",
   [IDENTIFIER_TOKEN] = "IDENTIFIER",
   [INTEGER_TOKEN] = "INTEGER",
   [STRING_TOKEN] = "STRING",
@@ -116,6 +118,7 @@ static const char token_to_char[] = {
   [ASTERISK_TOKEN] = '*',
   [COMMA_TOKEN] = ',',
   [POINT_TOKEN] = '.',
+  [BAR_TOKEN] = '|'
 };
 
 static const char * const keyword_token_to_string[] = {
@@ -279,12 +282,12 @@ else if (lxr_current_char(lexer) == first_char) { \
     token.type = secnd_token; \
     token.position = lexer->current-1; \
     token.data_length = 2; \
+    lxr_increment_current(lexer); \
   } else { \
     token.type = first_token; \
     token.position = lexer->current-1; \
     token.data_length = 1; \
   } \
-  lxr_increment_current(lexer); \
 }   \
 
 Token lxr_create_null_token() {
@@ -299,14 +302,19 @@ Token lxr_create_null_token() {
 Token lxr_next_token(Lexer *lexer) {
 
   eat_whitespace(lexer);
+
   Token token;
-  // int eaten = 0;
   token.data = lexer->data;
   token.type = NULL_TOKEN;
   token.position = 0;
   token.data_length = 0;
 
-  if (lxr_check_one_char_token(lexer, &token)) {
+  if (lexer->current >= lexer->data_length) {
+    token.type = END_TOKEN;
+    token.position = lexer->current;
+    token.data_length = 1;
+  }
+  else if (lxr_check_one_char_token(lexer, &token)) {
     lxr_increment_current(lexer);
   } 
   lxr_ambiguous_one_or_two_chars_token('<', LESS_TOKEN,       '=', LESS_EQUAL_TOKEN)

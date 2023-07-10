@@ -42,8 +42,8 @@ FACTOR     :: [ IDENDIFIER_TOKEN ],
   fprintf(stdout, " at position: %d\n", lookhaed.position); \
   exit(1);
 
-ASTNode *prsr_parse_assignment();
-Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor(), *prsr_parse_equation();
+ASTNode *prsr_parse_assignment(Token start_deref);
+Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor(), *prsr_parse_equation(), *prsr_parse_str_expression();
 
 static Token lookhaed;
 Lexer *lexer_ptr;
@@ -65,6 +65,8 @@ Token prsr_match(TokenType token_type)
   return lxr_create_null_token();
 }
 
+//// PARSE EXPRESSION
+
 Expression *prsr_parse_funccall(Token token)
 {
   PRSR_DEBUG_PRINT();
@@ -75,7 +77,7 @@ Expression *prsr_parse_funccall(Token token)
   {
     while (True)
     {
-      Expression *tmp_expr = prsr_parse_expression();
+      Expression *tmp_expr = prsr_parse_equation();
       expr_list_append(params_values, tmp_expr);
       if (lookhaed.type != COMMA_TOKEN)
         break;
@@ -104,7 +106,7 @@ ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
 
     if (lookhaed.type == OPEN_SQUARE_TOKEN) {
       prsr_match(OPEN_SQUARE_TOKEN);
-      Expression *index_expr = prsr_parse_expression();
+      Expression *index_expr = prsr_parse_equation();
       obj_drf_list_append(
         obj_derefs, 
         obj_drf_create_array_type_deref(
@@ -140,19 +142,6 @@ Expression *prsr_parse_factor()
     } 
     ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
     return expr_create_object_deref_operand_expression(derefs);
-    /*
-
-    else if (lookhaed.type == OPEN_SQUARE_TOKEN) 
-    {
-      prsr_match(OPEN_SQUARE_TOKEN);
-      Expression *index_expr = prsr_parse_expression();
-      prsr_match(CLOSE_SQUARE_TOKEN);
-      return expr_create_array_deref_operand_expression(
-        idf_create_identifier_from_token(id_token),
-        index_expr);
-    }
-    return expr_create_operand_expression_from_token(id_token);
-    */
   }
   case INTEGER_TOKEN:
   {
@@ -185,15 +174,39 @@ Expression *prsr_parse_factor()
     Expression *expression = prsr_parse_factor();
     return expr_create_unary_expression(expression, NOT_UNARY_OPERATION);
   }
+  case LESS_TOKEN:
+  {
+    return prsr_parse_str_expression();
+  }
   default:
     PRSR_ERROR();
   }
 }
 
+Expression *prsr_parse_str_expression() {
+  PRSR_DEBUG_PRINT();
+  Expression *root = NULL;
+  if (lookhaed.type == LESS_TOKEN) {
+    prsr_match(LESS_TOKEN);
+    root = prsr_parse_expression();
+    prsr_match(GREATER_TOKEN);
+    root = expr_create_unary_expression(root, STR_LEN_UNARY_OPERATION);
+  } else {
+    root = prsr_parse_factor();
+    while (lookhaed.type == BAR_TOKEN)
+    {
+      prsr_match(lookhaed.type);
+      Expression *right = prsr_parse_factor();
+      root = expr_create_binary_expression(root, STR_CONCAT_OPERATION, right);
+    } 
+  }
+  return root;
+}
+
 Expression *prsr_parse_term()
 {
   PRSR_DEBUG_PRINT();
-  Expression *root = prsr_parse_factor();
+  Expression *root = prsr_parse_str_expression();
   while (lookhaed.type == ASTERISK_TOKEN || lookhaed.type == SLASH_TOKEN)
   {
     OperationType op = lookhaed.type == ASTERISK_TOKEN ? MULT_OPERATION : DIV_OPERATION;
@@ -257,23 +270,7 @@ ASTNode *prsr_parse_expression_node()
   return ast_create_expression_node(expression);
 }
 
-// ASTNode *prsr_parse_var_declaration() 
-// {
-//   PRSR_DEBUG_PRINT();
-//   prsr_match(VAR_TOKEN);
-//   Token id_token = lookhaed;
-//   prsr_match(IDENTIFIER_TOKEN);
-//   ASTNode *expression_node = NULL;
-//   if (lookhaed.type == EQUAL_TOKEN){
-//     prsr_match(EQUAL_TOKEN);
-//     expression_node = prsr_parse_expression_node();
-//   }
-//   return ast_create_declaration_node(
-//     nt_bind_create(
-//       idf_create_identifier_from_token(id_token), 
-//       NULL), // for the moment the type is not parsed
-//     expression_node);
-// }
+//// PARSE EXPRESSION
 
 ExpressionList *prsr_parse_arr_initializations_values() {
   ExpressionList *init_values = expr_list_create_empty();
@@ -290,30 +287,6 @@ ExpressionList *prsr_parse_arr_initializations_values() {
   }
   return init_values;
 }
-
-// ASTNode *prsr_parse_arr_declaration() 
-// {
-//   PRSR_DEBUG_PRINT();
-//   prsr_match(ARR_TOKEN);
-//   prsr_match(OPEN_SQUARE_TOKEN);
-//   Token size_token = lookhaed;
-//   prsr_match(INTEGER_TOKEN);
-//   prsr_match(CLOSE_SQUARE_TOKEN);
-//   Token id_token = lookhaed;
-//   prsr_match(IDENTIFIER_TOKEN);
-//   ExpressionList *init_values = NULL;
-//   if (lookhaed.type == EQUAL_TOKEN) 
-//   {
-//     prsr_match(EQUAL_TOKEN);
-//     prsr_match(OPEN_SQUARE_TOKEN);
-//     init_values = prsr_parse_arr_initializations_values();
-//     prsr_match(CLOSE_SQUARE_TOKEN); 
-//   }
-//   return ast_create_array_declaration_node(
-//     idf_create_identifier_from_token(id_token),
-//     lxr_get_integer_value_of_integer_token(size_token),
-//     init_values);
-// }
 
 ASTNode *prsr_parse_assignment(Token start_deref)
 {
@@ -576,7 +549,7 @@ Expression *prsr_parse_expression_from_string(const char *data)
 
   prsr_next_token();
 
-  Expression *expression = prsr_parse_expression();
+  Expression *expression = prsr_parse_equation();
 
   if (lookhaed.type == END_TOKEN)
     return expression;
