@@ -3,6 +3,8 @@
 
 #include "../prsr/ast.h"
 
+// FORWARD DECLARATIONS
+
 struct StructGraphElem_s;
 typedef struct StructGraphElem_s StructGraphElem;
 
@@ -11,9 +13,11 @@ typedef struct StructGraph_s StructGraph;
 
 StructGraph *strct_graph_maker(ASTNodeList *struct_declarations);
 void strct_graph_dump_dot(StructGraph *struct_graph, FILE *file);
-bool strct_graph_anlyzer(StructGraph *struct_graph);
+bool strct_graph_analyzer(StructGraph *struct_graph);
 void strct_graph_dealloc(StructGraph *struct_graph);
 void strct_graph_element_dealloc(StructGraphElem *struct_graph_elem);
+
+// DEFINITIONS
 
 struct StructGraphElem_s {
   IdentifierList *sub_structs;
@@ -92,9 +96,62 @@ StructGraph *strct_graph_maker(ASTNodeList *struct_declarations) {
 
 // ANALYZER
 
-bool strct_graph_anlyzer(StructGraph *struct_graph) {
-  fprintf(stdout, "%s unimplemented\n", __FUNCTION__);
+bool strct_graph_find_struct(StructGraph *graph, Identifier *struct_name) {
+  for (size_t i=0; i<graph->num_structs; ++i) {
+    if (idf_equal_identifiers(graph->structs[i]->name, struct_name))
+      return True;
+  }
   return False;
+}
+
+size_t strct_graph_count_struct_name(StructGraph *graph, Identifier *struct_name) {
+  size_t counter = 0;
+  for (size_t i=0; i<graph->num_structs; ++i) {
+    if (idf_equal_identifiers(graph->structs[i]->name, struct_name))
+      ++counter;
+  }
+  return counter;
+}
+
+bool strct_graph_analyzer(StructGraph *graph) {
+
+  // there shoul be three phases to this analyzer:
+  //  - I have to check that all the sub-structs have their own declaration;
+  //  - I have to check that all the are no two structs with same name;
+  //  - I have to check that there are no cycles inside delcarations (i.e. the graph has no cycles);
+  // first/second one is easy, third one require an algorithm.
+
+  // 1 and 2) CHECK SUB-STRUCTS EXISTS and CHECK NO DOUBLE DECLARATIONS
+
+  bool sub_struct_existance_check = True;
+  bool double_declaration_check = True;
+  for (size_t i=0; i<graph->num_structs; ++i) 
+  {
+    for (IdentifierList *it = graph->structs[i]->sub_structs; (it != NULL && it->node != NULL); it = it->next) 
+    {
+      Identifier *id = it->node;
+      size_t struct_name_count = strct_graph_count_struct_name(graph, id);
+      if (struct_name_count == 0) 
+      {
+        sub_struct_existance_check = False;
+        break;
+      }
+      else if (struct_name_count > 1)
+      {
+        double_declaration_check = False;
+        break;
+      }
+    }
+    if (!sub_struct_existance_check || !double_declaration_check)
+      break;
+  }
+
+  if (!sub_struct_existance_check || !double_declaration_check)
+    return False;
+
+  
+
+  return True;
 }
 
 // DUMP DOT
@@ -117,7 +174,7 @@ void strct_graph_dump_dot(StructGraph *graph, FILE *file) {
     for (size_t j=0; j<num_sub_structs; ++j) 
     {
       char *sub_struct_name = idf_list_get_at(sub_structs, j)->name;
-      fprintf(file, "%s -> %s;\n", sub_struct_name, struct_name);
+      fprintf(file, "%s -> %s;\n", struct_name, sub_struct_name);
     }
   }
   fprintf(file, "}\n");

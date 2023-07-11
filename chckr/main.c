@@ -29,6 +29,11 @@ int main() {
   NodeListData *structs_list_data = (NodeListData *) program_data->struct_declarations->data;
   StructGraph* struct_graph = strct_graph_maker(structs_list_data->nodes);
 
+  if (strct_graph_analyzer(struct_graph)) {
+    fprintf(stdout, "analysis phase passed\n");
+  } else {
+    fprintf(stdout, "ERROR, analysis phase not passed\n");
+  }
   strct_graph_dump_dot(struct_graph, stdout);
   strct_graph_dealloc(struct_graph);
 

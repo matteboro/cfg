@@ -30,6 +30,10 @@ Identifier *idf_copy_identifier(Identifier *id) {
   return idf_create_identifier(id->name);
 } 
 
+bool idf_equal_identifiers(Identifier *id1, Identifier *id2) {
+  return strcmp(id1->name, id2->name) == 0;
+}
+
 void idf_dealloc_identifier(Identifier *id) {
   free(id->name);
   free(id);

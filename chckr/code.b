@@ -10,3 +10,7 @@ data struct2 {
   struct1 :: att2,
   struct2 :: att3
 }
+
+data struct3 {
+  struct4 :: att1
+}
