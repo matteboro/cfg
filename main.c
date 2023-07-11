@@ -372,10 +372,51 @@ string operations:
   - string1 <> string1  : concatenation,  string X string --> string
 NOTE: I have ended up doing another syntax: < str > for length and str2 | str1 for concatanation.
 
-Then the next step, as seen from very far above, are:
+Then the next steps, as seen from very far above, are:
   code checking --[ and then ]--> CFG generation;
-  
 
+Before I jump into code analysis to check for correction I want to change a bit how some AST node
+are constructed. At the moment I have the same type of nodes for blocks statement, a statement 
+made of a list of statements, and for the global function declarations. These nodes are both 
+ASTNodeList type and I want to distinguish between them. 
+
+Checks:
+  - struct declaration:
+    - check if name of type is available;
+    - check if types of attributes exist;
+    - check that attributes do not have same names;
+    - check to not have circular encapsulation;
+
+  - functions declarations:
+    - check if name is available;
+    - check if types of parameter exist;
+
+  - declaration:
+    - check if name is available;
+    - check if type exists;
+    - check if initialization expression is of correct type;
+
+  - assignment:
+    - check if assignable exists (object dereference);
+    - check if expression is of correct type;
+
+  - expression:
+    - we need a way to find the return type of an expression;
+
+  - function call:
+    - check if the type of the expression match the type of the parameter;
+    
+  - object dereference:
+    - struct:
+      - check if attribute exists;
+    - array:
+      - check if index expression is of type int;
+  
+  What i probably need is a map that connects name to the right entity. Kinda like the 
+  NameTypeBinding object. But maybe I can work on the data structure already created for the
+  AST. That would be faster, but maybe less elegant. We will see. The first thing i want to try 
+  is the struct declarations check. 
+  
 ============================================================================================
 
 TODO list:
@@ -393,6 +434,7 @@ TODO list:
    |  [x] parsing of structs;
   [x] ObjectDereference (and move it where it is used);
   [x] string operations;
+  [ ] distinguish the ASTNodeList type of node between all the cases;
   [ ] pointers;
   [ ] undefined arr sizes in function declaration parameters
 

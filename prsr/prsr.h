@@ -459,6 +459,7 @@ ASTNode *prsr_parse_if_statement(bool first)
     prsr_match(IF_TOKEN);
   else  
     prsr_match(ELIF_TOKEN);
+    
   ASTNode *expression = prsr_parse_expression_node();
   ASTNode *if_body = prsr_parse_statements();
   if (lookhaed.type == ELSE_TOKEN) {

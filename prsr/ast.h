@@ -1,7 +1,11 @@
+#ifndef AST_HEADER
+#define AST_HEADER
+
 #include "../expr/expr.h"
 #include "assgnbl.h"
 #include "attrb.h"
 #include <assert.h>
+#include "../utility/list.h"
 
 // #define AST_DEBUG
 #ifdef AST_DEBUG
@@ -42,98 +46,115 @@ void ast_dealloc_node(ASTNode *root);
 
 // ASTNODE LIST
 
-typedef struct ASTNodeList_s{
-  struct ASTNodeList_s *next;
-  ASTNode *node;
-} ASTNodeList;
+/*
+// 
 
-//// CREATE
+// typedef struct ASTNodeList_s{
+//   struct ASTNodeList_s *next;
+//   ASTNode *node;
+// } ASTNodeList;
 
-ASTNodeList *ast_list_create_empty() {
-  ASTNodeList *list = (ASTNodeList *)malloc(sizeof(ASTNodeList));
-  list->next = NULL;
-  list->node = NULL;
-  return list;
-  // return NULL;
-}
+// //// CREATE
 
-ASTNodeList *ast_list_create(ASTNode *node) {
-  ASTNodeList *list = (ASTNodeList *)malloc(sizeof(ASTNodeList));
-  list->next = NULL;
-  list->node = node;
-  return list;
-}
+// ASTNodeList *ast_list_create_empty() {
+//   ASTNodeList *list = (ASTNodeList *)malloc(sizeof(ASTNodeList));
+//   list->next = NULL;
+//   list->node = NULL;
+//   return list;
+//   // return NULL;
+// }
+
+// ASTNodeList *ast_list_create(ASTNode *node) {
+//   ASTNodeList *list = (ASTNodeList *)malloc(sizeof(ASTNodeList));
+//   list->next = NULL;
+//   list->node = node;
+//   return list;
+// }
 
 //// APPEND
 
-void ast_list_append(ASTNodeList *list, ASTNode *node) {
-  if (list->next == NULL) {
-    if (list->node == NULL) {
-      list->node = node;
-    } else {
-      list->next = ast_list_create(node);
-    }
-    return;
-  }
+// void ast_list_append(ASTNodeList *list, ASTNode *node) {
+//   if (list->next == NULL) {
+//     if (list->node == NULL) {
+//       list->node = node;
+//     } else {
+//       list->next = ast_list_create(node);
+//     }
+//     return;
+//   }
 
-  ASTNodeList *n = list->next;
-  while(n->next != NULL)
-    n = n->next;
+//   ASTNodeList *n = list->next;
+//   while(n->next != NULL)
+//     n = n->next;
 
-  n->next = ast_list_create(node);
-  return;
-}
+//   n->next = ast_list_create(node);
+//   return;
+// }
 
 //// DEALLOC
 
-void ast_list_dealloc(ASTNodeList *list) {
-  if (list == NULL)
-    return;
-  if (list->next != NULL)
-    ast_list_dealloc(list->next);
+// void ast_list_dealloc(ASTNodeList *list) {
+//   if (list == NULL)
+//     return;
+//   if (list->next != NULL)
+//     ast_list_dealloc(list->next);
   
-  if (list->node != NULL)
-    ast_dealloc_node(list->node);
+//   if (list->node != NULL)
+//     ast_dealloc_node(list->node);
   
-  free(list);
-}
+//   free(list);
+// }
 
 //// SIZE
 
-size_t ast_list_size(ASTNodeList *list) {
-  if (list->next != NULL)
-    return ast_list_size(list->next) + 1;
+// size_t ast_list_size(ASTNodeList *list) {
+//   if (list->next != NULL)
+//     return ast_list_size(list->next) + 1;
   
-  if (list->node != NULL)
-    return 1;
+//   if (list->node != NULL)
+//     return 1;
   
-  return 0;
-}
+//   return 0;
+// }
 
 //// GET AT
 
-ASTNode *ast_list_get_at(ASTNodeList *list, size_t index) {
-  if (list->next == NULL && list->node == NULL && index == 0)
-    return NULL;
-  assert(index < ast_list_size(list));
-  ASTNodeList *n = list;
-  for (size_t i=0; i<index; ++i)
-    n = n->next;
-  return n->node;
-}
+// ASTNode *ast_list_get_at(ASTNodeList *list, size_t index) {
+//   if (list->next == NULL && list->node == NULL && index == 0)
+//     return NULL;
+//   assert(index < ast_list_size(list));
+//   ASTNodeList *n = list;
+//   for (size_t i=0; i<index; ++i)
+//     n = n->next;
+//   return n->node;
+// }
 
 //// PRINT
 
-void ast_list_print(ASTNodeList *list, FILE *file) {
-  if_null_print(list, file);
-  if (list->node != NULL)
-    ast_print_node(list->node, file);
+// void ast_list_print(ASTNodeList *list, FILE *file) {
+//   if_null_print(list, file);
+//   if (list->node != NULL)
+//     ast_print_node(list->node, file);
   
-  if (list->next != NULL){
-    fprintf(file, ", ");
-    ast_list_print(list->next, file);
-  }
-}
+//   if (list->next != NULL){
+//     fprintf(file, ", ");
+//     ast_list_print(list->next, file);
+//   }
+// }
+
+// LIST(ast, ASTNode, ast_dealloc_node, ast_print_node)
+
+// DEFAULT_LIST_IMPLEMENTATION(ASTNode)                    
+// DEFAULT_LIST_CREATE_EMPTY(ast, ASTNode)              
+// DEFAULT_LIST_CREATE(ast, ASTNode)     
+// DEFAULT_LIST_APPEND(ast, ASTNode)                    
+// DEFAULT_LIST_DEALLOC(ast, ASTNode, ast_dealloc_node)     
+// DEFAULT_LIST_SIZE(ast, ASTNode)                      
+// DEFAULT_LIST_GET_AT(ast, ASTNode)                    
+// DEFAULT_LIST_PRINT(ast, ASTNode, ast_print_node) 
+*/
+
+LIST(ast, ASTNode, ast_dealloc_node, ast_print_node)
 
 void ast_list_print_ident(ASTNodeList *list, FILE *file, size_t ident) {
   if_null_print(list, file);
@@ -149,7 +170,7 @@ void ast_list_print_ident(ASTNodeList *list, FILE *file, size_t ident) {
 // END ASTNODE LIST
 
 /*
-to implement a new type of AST node you have to:
+to implement a new type of AST node you have to define:
   - the data structure holding the data of that node;
   - the create function;
   - the print function (and modify the general one to redirect there);
@@ -743,3 +764,5 @@ void ast_dealloc_node(ASTNode *root) {
   }
   free(root);
 }
+
+#endif // end AST_HEADER

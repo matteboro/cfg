@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include "../lxr/lxr.h"
+#include "../utility/list.h"
 
 // IDENTIFIER
 
@@ -25,6 +26,10 @@ Identifier *idf_create_identifier(const char *name) {
   return id;
 }
 
+Identifier *idf_copy_identifier(Identifier *id) {
+  return idf_create_identifier(id->name);
+} 
+
 void idf_dealloc_identifier(Identifier *id) {
   free(id->name);
   free(id);
@@ -41,6 +46,8 @@ Identifier *idf_create_identifier_from_token(Token token) {
   id->name = lxr_get_token_data_as_cstring(token);
   return id;
 }
+
+LIST(idf, Identifier, idf_dealloc_identifier, idf_print_identifier)
 
 // END IDENTIFIER
 #endif // end IDF_HEADER
