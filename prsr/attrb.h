@@ -25,7 +25,7 @@ void attrb_dealloc(Attribute *attribute) {
 
 typedef struct AttributeList_s{
   struct AttributeList_s *next;
-  Attribute *attribute;
+  Attribute *node;
 } AttributeList;
 
 //// CREATE EMPTY
@@ -33,7 +33,7 @@ typedef struct AttributeList_s{
 AttributeList *attrb_list_create_empty() {
   AttributeList *list = (AttributeList *) malloc(sizeof(AttributeList));
   list->next = NULL;
-  list->attribute = NULL;
+  list->node = NULL;
   return list;
   // return NULL;
 }
@@ -41,7 +41,7 @@ AttributeList *attrb_list_create_empty() {
 AttributeList *attrb_list_create(Attribute *attribute) {
   AttributeList *list = (AttributeList *) malloc(sizeof(AttributeList));
   list->next = NULL;
-  list->attribute = attribute;
+  list->node = attribute;
   return list;
 }
 
@@ -49,8 +49,8 @@ AttributeList *attrb_list_create(Attribute *attribute) {
 
 void attrb_list_append(AttributeList *list, Attribute *attribute) {
   if (list->next == NULL) {
-    if (list->attribute == NULL) {
-      list->attribute = attribute;
+    if (list->node == NULL) {
+      list->node = attribute;
     } else {
       list->next = attrb_list_create(attribute);
     }
@@ -73,8 +73,8 @@ void attrb_list_dealloc(AttributeList *list) {
   if (list->next != NULL)
     attrb_list_dealloc(list->next);
   
-  if (list->attribute != NULL)
-    attrb_dealloc(list->attribute);
+  if (list->node != NULL)
+    attrb_dealloc(list->node);
   
   free(list);
 }
@@ -85,7 +85,7 @@ size_t attrb_list_size(AttributeList *list) {
   if (list->next != NULL)
     return attrb_list_size(list->next) + 1;
   
-  if (list->attribute != NULL)
+  if (list->node != NULL)
     return 1;
   
   return 0;
@@ -94,21 +94,21 @@ size_t attrb_list_size(AttributeList *list) {
 //// GET AT
 
 Attribute *attrb_list_get_at(AttributeList *list, size_t index) {
-  if (list->next == NULL && list->attribute == NULL && index == 0)
+  if (list->next == NULL && list->node == NULL && index == 0)
     return NULL;
   assert(index < attrb_list_size(list));
   AttributeList *n = list;
   for (size_t i=0; i<index; ++i)
     n = n->next;
-  return n->attribute;
+  return n->node;
 }
 
 //// PRINT
 
 void attrb_list_print(AttributeList *list, FILE *file) {
   if_null_print(list, file);
-  if (list->attribute != NULL)
-    attrb_print(list->attribute, file);
+  if (list->node != NULL)
+    attrb_print(list->node, file);
   
   if (list->next != NULL){
     fprintf(file, ", ");

@@ -1,5 +1,5 @@
 #include "../prsr/prsr.h"
-#include "strct_graph.h"
+#include "strct_decl_chckr.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -25,13 +25,8 @@ int main() {
 
   ASTNode *ast = prsr_parse(code);
 
-  ProgramNodeData *program_data = (ProgramNodeData *) ast->data;
-  NodeListData *structs_list_data = (NodeListData *) program_data->struct_declarations->data;
-  StructGraph* struct_graph = strct_graph_maker(structs_list_data->nodes);
-
-  strct_graph_analyzer(struct_graph);
-  // strct_graph_dump_dot(struct_graph, stdout);
-  strct_graph_dealloc(struct_graph);
+  if (strct_decl_chckr_check(ast))
+    fprintf(stdout, "all checks passed!\n");
 
   ast_print_node(ast, stdout); fprintf(stdout, "\n");
   ast_dealloc_node(ast);

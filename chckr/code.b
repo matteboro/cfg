@@ -3,7 +3,8 @@ data struct1 {
 }
 
 data struct2 {
-  int :: att1
+  int :: att1,
+  string :: att1
 }
 
 data struct3 {
