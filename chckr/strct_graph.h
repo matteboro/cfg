@@ -31,8 +31,6 @@ struct StructGraph_s {
 
 StructGraph *strct_graph_maker(ASTNodeList *struct_declarations) {
 
-  fprintf(stdout, "num. of structs: %lu\n", ast_list_size(struct_declarations));
-
   // INIT VALUES
 
   size_t num_structs = ast_list_size(struct_declarations);
@@ -69,7 +67,9 @@ StructGraph *strct_graph_maker(ASTNodeList *struct_declarations) {
       if (attrb->nt_bind->type->type == STRUCT_TYPE) 
       {
         StructTypeData *struct_type_data = (StructTypeData *)attrb->nt_bind->type->data;
-        idf_list_append(graph_elem->sub_structs, idf_copy_identifier(struct_type_data->name));
+        Identifier *id = idf_copy_identifier(struct_type_data->name);
+        if (idf_list_find(graph_elem->sub_structs, id) < 0)
+          idf_list_append(graph_elem->sub_structs, id);
       } 
       else if (attrb->nt_bind->type->type == ARR_TYPE) 
       {
@@ -77,7 +77,9 @@ StructGraph *strct_graph_maker(ASTNodeList *struct_declarations) {
         if (array_type_data->type->type == STRUCT_TYPE)
         {
           StructTypeData *struct_type_data = (StructTypeData *)array_type_data->type->data;
-          idf_list_append(graph_elem->sub_structs, idf_copy_identifier(struct_type_data->name));
+          Identifier *id = idf_copy_identifier(struct_type_data->name);
+          if (idf_list_find(graph_elem->sub_structs, id) < 0)
+            idf_list_append(graph_elem->sub_structs, id);
         }
       }
     }
@@ -96,12 +98,14 @@ StructGraph *strct_graph_maker(ASTNodeList *struct_declarations) {
 
 // ANALYZER
 
-bool strct_graph_find_struct(StructGraph *graph, Identifier *struct_name) {
+int strct_graph_find_struct(StructGraph *graph, Identifier *struct_name) {
+  int counter = 0;
   for (size_t i=0; i<graph->num_structs; ++i) {
     if (idf_equal_identifiers(graph->structs[i]->name, struct_name))
-      return True;
+      return counter;
+    ++counter;
   }
-  return False;
+  return -1;
 }
 
 size_t strct_graph_count_struct_name(StructGraph *graph, Identifier *struct_name) {
@@ -113,6 +117,50 @@ size_t strct_graph_count_struct_name(StructGraph *graph, Identifier *struct_name
   return counter;
 }
 
+bool strct_graph_detect_cycles_recur(StructGraph *graph, Identifier *struct_name, bool *true_table) {
+
+  int index = strct_graph_find_struct(graph, struct_name);
+
+  if (index < 0)
+    return False;
+
+  if (true_table[index])
+    return True;
+
+  if (idf_list_size(graph->structs[index]->sub_structs) == 0)
+    return False;
+
+  true_table[index] = True;
+  
+  for (IdentifierList *it = graph->structs[index]->sub_structs; (it != NULL && it->node != NULL); it = it->next) 
+  {
+    if (strct_graph_detect_cycles_recur(graph, it->node, true_table))
+      return True;
+  }
+
+  true_table[index] = False;
+  return False;
+}
+
+bool strct_graph_detect_cycles(StructGraph *graph) {
+
+  bool *true_table = (bool *) malloc(sizeof(bool)*graph->num_structs);
+  bool result = False;
+  for (size_t i=0; i<graph->num_structs; ++i) 
+  {
+    for (size_t j=0; j<graph->num_structs; ++j)
+      true_table[j] = False;
+    if (strct_graph_detect_cycles_recur(graph, graph->structs[i]->name, true_table)) 
+    {
+      result = True;
+      break;
+    }
+  }
+
+  free(true_table);
+  return result;
+}
+
 bool strct_graph_analyzer(StructGraph *graph) {
 
   // there shoul be three phases to this analyzer:
@@ -120,6 +168,9 @@ bool strct_graph_analyzer(StructGraph *graph) {
   //  - I have to check that all the are no two structs with same name;
   //  - I have to check that there are no cycles inside delcarations (i.e. the graph has no cycles);
   // first/second one is easy, third one require an algorithm.
+
+  if (graph->num_structs == 0)
+    return True;
 
   // 1 and 2) CHECK SUB-STRUCTS EXISTS and CHECK NO DOUBLE DECLARATIONS
 
@@ -146,10 +197,20 @@ bool strct_graph_analyzer(StructGraph *graph) {
       break;
   }
 
-  if (!sub_struct_existance_check || !double_declaration_check)
+  if (!sub_struct_existance_check) {
+    fprintf(stdout, "ERROR, did not pass struct graph analysis check. Sub-struct is not existent.\n");
     return False;
+  }
 
-  
+  if (!double_declaration_check) {
+    fprintf(stdout, "ERROR, did not pass struct graph analysis check. There is a double declaration of a struct.\n");
+    return False;
+  }
+
+  if (strct_graph_detect_cycles(graph)) {
+    fprintf(stdout, "ERROR, did not pass struct graph analysis check. There is a cycle in struct encapsulation.\n");
+    return False;
+  }
 
   return True;
 }

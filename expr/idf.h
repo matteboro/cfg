@@ -51,7 +51,22 @@ Identifier *idf_create_identifier_from_token(Token token) {
   return id;
 }
 
+// IDENTIFIER LIST
+
 LIST(idf, Identifier, idf_dealloc_identifier, idf_print_identifier)
+
+int idf_list_find(IdentifierList *list, Identifier *id) {
+  int counter = 0;
+  for (IdentifierList *it = list; (it != NULL && it->node != NULL); it = it->next) 
+  {
+    if (idf_equal_identifiers(it->node, id))
+      return counter;
+    ++counter;
+  }
+  return -1;
+}
+
+// END IDENTIFIER LIST
 
 // END IDENTIFIER
 #endif // end IDF_HEADER
