@@ -11,7 +11,7 @@ typedef struct StructGraphElem_s StructGraphElem;
 struct StructGraph_s;
 typedef struct StructGraph_s StructGraph;
 
-StructGraph *strct_graph_maker(ASTNodeList *struct_declarations);
+StructGraph *strct_graph_maker(StructDeclarationList *struct_declarations);
 void strct_graph_dump_dot(StructGraph *struct_graph, FILE *file);
 bool strct_graph_analyzer(StructGraph *struct_graph);
 void strct_graph_dealloc(StructGraph *struct_graph);
@@ -29,41 +29,25 @@ struct StructGraph_s {
   size_t num_structs;
 };
 
-StructGraph *strct_graph_maker(ASTNodeList *struct_declarations) {
+StructGraph *strct_graph_maker(StructDeclarationList *struct_declarations) {
 
   // INIT VALUES
-
-  size_t num_structs = ast_list_size(struct_declarations);
+  size_t num_structs = strct_decl_list_size(struct_declarations);
   StructGraphElem **structs = (StructGraphElem **) malloc(sizeof(StructGraphElem *)*num_structs);
 
   // FILL STRUCTS
-
-  // I iterate trhough each struct declaration
-  for (size_t i=0; i<num_structs; ++i) 
+  size_t idx = 0;
+  FOR_EACH(StructDeclarationList, strct_it, struct_declarations) 
   {
-    ASTNode *elem = ast_list_get_at(struct_declarations, i);
-
-    if (elem->type != STRUCT_DECLARATION)
-    {
-      fprintf(stdout, "ERROR in %s at fill structs step, element is not a struct declaration.\n", __FUNCTION__);
-      exit(1);
-    }
-
-    StructDeclarationNodeData *struct_node_data = (StructDeclarationNodeData *)elem->data;
+    StructDeclaration *strct = strct_it->node;
 
     StructGraphElem *graph_elem = (StructGraphElem *) malloc(sizeof(StructGraphElem));
     graph_elem->sub_structs = idf_list_create_empty();
-    graph_elem->name = idf_copy_identifier(struct_node_data->name);
-    
-    AttributeList *attrbs = struct_node_data->attributes; 
-    size_t num_attrbs = attrb_list_size(attrbs);
+    graph_elem->name = idf_copy_identifier(strct->name);
 
-    // I iterate through each attribute of the struct:
-    //   - if is struct I insert;
-    //   - if is array I check if subtype is struct, if it is I insert;
-    for (size_t j=0; j<num_attrbs; ++j) 
+    FOR_EACH(AttributeList, attrb_it, strct->attributes) 
     {
-      Attribute *attrb = attrb_list_get_at(attrbs, j);
+      Attribute *attrb = attrb_it->node;
       if (attrb->nt_bind->type->type == STRUCT_TYPE) 
       {
         StructTypeData *struct_type_data = (StructTypeData *)attrb->nt_bind->type->data;
@@ -80,15 +64,19 @@ StructGraph *strct_graph_maker(ASTNodeList *struct_declarations) {
           Identifier *id = idf_copy_identifier(struct_type_data->name);
           if (idf_list_find(graph_elem->sub_structs, id) < 0)
             idf_list_append(graph_elem->sub_structs, id);
+        } 
+        else if (array_type_data->type->type == ARR_TYPE) 
+        {
+          fprintf(stdout, 
+                  "ERROR in %s, if type of multi-dimensional array is struct it is not inserted in StructGraphElem object\n",
+                  __FUNCTION__);
         }
       }
     }
-    
-    structs[i] = graph_elem;
+    structs[idx++] = graph_elem;
   }
 
   // CREATE OBJECT
-
   StructGraph *graph = (StructGraph *) malloc(sizeof(StructGraph));
   graph->num_structs = num_structs;
   graph->structs = structs;

@@ -4,7 +4,8 @@ data struct1 {
 
 data struct2 {
   int :: att1,
-  string :: att1
+  string :: att3,
+  int arr[10] :: att2
 }
 
 data struct3 {

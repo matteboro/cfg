@@ -18,14 +18,14 @@ int strct_decl_chckr_count_identifier_in_attributes(Identifier *id, AttributeLis
   return counter;
 }
 
-bool strct_decl_chckr_check_double_attributes(NodeListData *structs) {
-  FOR_EACH(ASTNodeList, node_it, structs->nodes) {
+bool strct_decl_chckr_check_double_attributes(StructDeclarationList *structs) {
+  FOR_EACH(StructDeclarationList, strct_it, structs) {
 
     // fprintf(stdout, "struct: ");
     // idf_print_identifier(((StructDeclarationNodeData *)node_it->node->data)->name, stdout);
     // fprintf(stdout, "\n");
 
-    AttributeList *attrbs = ((StructDeclarationNodeData *)node_it->node->data)->attributes;
+    AttributeList *attrbs = strct_it->node->attributes;
     FOR_EACH(AttributeList, attrb_it, attrbs) {
       if (strct_decl_chckr_count_identifier_in_attributes(attrb_it->node->nt_bind->name, attrbs) > 1)
         return False;
@@ -37,15 +37,14 @@ bool strct_decl_chckr_check_double_attributes(NodeListData *structs) {
 bool strct_decl_chckr_check(ASTNode *program) {
 
   ProgramNodeData *program_data = (ProgramNodeData *) program->data;
-  NodeListData *structs_list_data = (NodeListData *) program_data->struct_declarations->data;
-  
-  if(!strct_decl_chckr_check_double_attributes(structs_list_data)) {
+
+  if(!strct_decl_chckr_check_double_attributes(program_data->struct_declarations)) {
     fprintf(stdout, "ERROR, did not pass struct declaration analysis. There are attributes with same names within a struct.\n");
     return False;
   }
 
   bool result = True;
-  StructGraph* struct_graph = strct_graph_maker(structs_list_data->nodes);
+  StructGraph* struct_graph = strct_graph_maker(program_data->struct_declarations);
   if(!strct_graph_analyzer(struct_graph)) {
     result = False;
   }
