@@ -426,8 +426,18 @@ Checks:
     (the name of the struct) and a list of Attributes. And then the program node data contains a 
     list of StructDeclaration. 
 
+    DONE
     Next step is to adjust the struct declaration checker (it should simplify the things).
-  
+  FINISHED
+
+  I think we should do the same for function declarations. The program node data should contain a 
+  list of FunctionDeclaration, which is a data structure that contains:
+    - a Type object (the returned type);
+    - a list of Parameter;
+    - a list of Statements (this could be a ASTNode of type NODES containing statement nodes);
+        |
+        |---> this give me another idea: probably Statement should be an object of himself; it could
+              have its own sub-types (Assignment, Declaration, If, While for the moment);
 
   How do we know the type returned by an expression?
 

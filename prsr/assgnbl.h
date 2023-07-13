@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../expr/expr.h"
 #include "../expr/obj_drf.h"
 
