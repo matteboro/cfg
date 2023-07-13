@@ -416,6 +416,34 @@ Checks:
   NameTypeBinding object. But maybe I can work on the data structure already created for the
   AST. That would be faster, but maybe less elegant. We will see. The first thing i want to try 
   is the struct declarations check. 
+
+  ALMOST DONE
+  Do we need a StructDeclaration object?
+    What we currently have is: a program node whose data points to a ASTNode of type NODES, whose 
+    data contains a list of ASTNode of type STRUCT_DECL, whose data contains an Identifier (the 
+    name of the struct) and a list of Attributes. 
+    What would be more convenient is to have a StructDeclaration object that contains an Identifier 
+    (the name of the struct) and a list of Attributes. And then the program node data contains a 
+    list of StructDeclaration. 
+
+    Next step is to adjust the struct declaration checker (it should simplify the things).
+  
+
+  How do we know the type returned by an expression?
+
+    Let's think about how we could calculate the type returned by an expression. My idea is to have
+    a function with this signature:
+      bool expr_returned_type(Expression *expr, Type **ret_type);
+    The value returned by this function is True if the expression is consistent inside and it does
+    return a value of a valid type. If the value returned is True then ret_type points to a pointer
+    that points to the returned type.
+    How to know the type of an operand? 
+      - if it is a literal it is easy: either int or string; 
+      - if it is an expression, we recursively calculate the type of the sub-expression; 
+      - if it is a function call, we check the return type of the function;
+      - if it is a dereference object we need to do some more work:
+        - 
+
   
 ============================================================================================
 

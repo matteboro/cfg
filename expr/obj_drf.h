@@ -82,21 +82,22 @@ void obj_drf_print(ObjectDeref *obj_drf, FILE *file) {
 
 // DEALLOC
 
-
 OBJ_DRF_DEALLOC(
   array,
   ArrayTypeObjectDerefData, 
   {
     idf_dealloc_identifier(data->name);
     expr_dealloc_expression(data->index);
-  })
+  }
+)
 
 OBJ_DRF_DEALLOC(
-  struct_or_basic, 
-  StructOrBasicTypeObjectDerefData, 
+  struct_or_basic,
+  StructOrBasicTypeObjectDerefData,
   {
-    idf_dealloc_identifier(data->name); 
-  })
+    idf_dealloc_identifier(data->name);
+  }
+)
 
 void obj_drf_dealloc(ObjectDeref *obj_drf) {
   if (obj_drf == NULL)
@@ -111,7 +112,6 @@ void obj_drf_dealloc(ObjectDeref *obj_drf) {
 }
 
 
-// ATTRIBUTE LIST
 
 typedef struct ObjectDerefList_s{
   struct ObjectDerefList_s *next;
@@ -205,7 +205,5 @@ void obj_drf_list_print(ObjectDerefList *list, FILE *file) {
     obj_drf_list_print(list->next, file);
   }
 }
-
-// END ATTRIBUTE LIST
 
 #endif // end OBJ_DRF_HEADER

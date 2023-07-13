@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../expr/nt_bind.h"
 
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }

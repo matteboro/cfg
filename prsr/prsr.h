@@ -482,7 +482,7 @@ ASTNode *prsr_parse_while_statement()
   return ast_create_while_node(expression, body);
 }
 
-ASTNode *prsr_parse_struct_declaration() {
+StructDeclaration *prsr_parse_struct_declaration() {
   prsr_match(DATA_TOKEN);
   Token name = prsr_match(IDENTIFIER_TOKEN);
   AttributeList *attributes = attrb_list_create_empty();  
@@ -503,29 +503,34 @@ ASTNode *prsr_parse_struct_declaration() {
       break;
   }
   prsr_match(CLOSE_CURLY_TOKEN);
-  return ast_create_struct_declaration_node(
+
+  return strct_decl_create(
     idf_create_identifier_from_token(name),
-    attributes);
+    attributes
+  );
+  // return ast_create_struct_declaration_node(
+  //   idf_create_identifier_from_token(name),
+  //   attributes);
 }
 
 ASTNode *prsr_parse_program()
 {
   ASTNodeList *functions = ast_list_create_empty();
   ASTNodeList *global_stmnts = ast_list_create_empty();
-  ASTNodeList *struct_declarations = ast_list_create_empty();
+  StructDeclarationList *struct_declarations = strct_decl_list_create_empty();
 
   while (lookhaed.type != END_TOKEN) {
     if (lookhaed.type == FUNC_TOKEN)
       ast_list_append(functions, prsr_parse_func_declaration());
     else if (lookhaed.type == DATA_TOKEN)
-      ast_list_append(struct_declarations, prsr_parse_struct_declaration());
+      strct_decl_list_append(struct_declarations, prsr_parse_struct_declaration());
     else
       ast_list_append(global_stmnts, prsr_parse_statement());
   }
   return ast_create_program_node(
     ast_create_node_list_node(functions), 
     ast_create_node_list_node(global_stmnts),
-    ast_create_node_list_node(struct_declarations));
+    struct_declarations);
 }
 
 ASTNode *prsr_parse(const char *data)

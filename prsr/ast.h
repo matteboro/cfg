@@ -3,9 +3,9 @@
 
 #include "../expr/expr.h"
 #include "assgnbl.h"
-#include "attrb.h"
 #include <assert.h>
 #include "../utility/list.h"
+#include "strct_decl.h"
 
 // #define AST_DEBUG
 #ifdef AST_DEBUG
@@ -15,7 +15,6 @@
 #endif
 #define AST_ERROR() fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1);
 
-#define print_spaces(n, file) {for (size_t spaces_counter=0; spaces_counter<n; ++spaces_counter) fprintf(file, " ");}
 
 typedef enum {
   EXPRESSION,
@@ -217,7 +216,8 @@ typedef struct {
 typedef struct {
   ASTNode *func_declarations;
   ASTNode *global_statements;
-  ASTNode *struct_declarations;
+  // ASTNode *struct_declarations;
+  StructDeclarationList *struct_declarations;
 } ProgramNodeData;
 
 typedef struct {
@@ -258,7 +258,7 @@ ASTNode *ast_create_array_declaration_node(Identifier *name, int size, Expressio
 ASTNode *ast_create_program_node(
   ASTNode *func_declarations, 
   ASTNode *global_statements, 
-  ASTNode *struct_declarations) {
+  StructDeclarationList *struct_declarations) {
   ProgramNodeData *data = (ProgramNodeData *) malloc(sizeof(ProgramNodeData));
   data->func_declarations = func_declarations;
   data->global_statements = global_statements;
@@ -402,7 +402,7 @@ void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
   fprintf(file, "  Data Structs: {\n");
 
   //structs
-  ast_print_node_ident(data->struct_declarations, file, ident+4);
+  strct_decl_list_print_ident(data->struct_declarations, file, ident+4);
   fprintf(file, "\n");
 
   print_spaces(ident, file);
@@ -664,7 +664,7 @@ void ast_dealloc_program_node(ASTNode *node) {
   ProgramNodeData *data = (ProgramNodeData *) node->data;
   ast_dealloc_node(data->func_declarations);
   ast_dealloc_node(data->global_statements);
-  ast_dealloc_node(data->struct_declarations);
+  strct_decl_list_dealloc(data->struct_declarations);
   free(data);
 }
 

@@ -5,7 +5,7 @@
 #define typed_data(type) type *data = (type *) malloc(sizeof(type))
 #define casted_data(type, elem) type *data = (type *) elem->data
 
-#define TYPE_DEALLOC( infix, data_type, dealloc_code) \
+#define TYPE_DEALLOC(infix, data_type, dealloc_code) \
   void type_dealloc_##infix##_type(Type *type) \
     { if (!type->data) return; data_type *data = (data_type *)type->data; dealloc_code; free(data); }
 
