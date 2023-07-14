@@ -384,6 +384,9 @@ Token lxr_next_token(Lexer *lexer) {
     lxr_increment_current(lexer);
   }
 
+  if (token.type == COMMENT_TOKEN)
+    return lxr_next_token(lexer);
+    
   return token;
 }
 

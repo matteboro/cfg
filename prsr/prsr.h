@@ -42,7 +42,7 @@ FACTOR     :: [ IDENDIFIER_TOKEN ],
   fprintf(stdout, " at position: %d\n", lookhaed.position); \
   exit(1);
 
-ASTNode *prsr_parse_assignment(Token start_deref);
+Statement *prsr_parse_assignment(Token start_deref);
 Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor(), *prsr_parse_equation(), *prsr_parse_str_expression();
 
 static Token lookhaed;
@@ -288,15 +288,18 @@ ExpressionList *prsr_parse_arr_initializations_values() {
   return init_values;
 }
 
-ASTNode *prsr_parse_assignment(Token start_deref)
+Statement *prsr_parse_assignment(Token start_deref)
 {
   PRSR_DEBUG_PRINT();
   ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
   prsr_match(EQUAL_TOKEN);
-  ASTNode *expression_node = prsr_parse_expression_node();
-  return ast_create_assignment_node(
+  Expression *expression = prsr_parse_expression();
+  return stmnt_create_assignment(
     assgnbl_create_deref_list_assignable(derefs), 
-    expression_node);
+    expression);
+  // return ast_create_assignment_node(
+  //   assgnbl_create_deref_list_assignable(derefs), 
+  //   expression_node);
 }
 
 Type *prsr_parse_type(Token start_type) {
@@ -322,7 +325,7 @@ Type *prsr_parse_type(Token start_type) {
   return type;
 }
 
-ASTNode *prsr_parse_declaration(Token start_type) {
+Statement *prsr_parse_declaration(Token start_type) {
   Type *type = prsr_parse_type(start_type);
   prsr_match(DOUBLE_COLON_TOKEN);
 
@@ -340,16 +343,21 @@ ASTNode *prsr_parse_declaration(Token start_type) {
       init_expr = expr_list_create_empty();
       expr_list_append(init_expr, prsr_parse_expression());
     }
+    // TODO: add struct initialization using { val1, val2, ... val2 }
   }
-  return ast_create_declaration_node(
-      nt_bind_create(
-        idf_create_identifier_from_token(name_token),
-        type),
+
+  return stmnt_create_declaration(
+      nt_bind_create(idf_create_identifier_from_token(name_token), type),
       init_expr);
+  // return ast_create_declaration_node(
+  //     nt_bind_create(
+  //       idf_create_identifier_from_token(name_token),
+  //       type),
+  //     init_expr);
 }
 
-ASTNode *prsr_dispatch_declaration_assignment() {
-  ASTNode *statement = NULL;
+Statement *prsr_dispatch_declaration_assignment() {
+  Statement *statement = NULL;
 
   Token maybe_type_or_id = lookhaed;
   prsr_match(lookhaed.type);
@@ -362,21 +370,14 @@ ASTNode *prsr_dispatch_declaration_assignment() {
     statement = prsr_parse_declaration(maybe_type_or_id);
   }
 
-  // if (lookhaed.type == VAR_TOKEN) {
-  //   statement = prsr_parse_var_declaration();
-  // } else if (lookhaed.type == ARR_TOKEN){
-  //   statement = prsr_parse_arr_declaration();
-  // } else {
-  //   statement = prsr_parse_assignment();
-  // }
   return statement;
 }
 
-ASTNode *prsr_parse_while_statement(); 
-ASTNode *prsr_parse_if_statement(bool first);
-ASTNode *prsr_parse_statements();
+Statement *prsr_parse_while_statement(); 
+Statement *prsr_parse_if_statement(bool first);
+Statement *prsr_parse_statements();
 
-ASTNode *prsr_parse_statement() 
+Statement *prsr_parse_statement() 
 {
   PRSR_DEBUG_PRINT();
   if (lookhaed.type == OPEN_CURLY_TOKEN){
@@ -386,23 +387,23 @@ ASTNode *prsr_parse_statement()
   } else if (lookhaed.type == WHILE_TOKEN){
     return prsr_parse_while_statement();
   } 
-  ASTNode *statement = NULL;
+  Statement *statement = NULL;
   statement = prsr_dispatch_declaration_assignment();
   prsr_match(SEMICOLON_TOKEN);
   return statement;
 }
 
-ASTNode *prsr_parse_statements() 
+Statement *prsr_parse_statements() 
 {
   PRSR_DEBUG_PRINT();
-  ASTNodeList *node_list = ast_list_create_empty();
+  StatementList *stmnt_list = stmnt_list_create_empty();
   prsr_match(OPEN_CURLY_TOKEN);
   while (lookhaed.type != CLOSE_CURLY_TOKEN) {
-    ASTNode *statement = prsr_parse_statement();
-    ast_list_append(node_list, statement);
+    Statement *statement = prsr_parse_statement();
+    stmnt_list_append(stmnt_list, statement);
   }
   prsr_match(CLOSE_CURLY_TOKEN);
-  return ast_create_node_list_node(node_list);
+  return stmnt_create_block(stmnt_list);
 }
 
 ParameterList *prsr_parse_func_declaration_params() 
@@ -445,16 +446,39 @@ ASTNode *prsr_parse_func_declaration()
   else
     params = prmt_list_create_empty();
   prsr_match(CLOSE_PAREN_TOKEN);
-  ASTNode *body = prsr_parse_statements();
+  ASTNode *body = ast_create_statement_node(prsr_parse_statements());
   return ast_create_func_declaration_node(
     idf_create_identifier_from_token(func_name_id),
     params, 
     body);
 }
 
-// TODO: we should also parse the possible else and the chain of elif
-ASTNode *prsr_parse_if_statement(bool first) 
+Statement *prsr_parse_if_statement(bool first) 
 {
+  if (first)
+    prsr_match(IF_TOKEN);
+  else  
+    prsr_match(ELIF_TOKEN);
+    
+  Expression *condition = prsr_parse_expression();
+  Statement *if_body = prsr_parse_statements();
+
+  if (lookhaed.type == ELSE_TOKEN) {
+    prsr_match(ELSE_TOKEN);
+    Statement *else_body = prsr_parse_statements();
+    return stmnt_create_if_else(condition, if_body, else_body);
+    // return ast_create_if_else_node(expression, if_body, else_body);
+  } 
+  else if (lookhaed.type == ELIF_TOKEN) {
+    Statement *else_body = prsr_parse_if_statement(False);
+    return stmnt_create_if_else(condition, if_body, else_body);
+  } 
+  else {
+    return stmnt_create_if_else(condition, if_body, NULL);
+  }
+
+
+/*
   if (first)
     prsr_match(IF_TOKEN);
   else  
@@ -472,14 +496,16 @@ ASTNode *prsr_parse_if_statement(bool first)
   } else {
     return ast_create_if_node(expression, if_body);
   }
+*/
 }
 
-ASTNode *prsr_parse_while_statement() 
+Statement *prsr_parse_while_statement() 
 {
   prsr_match(WHILE_TOKEN);
-  ASTNode *expression = prsr_parse_expression_node();
-  ASTNode *body = prsr_parse_statements();
-  return ast_create_while_node(expression, body);
+  Expression *condition = prsr_parse_expression();
+  Statement *body = prsr_parse_statements();
+  return stmnt_create_while(condition, body);
+  // return ast_create_while_node(expression, body);
 }
 
 StructDeclaration *prsr_parse_struct_declaration() {
@@ -516,20 +542,20 @@ StructDeclaration *prsr_parse_struct_declaration() {
 ASTNode *prsr_parse_program()
 {
   ASTNodeList *functions = ast_list_create_empty();
-  ASTNodeList *global_stmnts = ast_list_create_empty();
+  // ASTNodeList *global_stmnts = ast_list_create_empty();
   StructDeclarationList *struct_declarations = strct_decl_list_create_empty();
-
+  StatementList *global_stmnts = stmnt_list_create_empty();
   while (lookhaed.type != END_TOKEN) {
     if (lookhaed.type == FUNC_TOKEN)
       ast_list_append(functions, prsr_parse_func_declaration());
     else if (lookhaed.type == DATA_TOKEN)
       strct_decl_list_append(struct_declarations, prsr_parse_struct_declaration());
     else
-      ast_list_append(global_stmnts, prsr_parse_statement());
+      stmnt_list_append(global_stmnts, prsr_parse_statement());
   }
   return ast_create_program_node(
     ast_create_node_list_node(functions), 
-    ast_create_node_list_node(global_stmnts),
+    ast_create_statement_node(stmnt_create_block(global_stmnts)),
     struct_declarations);
 }
 

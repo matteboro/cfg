@@ -4,8 +4,10 @@
 #include "assgnbl.h"
 
 #define STMNT_ALLOC_PAYLOAD(type) type *payload = (type *)malloc(sizeof(type))
-#define STMNT_CAST_PAYLOAD(type, obj) type *payload = (type *)obj->payload;
+#define STMNT_CAST_PAYLOAD(type, obj) type *payload = (type *)obj->payload
 #define STMNT_ALLOC(type) (type *)malloc(sizeof(type))
+#define print_spaces(n, file) {for (size_t spaces_counter=0; spaces_counter<n; ++spaces_counter) fprintf(file, " ");}
+
 
 enum StatementType_e;
 typedef enum StatementType_e StatementType;
@@ -18,6 +20,7 @@ typedef void * StatementPayload;
 Statement *stmnt_create(StatementPayload payload, StatementType type);
 void stmnt_dealloc(Statement *stmnt);
 void stmnt_print(Statement *stmnt, FILE *file);
+void stmnt_print_ident(Statement *stmnt, FILE *file, size_t ident);
 
 enum StatementType_e {
   ASSIGNMENT_STMNT,
@@ -51,7 +54,7 @@ struct AssignmentPayload_s;
 typedef struct AssignmentPayload_s AssignmentPayload;
 
 Statement *stmnt_create_assignment(AssignableElement *, Expression *);
-void stmnt_print_assignment(Statement *, FILE *);
+void stmnt_print_assignment_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_assignment(Statement *);
 
 struct AssignmentPayload_s {
@@ -66,8 +69,13 @@ Statement *stmnt_create_assignment(AssignableElement *assgnbl, Expression *value
   return stmnt_create(payload, ASSIGNMENT_STMNT);
 }
 
-void stmnt_print_assignment(Statement *stmnt, FILE *file) {
-  fprintf(file, "ASSIGNMENT");
+void stmnt_print_assignment_ident(Statement *stmnt, FILE *file, size_t ident) {
+  STMNT_CAST_PAYLOAD(AssignmentPayload, stmnt);
+
+  print_spaces(ident, file);
+  assgnbl_print(payload->assgnbl, file);
+  fprintf(file, " = ");
+  expr_print_expression(payload->value, file);
 }
 
 void stmnt_dealloc_assignment(Statement *stmnt) {
@@ -83,7 +91,7 @@ struct DeclarationPayload_s;
 typedef struct DeclarationPayload_s DeclarationPayload;
 
 Statement *stmnt_create_declaration(NameTypeBinding *, ExpressionList *);
-void stmnt_print_declaration(Statement *, FILE *);
+void stmnt_print_declaration_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_declaration(Statement *);
 
 struct DeclarationPayload_s {
@@ -98,8 +106,21 @@ Statement *stmnt_create_declaration(NameTypeBinding *nt_bind, ExpressionList *in
   return stmnt_create(payload, DECLARATION_STMNT);
 }
 
-void stmnt_print_declaration(Statement *stmnt, FILE *file) {
-  fprintf(file, "DECLARATION");
+void stmnt_print_declaration_ident(Statement *stmnt, FILE *file, size_t ident) {
+  STMNT_CAST_PAYLOAD(DeclarationPayload, stmnt);
+
+  print_spaces(ident, file);
+  nt_bind_print(payload->nt_bind, file);
+  if (payload->init_values != NULL) {
+    fprintf(file, " = ");
+    if (expr_list_size(payload->init_values) > 1) {
+      fprintf(file, "[ ");
+      expr_list_print(payload->init_values, file);
+      fprintf(file, " ]");
+    } else {
+      expr_list_print(payload->init_values, file);
+    }
+  }
 }
 
 void stmnt_dealloc_declaration(Statement *stmnt) {
@@ -115,30 +136,57 @@ void stmnt_dealloc_declaration(Statement *stmnt) {
 struct IfElsePayload_s;
 typedef struct IfElsePayload_s IfElsePayload;
 
-Statement *stmnt_create_if_else(Expression *, Statement *);
-void stmnt_print_if_else(Statement *, FILE *);
+Statement *stmnt_create_if_else(Expression *, Statement *, Statement *);
+void stmnt_print_if_else_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_if_else(Statement *);
 
 struct IfElsePayload_s {
   Expression *condition;
-  Statement *body;
+  Statement *if_body;
+  Statement *else_body;
 };
 
-Statement *stmnt_create_if_else(Expression *condition, Statement *body) {
+Statement *stmnt_create_if_else(Expression *condition, Statement *if_body, Statement *else_body) {
   STMNT_ALLOC_PAYLOAD(IfElsePayload);
   payload->condition = condition;
-  payload->body = body;
+  payload->if_body = if_body;
+  payload->else_body = else_body;
   return stmnt_create(payload, IF_ELSE_STMNT);
 }
 
-void stmnt_print_if_else(Statement *stmnt, FILE *file) {
-  fprintf(file, "IF_ELSE");
+void stmnt_print_if_else_ident(Statement *stmnt, FILE *file, size_t ident) {
+  STMNT_CAST_PAYLOAD(IfElsePayload, stmnt);
+
+  print_spaces(ident, file);
+  fprintf(file, "if ");
+  expr_print_expression(payload->condition, file);
+  fprintf(file, " {\n");
+
+  stmnt_print_ident(payload->if_body, file, ident+2);
+  fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "}");
+
+  if (payload->else_body->type == IF_ELSE_STMNT) {
+    fprintf (file, " else \n");
+    stmnt_print_ident(payload->else_body, file, ident);
+    fprintf(file, "\n");
+  } else {
+    fprintf (file, " else {\n");
+    stmnt_print_ident(payload->else_body, file, ident+2);
+    fprintf(file, "\n");
+
+    print_spaces(ident, file);
+    fprintf(file, "}");
+  }
 }
 
 void stmnt_dealloc_if_else(Statement *stmnt) {
   STMNT_CAST_PAYLOAD(IfElsePayload, stmnt);
   expr_dealloc_expression(payload->condition);
-  stmnt_dealloc(payload->body);
+  stmnt_dealloc(payload->if_body);
+  stmnt_dealloc(payload->else_body);
   free(payload);
 }
 
@@ -149,7 +197,7 @@ struct WhilePayload_s;
 typedef struct WhilePayload_s WhilePayload;
 
 Statement *stmnt_create_while(Expression *, Statement *);
-void stmnt_print_while(Statement *, FILE *);
+void stmnt_print_while_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_while(Statement *);
 
 struct WhilePayload_s {
@@ -164,8 +212,19 @@ Statement *stmnt_create_while(Expression *condition, Statement *body) {
   return stmnt_create(payload, WHILE_STMNT);
 }
 
-void stmnt_print_while(Statement *stmnt, FILE *file) {
-  fprintf(file, "WHILE");
+void stmnt_print_while_ident(Statement *stmnt, FILE *file, size_t ident) {
+  STMNT_CAST_PAYLOAD(WhilePayload, stmnt);
+
+  print_spaces(ident, file);
+  fprintf(file, "while ");
+  expr_print_expression(payload->condition, file);
+  fprintf(file, " {\n");
+
+  stmnt_print_ident(payload->body, file, ident+2);
+  fprintf(file, "\n");
+
+  print_spaces(ident, file);
+  fprintf(file, "}");
 }
 
 void stmnt_dealloc_while(Statement *stmnt) {
@@ -182,7 +241,7 @@ struct ReturnPayload_s;
 typedef struct ReturnPayload_s ReturnPayload;
 
 Statement *stmnt_create_return(Expression *);
-void stmnt_print_return(Statement *, FILE *);
+void stmnt_print_return_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_return(Statement *);
 
 struct ReturnPayload_s {
@@ -195,8 +254,11 @@ Statement *stmnt_create_return(Expression *ret_value) {
   return stmnt_create(payload, RETURN_STMNT);
 }
 
-void stmnt_print_return(Statement *stmnt, FILE *file) {
-  fprintf(file, "RETURN");
+void stmnt_print_return_ident(Statement *stmnt, FILE *file, size_t ident) {
+  STMNT_CAST_PAYLOAD(ReturnPayload, stmnt);
+  print_spaces(ident, file);
+  fprintf(file, "return ");
+  expr_print_expression(payload->ret_value, file);
 }
 
 void stmnt_dealloc_return(Statement *stmnt) {
@@ -212,7 +274,7 @@ struct BlockPayload_s;
 typedef struct BlockPayload_s BlockPayload;
 
 Statement *stmnt_create_block(StatementList *);
-void stmnt_print_block(Statement *, FILE *);
+void stmnt_print_block_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_block(Statement *);
 
 struct BlockPayload_s {
@@ -225,8 +287,15 @@ Statement *stmnt_create_block(StatementList *body) {
   return stmnt_create(payload, BLOCK_STMNT);
 }
 
-void stmnt_print_block(Statement *stmnt, FILE *file) {
-  fprintf(file, "BLOCK");
+void stmnt_print_block_ident(Statement *stmnt, FILE *file, size_t ident) {
+
+  STMNT_CAST_PAYLOAD(BlockPayload, stmnt);
+
+  FOR_EACH(StatementList, stmnt_it, payload->body) {
+    stmnt_print_ident(stmnt_it->node, file, ident);
+    if (stmnt_it->next != NULL)
+      fprintf(file, "\n");
+  }
 }
 
 void stmnt_dealloc_block(Statement *stmnt) {
@@ -236,6 +305,23 @@ void stmnt_dealloc_block(Statement *stmnt) {
 }
 
 // GENERAL DEFINITION
+
+#define STMNT_PRINT_SIGN   void (*)(Statement *, FILE *, size_t)
+#define STMNT_DEALLOC_SIGN void (*)(Statement *)
+
+enum {
+  PRINT_FUNC   = 0,
+  DEALLOC_FUNC = 1,
+};
+
+void *stmnt_funcs_map[][2] = {
+  [ASSIGNMENT_STMNT]   = {stmnt_print_assignment_ident,   stmnt_dealloc_assignment},
+  [DECLARATION_STMNT]  = {stmnt_print_declaration_ident,  stmnt_dealloc_declaration},
+  [BLOCK_STMNT]        = {stmnt_print_block_ident,        stmnt_dealloc_block},
+  [IF_ELSE_STMNT]      = {stmnt_print_if_else_ident,      stmnt_dealloc_if_else},
+  [WHILE_STMNT]        = {stmnt_print_while_ident,        stmnt_dealloc_while},
+  [RETURN_STMNT]       = {stmnt_print_return_ident,       stmnt_dealloc_return},
+};
 
 void (*stmnt_dealloc_funcs[])(Statement *) = {
   [ASSIGNMENT_STMNT] = stmnt_dealloc_assignment,
@@ -248,25 +334,32 @@ void (*stmnt_dealloc_funcs[])(Statement *) = {
 
 #define STMNT_SIZE_OF_DEALLOC_FUNCS sizeof(stmnt_dealloc_funcs)/sizeof(void (*)(Statement *))
 
-
 void stmnt_dealloc(Statement *stmnt) {
   assert(COUNT_STMNT == STMNT_SIZE_OF_DEALLOC_FUNCS);
+  if (stmnt == NULL)
+    return;
   stmnt_dealloc_funcs[stmnt->type](stmnt);
   free(stmnt);
 }
 
-void (*stmnt_print_funcs[])(Statement *, FILE *) = {
-  [ASSIGNMENT_STMNT] = stmnt_print_assignment,
-  [DECLARATION_STMNT] = stmnt_print_declaration,
-  [BLOCK_STMNT] = stmnt_print_block,
-  [IF_ELSE_STMNT] = stmnt_print_if_else,
-  [WHILE_STMNT] = stmnt_print_while,
-  [RETURN_STMNT] = stmnt_print_return,
+void (*stmnt_print_funcs[])(Statement *, FILE *, size_t) = {
+  [ASSIGNMENT_STMNT] = stmnt_print_assignment_ident,
+  [DECLARATION_STMNT] = stmnt_print_declaration_ident,
+  [BLOCK_STMNT] = stmnt_print_block_ident,
+  [IF_ELSE_STMNT] = stmnt_print_if_else_ident,
+  [WHILE_STMNT] = stmnt_print_while_ident,
+  [RETURN_STMNT] = stmnt_print_return_ident,
 };
 
 #define STMNT_SIZE_OF_PRINT_FUNCS sizeof(stmnt_print_funcs)/sizeof(void (*)(Statement *, FILE *))
 
 void stmnt_print(Statement *stmnt, FILE *file) {
   assert(COUNT_STMNT == STMNT_SIZE_OF_PRINT_FUNCS);
-  stmnt_print_funcs[stmnt->type](stmnt, file);
+  stmnt_print_funcs[stmnt->type](stmnt, file, 0);
 }
+
+void stmnt_print_ident(Statement *stmnt, FILE *file, size_t ident) {
+  assert(COUNT_STMNT == STMNT_SIZE_OF_PRINT_FUNCS);
+  stmnt_print_funcs[stmnt->type](stmnt, file, ident);
+}
+

@@ -1,10 +1,13 @@
 #include "lxr.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "../utility/file_man.h"
 
 int main() {
 
-  Lexer lexer = lxr_init("<\"bla\">");
+  char *code = file_to_cstring("/home/matteo/github/cfg/chckr/code.b");
+
+  Lexer lexer = lxr_init(code);
 
   lxr_dump_lexer(&lexer);
 
@@ -16,5 +19,6 @@ int main() {
     next_token = lxr_next_token(&lexer); 
   }
 
+  munmap(code, 0);
   return 0;
 }

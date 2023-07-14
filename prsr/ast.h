@@ -19,13 +19,8 @@
 
 typedef enum {
   EXPRESSION,
-  ASSIGNMENT,
   NODES,
-  DECLARATION,
   FUNC_DECLARATION,
-  IF_STATEMENT,
-  IF_ELSE_STATEMENT,
-  WHILE_STATEMENT,
   PROGRAM,
   STATEMENT,
 } ASTNodeType;
@@ -180,38 +175,16 @@ typedef struct {
   Expression *expression;
 } ExpressionNodeData;
 
-typedef struct {
-  AssignableElement *assgnbl;
-  ASTNode *expression;
-} AssignmentNodeData;
-
 // TODO: we could have lists of nodes that accepts ASTNode of only certain type
 typedef struct {
   ASTNodeList *nodes;
 } NodeListData;
 
 typedef struct {
-  NameTypeBinding *nt_bind;
-  bool has_init;
-  ExpressionList *init_values;
-} DeclarationNodeData;
-
-typedef struct {
   Identifier *func_name;
   ParameterList *params;
   ASTNode *statements;
 } FunctionDeclarationNodeData;
-
-typedef struct {
-  ASTNode *expression;
-  ASTNode *body;
-} ConditionalStatementNodeData;
-
-typedef struct {
-  ASTNode *expression;
-  ASTNode *if_body;
-  ASTNode *else_body;
-} IfElseStatementNodeData;
 
 typedef struct {
   ASTNode *func_declarations;
@@ -250,13 +223,6 @@ ASTNode *ast_create_statement_node(Statement *stmnt) {
   return ast_create_node(STATEMENT, data);
 }
 
-ASTNode *ast_create_assignment_node(AssignableElement *assgnbl, ASTNode *expression_node) {
-  AssignmentNodeData *data = (AssignmentNodeData *) malloc(sizeof(AssignmentNodeData));
-  data->assgnbl = assgnbl;
-  data->expression = expression_node;
-  return ast_create_node(ASSIGNMENT, data);
-}
-
 ASTNode *ast_create_expression_node(Expression *expression) {
   ExpressionNodeData *data = (ExpressionNodeData *) malloc(sizeof(ExpressionNodeData));
   data->expression = expression;
@@ -267,37 +233,6 @@ ASTNode *ast_create_node_list_node(ASTNodeList *list) {
   NodeListData *data = (NodeListData *) malloc(sizeof(NodeListData));
   data->nodes = list;
   return ast_create_node(NODES, data);
-}
-
-// here expression could be NULL, if it is the value has_init should be false
-ASTNode *ast_create_declaration_node(NameTypeBinding *nt_bind, ExpressionList *init_values) {
-  DeclarationNodeData *data = (DeclarationNodeData *) malloc(sizeof(DeclarationNodeData));
-  data->nt_bind = nt_bind;
-  data->has_init = init_values == NULL ? False : True;
-  data->init_values = init_values;
-  return ast_create_node(DECLARATION, data);
-}
-
-ASTNode *ast_create_if_node(ASTNode *expression, ASTNode *body) {
-  ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) malloc(sizeof(ConditionalStatementNodeData));
-  data->expression = expression;
-  data->body = body;
-  return ast_create_node(IF_STATEMENT, data);
-}
-
-ASTNode *ast_create_if_else_node(ASTNode *expression, ASTNode *if_body, ASTNode *else_body) {
-  IfElseStatementNodeData *data = (IfElseStatementNodeData *) malloc(sizeof(IfElseStatementNodeData));
-  data->expression = expression;
-  data->if_body = if_body;
-  data->else_body = else_body;
-  return ast_create_node(IF_ELSE_STATEMENT, data);
-}
-
-ASTNode *ast_create_while_node(ASTNode *expression, ASTNode *body) {
-  ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) malloc(sizeof(ConditionalStatementNodeData));
-  data->expression = expression;
-  data->body = body;
-  return ast_create_node(WHILE_STATEMENT, data);
 }
 
 ASTNode *ast_create_func_declaration_node(Identifier *id, ParameterList *params, ASTNode *statements) {
@@ -358,8 +293,9 @@ void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
 void ast_print_statement_node(ASTNode *node, FILE *file, size_t ident) {
   AST_PRINT_DEBUG();
   assert(node->type == STATEMENT);
+  (void) ident;
   StatementNodeData *data = (StatementNodeData *) node->data;
-  stmnt_print(data->stmnt, file);
+  stmnt_print_ident(data->stmnt, file, ident);
 }
 
 void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
@@ -372,158 +308,121 @@ void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
   fprintf(file, " >\n");
 }
 
-void ast_print_assignment_node(ASTNode *node, FILE *file, size_t ident) {
-  AST_PRINT_DEBUG();
-  assert(node->type == ASSIGNMENT);
-  AssignmentNodeData *data = (AssignmentNodeData *) node->data;
-  print_spaces(ident, file);
-  fprintf(file, "Assignment: {\n");
-  print_spaces(ident, file);
-  fprintf(file, "  Assignable: ");
-  assgnbl_print(data->assgnbl, file);
-  //idf_print_identifier(data->id, file);
-  fprintf(file, ",\n");
-  ast_print_expression_node(data->expression, file, ident+2);
-  print_spaces(ident, file);
-  fprintf(file, "}");
-}
+// void ast_print_assignment_node(ASTNode *node, FILE *file, size_t ident) {
+//   AST_PRINT_DEBUG();
+//   assert(node->type == ASSIGNMENT);
+//   AssignmentNodeData *data = (AssignmentNodeData *) node->data;
+//   print_spaces(ident, file);
+//   fprintf(file, "Assignment: {\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  Assignable: ");
+//   assgnbl_print(data->assgnbl, file);
+//   //idf_print_identifier(data->id, file);
+//   fprintf(file, ",\n");
+//   ast_print_expression_node(data->expression, file, ident+2);
+//   print_spaces(ident, file);
+//   fprintf(file, "}");
+// }
 
-void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
-  AST_PRINT_DEBUG();
-  assert(node->type == DECLARATION);
-  DeclarationNodeData *data = (DeclarationNodeData *) node->data;
-  print_spaces(ident, file);
-  fprintf(file, "Declaration: {\n");
-  print_spaces(ident, file);
-  fprintf(file, "  Idenfier: ");
-  nt_bind_print(data->nt_bind, file);
-  //idf_print_identifier(data->id, file);
-  if (data->has_init) {
-    fprintf(file, ", \n");
-    print_spaces(ident, file);
-    fprintf(file, "  Init Value/s: ");
-    if (expr_list_size(data->init_values) > 1)
-      fprintf(file, "[ ");
-    expr_list_print(data->init_values, file);
-    if (expr_list_size(data->init_values) > 1)
-      fprintf(file, " ]");
-    fprintf(file, "\n");
-  } else {
-    fprintf(file, "\n");
-  }
+// void ast_print_declaration_node(ASTNode *node, FILE *file, size_t ident) {
+//   AST_PRINT_DEBUG();
+//   assert(node->type == DECLARATION);
+//   DeclarationNodeData *data = (DeclarationNodeData *) node->data;
+//   print_spaces(ident, file);
+//   fprintf(file, "Declaration: {\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  Idenfier: ");
+//   nt_bind_print(data->nt_bind, file);
+//   //idf_print_identifier(data->id, file);
+//   if (data->has_init) {
+//     fprintf(file, ", \n");
+//     print_spaces(ident, file);
+//     fprintf(file, "  Init Value/s: ");
+//     if (expr_list_size(data->init_values) > 1)
+//       fprintf(file, "[ ");
+//     expr_list_print(data->init_values, file);
+//     if (expr_list_size(data->init_values) > 1)
+//       fprintf(file, " ]");
+//     fprintf(file, "\n");
+//   } else {
+//     fprintf(file, "\n");
+//   }
   
-  print_spaces(ident, file);
-  fprintf(file, "}");
-}
+//   print_spaces(ident, file);
+//   fprintf(file, "}");
+// }
 
-void ast_print_if_node(ASTNode *node, FILE *file, size_t ident) {
-  AST_PRINT_DEBUG();
-  assert(node->type == IF_STATEMENT);
-  ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
+// void ast_print_if_node(ASTNode *node, FILE *file, size_t ident) {
+//   AST_PRINT_DEBUG();
+//   assert(node->type == IF_STATEMENT);
+//   ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
 
-  print_spaces(ident, file);
-  fprintf(file, "If: {\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "If: {\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  Guard: {\n");
-  ast_print_node_ident(data->expression, file, ident+4);
+//   print_spaces(ident, file);
+//   fprintf(file, "  Guard: {\n");
+//   ast_print_node_ident(data->expression, file, ident+4);
 
-  print_spaces(ident, file);
-  fprintf(file, "  }\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  }\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  Body: {\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  Body: {\n");
 
-  ast_print_node_ident(data->body, file, ident+4);
-  fprintf(file, "\n");
+//   ast_print_node_ident(data->body, file, ident+4);
+//   fprintf(file, "\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  }\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  }\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "}");
-}
+//   print_spaces(ident, file);
+//   fprintf(file, "}");
+// }
 
-void ast_print_if_else_node(ASTNode *node, FILE *file, size_t ident) {
-  AST_PRINT_DEBUG();
-  assert(node->type == IF_ELSE_STATEMENT);
-  IfElseStatementNodeData *data = (IfElseStatementNodeData *) node->data;
+// void ast_print_if_else_node(ASTNode *node, FILE *file, size_t ident) {
+//   AST_PRINT_DEBUG();
+//   assert(node->type == IF_ELSE_STATEMENT);
+//   IfElseStatementNodeData *data = (IfElseStatementNodeData *) node->data;
 
-  print_spaces(ident, file);
-  fprintf(file, "IfElse: {\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "IfElse: {\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  Guard: {\n");
-  ast_print_node_ident(data->expression, file, ident+4);
+//   print_spaces(ident, file);
+//   fprintf(file, "  Guard: {\n");
+//   ast_print_node_ident(data->expression, file, ident+4);
 
-  print_spaces(ident, file);
-  fprintf(file, "  }\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  }\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  If Body: {\n");
-  ast_print_node_ident(data->if_body, file, ident+4);
-  fprintf(file, "\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  If Body: {\n");
+//   ast_print_node_ident(data->if_body, file, ident+4);
+//   fprintf(file, "\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  }\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  }\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  Else Body: {\n");
-  ast_print_node_ident(data->else_body, file, ident+4);
-  fprintf(file, "\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  Else Body: {\n");
+//   ast_print_node_ident(data->else_body, file, ident+4);
+//   fprintf(file, "\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "  }\n");
+//   print_spaces(ident, file);
+//   fprintf(file, "  }\n");
 
-  print_spaces(ident, file);
-  fprintf(file, "}");
-}
-
-void ast_print_while_node(ASTNode *node, FILE *file, size_t ident) {
-  AST_PRINT_DEBUG();
-  assert(node->type == WHILE_STATEMENT);
-  ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
-
-  print_spaces(ident, file);
-  fprintf(file, "While: {\n");
-
-  print_spaces(ident, file);
-  fprintf(file, "  Guard: {\n");
-  ast_print_node_ident(data->expression, file, ident+4);
-
-  print_spaces(ident, file);
-  fprintf(file, "  }\n");
-
-  print_spaces(ident, file);
-  fprintf(file, "  Body: {\n");
-  ast_print_node_ident(data->body, file, ident+4);
-  fprintf(file, "\n");
-
-  print_spaces(ident, file);
-  fprintf(file, "  }\n");
-
-  print_spaces(ident, file);
-  fprintf(file, "}");
-}
+//   print_spaces(ident, file);
+//   fprintf(file, "}");
+// }
 
 
 void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
-  if (node->type == ASSIGNMENT) {
-    ast_print_assignment_node(node, file, ident);
-  } else if (node->type == EXPRESSION) {
+  if (node->type == EXPRESSION) {
     ast_print_expression_node(node, file, ident);
   } else if (node->type == NODES) {
     ast_print_node_list_node(node, file, ident);
-  } else if (node->type == DECLARATION) {
-    ast_print_declaration_node(node, file, ident);
   } else if (node->type == FUNC_DECLARATION) {
     ast_print_func_declaration_node(node, file, ident);
-  } else if (node->type == IF_STATEMENT) {
-    ast_print_if_node(node, file, ident);
-  } else if (node->type == IF_ELSE_STATEMENT) {
-    ast_print_if_else_node(node, file, ident);
-  } else if (node->type == WHILE_STATEMENT) {
-    ast_print_while_node(node, file, ident);
   } else if (node->type == PROGRAM) {
     ast_print_program_node(node, file, ident);
   } else if (node->type == STATEMENT) {
@@ -595,34 +494,11 @@ void ast_dealloc_statement_node(ASTNode *node) {
   free(data);
 }
 
-
 void ast_dealloc_expression_node(ASTNode *node) {
   AST_PRINT_DEBUG();
   assert(node->type == EXPRESSION);
   ExpressionNodeData *data = (ExpressionNodeData *) node->data;
   expr_dealloc_expression(data->expression);
-  free(data);
-}
-
-void ast_dealloc_assignment_node(ASTNode *node) {
-  AST_PRINT_DEBUG();
-  assert(node->type == ASSIGNMENT);
-  AssignmentNodeData *data = (AssignmentNodeData *) node->data;
-  ast_dealloc_node(data->expression);
-  assgnbl_dealloc(data->assgnbl);
-  //idf_dealloc_identifier(data->id);
-  free(data);
-}
-
-void ast_dealloc_declaration_node(ASTNode *node) {
-  AST_PRINT_DEBUG();
-  assert(node->type == DECLARATION);
-  DeclarationNodeData *data = (DeclarationNodeData *) node->data;
-  if (data->has_init)
-    expr_list_dealloc(data->init_values);
-  // ast_dealloc_node(data->expression);
-  // idf_dealloc_identifier(data->id);
-  nt_bind_dealloc(data->nt_bind);
   free(data);
 }
 
@@ -644,43 +520,16 @@ void ast_dealloc_node_list_node(ASTNode *node) {
   free(data);
 }
 
-void ast_dealloc_conditional_statement_node(ASTNode *node) {
-  AST_PRINT_DEBUG();
-  assert(node->type == IF_STATEMENT || node->type == WHILE_STATEMENT);
-  ConditionalStatementNodeData *data = (ConditionalStatementNodeData *) node->data;
-  ast_dealloc_node(data->body);
-  ast_dealloc_node(data->expression);
-  free(data);
-}
-
-void ast_dealloc_if_else_node(ASTNode *node) {
-  AST_PRINT_DEBUG();
-  assert(node->type == IF_ELSE_STATEMENT);
-  IfElseStatementNodeData *data = (IfElseStatementNodeData *) node->data;
-  ast_dealloc_node(data->if_body);
-  ast_dealloc_node(data->else_body);
-  ast_dealloc_node(data->expression);
-  free(data);
-}
-
 void ast_dealloc_node(ASTNode *root) {
   AST_PRINT_DEBUG();
   if (root == NULL)
     return;
-  if (root->type == ASSIGNMENT) {
-    ast_dealloc_assignment_node(root);
-  } else if (root->type == EXPRESSION) {
+  if (root->type == EXPRESSION) {
     ast_dealloc_expression_node(root);
   } else if (root->type == NODES) {
     ast_dealloc_node_list_node(root);
-  } else if (root->type == DECLARATION) {
-    ast_dealloc_declaration_node(root);
   } else if (root->type == FUNC_DECLARATION) {
     ast_dealloc_func_declaration_node(root);
-  } else if (root->type == IF_STATEMENT || root->type == WHILE_STATEMENT) {
-    ast_dealloc_conditional_statement_node(root);
-  } else if (root->type == IF_ELSE_STATEMENT) {
-    ast_dealloc_if_else_node(root);
   } else if (root->type == PROGRAM) {
     ast_dealloc_program_node(root);
   } else if (root->type == STATEMENT) {
