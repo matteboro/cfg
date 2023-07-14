@@ -172,7 +172,7 @@ void prmt_print_funccall_param(Parameter *param, FILE *file) {
 
 typedef struct ParameterList_s{
   struct ParameterList_s *next;
-  Parameter *param;
+  Parameter *node;
 } ParameterList;
 
 //// CREATE EMPTY
@@ -180,7 +180,7 @@ typedef struct ParameterList_s{
 ParameterList *prmt_list_create_empty() {
   ParameterList *list = (ParameterList *)malloc(sizeof(ParameterList));
   list->next = NULL;
-  list->param = NULL;
+  list->node = NULL;
   return list;
   // return NULL;
 }
@@ -188,7 +188,7 @@ ParameterList *prmt_list_create_empty() {
 ParameterList *prmt_list_create(Parameter *param) {
   ParameterList *list = (ParameterList *)malloc(sizeof(ParameterList));
   list->next = NULL;
-  list->param = param;
+  list->node = param;
   return list;
 }
 
@@ -196,8 +196,8 @@ ParameterList *prmt_list_create(Parameter *param) {
 
 void prmt_list_append(ParameterList *list, Parameter *param) {
   if (list->next == NULL) {
-    if (list->param == NULL) {
-      list->param = param;
+    if (list->node == NULL) {
+      list->node = param;
     } else {
       list->next = prmt_list_create(param);
     }
@@ -220,9 +220,9 @@ void prmt_list_dealloc(ParameterList *list) {
   if (list->next != NULL)
     prmt_list_dealloc(list->next);
   
-  if (list->param != NULL)
-    prmt_dealloc_param(list->param);
-  
+  if (list->node != NULL)
+    prmt_dealloc_param(list->node);
+
   free(list);
 }
 
@@ -232,7 +232,7 @@ size_t prmt_list_size(ParameterList *list) {
   if (list->next != NULL)
     return prmt_list_size(list->next) + 1;
   
-  if (list->param != NULL)
+  if (list->node != NULL)
     return 1;
   
   return 0;
@@ -241,21 +241,21 @@ size_t prmt_list_size(ParameterList *list) {
 //// GET AT
 
 Parameter *prmt_list_get_at(ParameterList *list, size_t index) {
-  if (list->next == NULL && list->param == NULL && index == 0)
+  if (list->next == NULL && list->node == NULL && index == 0)
     return NULL;
   assert(index < prmt_list_size(list));
   ParameterList *n = list;
   for (size_t i=0; i<index; ++i)
     n = n->next;
-  return n->param;
+  return n->node;
 }
 
 //// PRINT
 
 void prmt_list_print(ParameterList *list, FILE *file) {
   if_null_print(list, file);
-  if (list->param != NULL)
-    prmt_print_param(list->param, file);
+  if (list->node != NULL)
+    prmt_print_param(list->node, file);
   
   if (list->next != NULL){
     fprintf(file, ", ");
