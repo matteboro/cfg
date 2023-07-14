@@ -21,7 +21,6 @@
 typedef enum {
   EXPRESSION,
   NODES,
-  FUNC_DECLARATION,
   PROGRAM,
   STATEMENT,
 } ASTNodeType;
@@ -182,13 +181,7 @@ typedef struct {
 } NodeListData;
 
 typedef struct {
-  Identifier *func_name;
-  ParameterList *params;
-  ASTNode *statements;
-} FunctionDeclarationNodeData;
-
-typedef struct {
-  ASTNode *func_declarations;
+  FunctionDeclarationList *func_declarations;
   ASTNode *global_statements;
   // ASTNode *struct_declarations;
   StructDeclarationList *struct_declarations;
@@ -208,7 +201,7 @@ ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
 }
 
 ASTNode *ast_create_program_node(
-  ASTNode *func_declarations, 
+  FunctionDeclarationList *func_declarations, 
   ASTNode *global_statements, 
   StructDeclarationList *struct_declarations) {
   ProgramNodeData *data = (ProgramNodeData *) malloc(sizeof(ProgramNodeData));
@@ -236,14 +229,6 @@ ASTNode *ast_create_node_list_node(ASTNodeList *list) {
   return ast_create_node(NODES, data);
 }
 
-ASTNode *ast_create_func_declaration_node(Identifier *id, ParameterList *params, ASTNode *statements) {
-  FunctionDeclarationNodeData *data = (FunctionDeclarationNodeData *) malloc(sizeof(FunctionDeclarationNodeData));
-  data->func_name = id;
-  data->params = params;
-  data->statements = statements;
-  return ast_create_node(FUNC_DECLARATION, data);
-}
-
 // PRINT
 
 void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident);
@@ -256,37 +241,30 @@ void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
 
   print_spaces(ident, file);
   fprintf(file, "Program: {\n");
-
   print_spaces(ident, file);
-  fprintf(file, "  Functions: {\n");
+  fprintf(file, "  Functions: [\n");
 
   //functions
-  ast_print_node_ident(data->func_declarations, file, ident+4);
+  func_decl_list_print_ident(data->func_declarations, file, ident+4);
   fprintf(file, "\n");
-
   print_spaces(ident, file);
-  fprintf(file, "  }\n");
-
+  fprintf(file, "  ]\n");
   print_spaces(ident, file);
   fprintf(file, "  Data Structs: {\n");
 
   //structs
   strct_decl_list_print_ident(data->struct_declarations, file, ident+4);
   fprintf(file, "\n");
-
   print_spaces(ident, file);
   fprintf(file, "  }\n");
-
   print_spaces(ident, file);
   fprintf(file, "  Global Statements: {\n");
 
   //statements
   ast_print_node_ident(data->global_statements, file, ident+4);
   fprintf(file, "\n");
-
   print_spaces(ident, file);
   fprintf(file, "  }\n");
-
   print_spaces(ident, file);
   fprintf(file, "}");
 }
@@ -314,8 +292,6 @@ void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
     ast_print_expression_node(node, file, ident);
   } else if (node->type == NODES) {
     ast_print_node_list_node(node, file, ident);
-  } else if (node->type == FUNC_DECLARATION) {
-    ast_print_func_declaration_node(node, file, ident);
   } else if (node->type == PROGRAM) {
     ast_print_program_node(node, file, ident);
   } else if (node->type == STATEMENT) {
@@ -341,39 +317,13 @@ void ast_print_node_list_node(ASTNode *node, FILE *file, size_t ident) {
   fprintf(file, "]");
 }
 
-void ast_print_func_declaration_node(ASTNode *node, FILE *file, size_t ident) {
-  AST_PRINT_DEBUG();
-  assert(node->type == FUNC_DECLARATION);
-  FunctionDeclarationNodeData *data = (FunctionDeclarationNodeData *) node->data;
-
-  print_spaces(ident, file);
-  fprintf(file, "Function Declaration: {\n");
-
-  print_spaces(ident, file);
-  fprintf(file, "  Name: ");
-  idf_print_identifier(data->func_name, file);
-  fprintf(file, ",\n");
-
-  print_spaces(ident, file);
-  fprintf(file, "  Parameters: ");
-  prmt_list_print(data->params, file);
-  fprintf(file, ",\n");
-
-  ast_print_node_ident(data->statements, file, ident+2);
-
-  fprintf(file, "\n");
-  print_spaces(ident, file);
-  fprintf(file, "}");
-}
-
-
 // DEALLOC
 
 void ast_dealloc_program_node(ASTNode *node) {
   AST_PRINT_DEBUG();
   assert(node->type == PROGRAM);
   ProgramNodeData *data = (ProgramNodeData *) node->data;
-  ast_dealloc_node(data->func_declarations);
+  func_decl_list_dealloc(data->func_declarations);
   ast_dealloc_node(data->global_statements);
   strct_decl_list_dealloc(data->struct_declarations);
   free(data);
@@ -395,16 +345,6 @@ void ast_dealloc_expression_node(ASTNode *node) {
   free(data);
 }
 
-void ast_dealloc_func_declaration_node(ASTNode *node) {
-  AST_PRINT_DEBUG();
-  assert(node->type == FUNC_DECLARATION);
-  FunctionDeclarationNodeData *data = (FunctionDeclarationNodeData *) node->data;
-  ast_dealloc_node(data->statements);
-  idf_dealloc_identifier(data->func_name);
-  prmt_list_dealloc(data->params);
-  free(data);
-}
-
 void ast_dealloc_node_list_node(ASTNode *node) {
   AST_PRINT_DEBUG();
   assert(node->type == NODES); 
@@ -421,8 +361,6 @@ void ast_dealloc_node(ASTNode *root) {
     ast_dealloc_expression_node(root);
   } else if (root->type == NODES) {
     ast_dealloc_node_list_node(root);
-  } else if (root->type == FUNC_DECLARATION) {
-    ast_dealloc_func_declaration_node(root);
   } else if (root->type == PROGRAM) {
     ast_dealloc_program_node(root);
   } else if (root->type == STATEMENT) {

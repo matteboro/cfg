@@ -42,7 +42,7 @@ void func_decl_print_ident(FunctionDeclaration *func, FILE *file, size_t ident) 
   prmt_list_print(func->params, file);
   fprintf(file, ") {\n");
 
-  stmnt_print(func->body, file);
+  stmnt_print_ident(func->body, file, ident+2);
   fprintf(file, "\n");
 
   print_spaces(ident, file);
