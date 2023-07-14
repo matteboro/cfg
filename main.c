@@ -452,7 +452,20 @@ Checks:
       - if it is an expression, we recursively calculate the type of the sub-expression; 
       - if it is a function call, we check the return type of the function;
       - if it is a dereference object we need to do some more work:
-        - 
+        - We probably need some sort of table that holds the knowledge about all declared object (so all)
+          the NameTypeBinding valid to that point) and a table holding information about all the declared 
+          types (for the latter the part regarding declared structs is already inside the program node of
+          the outputted AST). I will think about it in the future...
+
+A couple of things to do:
+  - re-implement the Parameter object, there should not be different type of parameter. It should
+    contain a NameTypeBinding (for the moment just that, maybe in the future a default type or 
+    something else);
+  - clean the AST nodes type, maybe it will only remain the Program node. In that case remove ast
+    and create a Program object, and the parser return a Program;
+  - we need to implement the possibility of having function call as statement; as for the moment
+    those are parsed only has operands in expressions;
+  - add the parsing of return statement (pretty straight-forward);
 
   
 ============================================================================================
@@ -472,9 +485,13 @@ TODO list:
    |  [x] parsing of structs;
   [x] ObjectDereference (and move it where it is used);
   [x] string operations;
-  [ ] distinguish the ASTNodeList type of node between all the cases;
+  [/] distinguish the ASTNodeList type of node between all the cases;
   [ ] pointers;
-  [ ] undefined arr sizes in function declaration parameters
+  [ ] undefined arr sizes in function declaration parameters;
+  [ ] re-implement Parameter;
+  [ ] clean AST of garbage (maybe remove it, leave only Program);
+  [ ] function call as statement;
+  [ ] add return statement to parsing phase;
 
 ============================================================================================
 */
