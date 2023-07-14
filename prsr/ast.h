@@ -6,6 +6,7 @@
 #include <assert.h>
 #include "../utility/list.h"
 #include "strct_decl.h"
+#include "stmnt.h"
 
 // #define AST_DEBUG
 #ifdef AST_DEBUG
@@ -26,6 +27,7 @@ typedef enum {
   IF_ELSE_STATEMENT,
   WHILE_STATEMENT,
   PROGRAM,
+  STATEMENT,
 } ASTNodeType;
 
 // DEFINITIONS
@@ -218,6 +220,10 @@ typedef struct {
   StructDeclarationList *struct_declarations;
 } ProgramNodeData;
 
+typedef struct {
+  Statement *stmnt;
+} StatementNodeData;
+
 // CREATE
 
 ASTNode *ast_create_node(ASTNodeType type, ASTNodeData *data) {
@@ -236,6 +242,12 @@ ASTNode *ast_create_program_node(
   data->global_statements = global_statements;
   data->struct_declarations = struct_declarations;
   return ast_create_node(PROGRAM, data);
+}
+
+ASTNode *ast_create_statement_node(Statement *stmnt) {
+  StatementNodeData *data = (StatementNodeData *)malloc(sizeof(StatementNodeData));
+  data->stmnt = stmnt;
+  return ast_create_node(STATEMENT, data);
 }
 
 ASTNode *ast_create_assignment_node(AssignableElement *assgnbl, ASTNode *expression_node) {
@@ -341,6 +353,13 @@ void ast_print_program_node(ASTNode *node, FILE *file, size_t ident) {
 
   print_spaces(ident, file);
   fprintf(file, "}");
+}
+
+void ast_print_statement_node(ASTNode *node, FILE *file, size_t ident) {
+  AST_PRINT_DEBUG();
+  assert(node->type == STATEMENT);
+  StatementNodeData *data = (StatementNodeData *) node->data;
+  stmnt_print(data->stmnt, file);
 }
 
 void ast_print_expression_node(ASTNode *node, FILE *file, size_t ident) {
@@ -507,6 +526,8 @@ void ast_print_node_ident(ASTNode *node, FILE *file, size_t ident) {
     ast_print_while_node(node, file, ident);
   } else if (node->type == PROGRAM) {
     ast_print_program_node(node, file, ident);
+  } else if (node->type == STATEMENT) {
+    ast_print_statement_node(node, file, ident);
   } else {
     AST_ERROR();
   }
@@ -565,6 +586,15 @@ void ast_dealloc_program_node(ASTNode *node) {
   strct_decl_list_dealloc(data->struct_declarations);
   free(data);
 }
+
+void ast_dealloc_statement_node(ASTNode *node) {
+  AST_PRINT_DEBUG();
+  assert(node->type == STATEMENT);
+  StatementNodeData *data = (StatementNodeData *) node->data;
+  stmnt_dealloc(data->stmnt);
+  free(data);
+}
+
 
 void ast_dealloc_expression_node(ASTNode *node) {
   AST_PRINT_DEBUG();
@@ -653,6 +683,8 @@ void ast_dealloc_node(ASTNode *root) {
     ast_dealloc_if_else_node(root);
   } else if (root->type == PROGRAM) {
     ast_dealloc_program_node(root);
+  } else if (root->type == STATEMENT) {
+    ast_dealloc_statement_node(root);
   } else {
     AST_ERROR();
   }

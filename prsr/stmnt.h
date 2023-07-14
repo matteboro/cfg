@@ -48,7 +48,7 @@ LIST(stmnt, Statement, stmnt_dealloc, stmnt_print)
 // ASSIGNMENT
 
 struct AssignmentPayload_s;
-typedef AssignmentPayload_s AssignmentPayload;
+typedef struct AssignmentPayload_s AssignmentPayload;
 
 Statement *stmnt_create_assignment(AssignableElement *, Expression *);
 void stmnt_print_assignment(Statement *, FILE *);
@@ -80,9 +80,9 @@ void stmnt_dealloc_assignment(Statement *stmnt) {
 // DECLARATION
 
 struct DeclarationPayload_s;
-typedef DeclarationPayload_s DeclarationPayload;
+typedef struct DeclarationPayload_s DeclarationPayload;
 
-Statement *stmnt_create_declaration(AssignableElement *, Expression *);
+Statement *stmnt_create_declaration(NameTypeBinding *, ExpressionList *);
 void stmnt_print_declaration(Statement *, FILE *);
 void stmnt_dealloc_declaration(Statement *);
 
@@ -113,9 +113,9 @@ void stmnt_dealloc_declaration(Statement *stmnt) {
 // payload {Expression *condition, Statement *if_body, Statement *else_body}
 
 struct IfElsePayload_s;
-typedef IfElsePayload_s IfElsePayload;
+typedef struct IfElsePayload_s IfElsePayload;
 
-Statement *stmnt_create_if_else(AssignableElement *, Expression *);
+Statement *stmnt_create_if_else(Expression *, Statement *);
 void stmnt_print_if_else(Statement *, FILE *);
 void stmnt_dealloc_if_else(Statement *);
 
@@ -124,7 +124,7 @@ struct IfElsePayload_s {
   Statement *body;
 };
 
-Statement *stmnt_create_if_else( Expression *condition, Statement *body) {
+Statement *stmnt_create_if_else(Expression *condition, Statement *body) {
   STMNT_ALLOC_PAYLOAD(IfElsePayload);
   payload->condition = condition;
   payload->body = body;
@@ -146,9 +146,9 @@ void stmnt_dealloc_if_else(Statement *stmnt) {
 // payload {Expression *condition, Statement *body}
 
 struct WhilePayload_s;
-typedef WhilePayload_s WhilePayload;
+typedef struct WhilePayload_s WhilePayload;
 
-Statement *stmnt_create_while(AssignableElement *, Expression *);
+Statement *stmnt_create_while(Expression *, Statement *);
 void stmnt_print_while(Statement *, FILE *);
 void stmnt_dealloc_while(Statement *);
 
@@ -157,7 +157,7 @@ struct WhilePayload_s {
   Statement *body;
 };
 
-Statement *stmnt_create_while( Expression *condition, Statement *body) {
+Statement *stmnt_create_while(Expression *condition, Statement *body) {
   STMNT_ALLOC_PAYLOAD(WhilePayload);
   payload->condition = condition;
   payload->body = body;
@@ -179,9 +179,9 @@ void stmnt_dealloc_while(Statement *stmnt) {
 // payload {Expression *ret_value}
 
 struct ReturnPayload_s;
-typedef ReturnPayload_s ReturnPayload;
+typedef struct ReturnPayload_s ReturnPayload;
 
-Statement *stmnt_create_return(AssignableElement *, Expression *);
+Statement *stmnt_create_return(Expression *);
 void stmnt_print_return(Statement *, FILE *);
 void stmnt_dealloc_return(Statement *);
 
@@ -189,7 +189,7 @@ struct ReturnPayload_s {
   Expression *ret_value;
 };
 
-Statement *stmnt_create_return( Expression *ret_value) {
+Statement *stmnt_create_return(Expression *ret_value) {
   STMNT_ALLOC_PAYLOAD(ReturnPayload);
   payload->ret_value = ret_value;
   return stmnt_create(payload, RETURN_STMNT);
@@ -209,9 +209,9 @@ void stmnt_dealloc_return(Statement *stmnt) {
 // payload {StatementList *statements}
 
 struct BlockPayload_s;
-typedef BlockPayload_s BlockPayload;
+typedef struct BlockPayload_s BlockPayload;
 
-Statement *stmnt_create_block(AssignableElement *, Expression *);
+Statement *stmnt_create_block(StatementList *);
 void stmnt_print_block(Statement *, FILE *);
 void stmnt_dealloc_block(Statement *);
 
@@ -246,8 +246,11 @@ void (*stmnt_dealloc_funcs[])(Statement *) = {
   [RETURN_STMNT] = stmnt_dealloc_return,
 };
 
+#define STMNT_SIZE_OF_DEALLOC_FUNCS sizeof(stmnt_dealloc_funcs)/sizeof(void (*)(Statement *))
+
+
 void stmnt_dealloc(Statement *stmnt) {
-  assert(COUNT_STMNT == sizeof(stmnt_dealloc_funcs));
+  assert(COUNT_STMNT == STMNT_SIZE_OF_DEALLOC_FUNCS);
   stmnt_dealloc_funcs[stmnt->type](stmnt);
   free(stmnt);
 }
@@ -261,7 +264,9 @@ void (*stmnt_print_funcs[])(Statement *, FILE *) = {
   [RETURN_STMNT] = stmnt_print_return,
 };
 
+#define STMNT_SIZE_OF_PRINT_FUNCS sizeof(stmnt_print_funcs)/sizeof(void (*)(Statement *, FILE *))
+
 void stmnt_print(Statement *stmnt, FILE *file) {
-  assert(COUNT_STMNT == sizeof(stmnt_print_funcs));
+  assert(COUNT_STMNT == STMNT_SIZE_OF_PRINT_FUNCS);
   stmnt_print_funcs[stmnt->type](stmnt, file);
 }
