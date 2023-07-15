@@ -419,7 +419,7 @@ ParameterList *prsr_parse_func_declaration_params()
     prsr_match(IDENTIFIER_TOKEN);
     prmt_list_append(
       params,
-      prmt_create_funcdec_param(
+      prmt_create(
         nt_bind_create(
           idf_create_identifier_from_token(name_token),
           type
