@@ -67,10 +67,9 @@ Token prsr_match(TokenType token_type)
 
 //// PARSE EXPRESSION
 
-Expression *prsr_parse_funccall(Token token)
+FunctionCall *prsr_parse_funccall(Token func_name)
 {
   PRSR_DEBUG_PRINT();
-  char *func_name = lxr_get_token_data_as_cstring(token);
   prsr_match(OPEN_PAREN_TOKEN);
   ExpressionList *params_values = expr_list_create_empty();
   if (lookhaed.type != CLOSE_PAREN_TOKEN)
@@ -84,11 +83,9 @@ Expression *prsr_parse_funccall(Token token)
       prsr_match(COMMA_TOKEN);
     }
   }
-  FunctionCall *func_call = funccall_create(func_name, params_values);
-  Expression *result = expr_create_funccall_operand_expression(func_call);
-  free(func_name);
+  FunctionCall *func_call = funccall_create(idf_create_identifier_from_token(func_name), params_values);
   prsr_match(CLOSE_PAREN_TOKEN);
-  return result;
+  return func_call;
 }
 
 ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
@@ -137,7 +134,7 @@ Expression *prsr_parse_factor()
     Token start_deref = prsr_match(IDENTIFIER_TOKEN);
     if (lookhaed.type == OPEN_PAREN_TOKEN) 
     {
-      Expression *result = prsr_parse_funccall(start_deref);
+      Expression *result = expr_create_funccall_operand_expression(prsr_parse_funccall(start_deref));
       return result;
     } 
     ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
@@ -342,7 +339,7 @@ Statement *prsr_parse_declaration(Token start_type) {
       init_expr);
 }
 
-Statement *prsr_dispatch_declaration_assignment() {
+Statement *prsr_dispatch_id_started_statement() {
   Statement *statement = NULL;
 
   Token maybe_type_or_id = lookhaed;
@@ -352,10 +349,11 @@ Statement *prsr_dispatch_declaration_assignment() {
       lookhaed.type == OPEN_SQUARE_TOKEN ||
       lookhaed.type == POINT_TOKEN) {
     statement = prsr_parse_assignment(maybe_type_or_id);
+  } else if (lookhaed.type == OPEN_PAREN_TOKEN) {
+    statement = stmnt_create_funccall(prsr_parse_funccall(maybe_type_or_id));
   } else {
     statement = prsr_parse_declaration(maybe_type_or_id);
   }
-
   return statement;
 }
 
@@ -374,7 +372,7 @@ Statement *prsr_parse_statement()
     return prsr_parse_while_statement();
   } 
   Statement *statement = NULL;
-  statement = prsr_dispatch_declaration_assignment();
+  statement = prsr_dispatch_id_started_statement();
   prsr_match(SEMICOLON_TOKEN);
   return statement;
 }

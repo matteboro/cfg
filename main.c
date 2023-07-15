@@ -489,7 +489,7 @@ TODO list:
   [ ] pointers;
   [ ] undefined arr sizes in function declaration parameters;
   [x] re-implement Parameter;
-  [ ] clean AST of garbage (maybe remove it, leave only Program);
+  [x] clean AST of garbage (maybe remove it, leave only Program);
   [ ] function call as statement;
   [ ] add return statement to parsing phase;
 

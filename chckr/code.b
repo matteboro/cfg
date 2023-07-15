@@ -23,6 +23,6 @@ func main (int :: n_args, int arr[10] :: args) {
     string :: dknow = "dont know";
     f =  < dknow >;
   }
-
+  print_int(f);
   f = f + j * i;
 }

@@ -2,6 +2,7 @@
 
 #include "../expr/expr.h"
 #include "assgnbl.h"
+#include "../expr/funccall.h"
 
 #define STMNT_ALLOC_PAYLOAD(type) type *payload = (type *)malloc(sizeof(type))
 #define STMNT_CAST_PAYLOAD(type, obj) type *payload = (type *)obj->payload
@@ -29,6 +30,8 @@ enum StatementType_e {
   IF_ELSE_STMNT,
   WHILE_STMNT,
   RETURN_STMNT,
+  FUNCCALL_STMNT,
+  // define above here
   COUNT_STMNT,
 };
 
@@ -304,6 +307,37 @@ void stmnt_dealloc_block(Statement *stmnt) {
   free(payload);
 }
 
+// FUNCCALL STATEMENT
+
+struct FunctionCallPayload_s;
+typedef struct FunctionCallPayload_s FunctionCallPayload;
+
+Statement *stmnt_create_funccall(FunctionCall *);
+void stmnt_print_funccall_ident(Statement *, FILE *, size_t);
+void stmnt_dealloc_funccall(Statement *);
+
+struct FunctionCallPayload_s {
+  FunctionCall *funccall;
+};
+
+Statement *stmnt_create_funccall(FunctionCall *funccall) {
+  STMNT_ALLOC_PAYLOAD(FunctionCallPayload);
+  payload->funccall = funccall;
+  return stmnt_create(payload, FUNCCALL_STMNT);
+}
+
+void stmnt_print_funccall_ident(Statement *stmnt, FILE *file, size_t ident) {
+  STMNT_CAST_PAYLOAD(FunctionCallPayload, stmnt);
+  print_spaces(ident, file);
+  funccall_print(payload->funccall, file);
+}
+
+void stmnt_dealloc_funccall(Statement *stmnt) {
+  STMNT_CAST_PAYLOAD(FunctionCallPayload, stmnt);
+  funccall_dealloc(payload->funccall);
+  free(payload);
+}
+
 // GENERAL DEFINITION
 
 #define STMNT_PRINT_SIGN   void (*)(Statement *, FILE *, size_t)
@@ -312,54 +346,34 @@ void stmnt_dealloc_block(Statement *stmnt) {
 enum {
   PRINT_FUNC   = 0,
   DEALLOC_FUNC = 1,
+  COUNT_FUNC,
 };
 
-void *stmnt_funcs_map[][2] = {
+void *stmnt_funcs_map[][COUNT_FUNC] = {
   [ASSIGNMENT_STMNT]   = {stmnt_print_assignment_ident,   stmnt_dealloc_assignment},
   [DECLARATION_STMNT]  = {stmnt_print_declaration_ident,  stmnt_dealloc_declaration},
   [BLOCK_STMNT]        = {stmnt_print_block_ident,        stmnt_dealloc_block},
   [IF_ELSE_STMNT]      = {stmnt_print_if_else_ident,      stmnt_dealloc_if_else},
   [WHILE_STMNT]        = {stmnt_print_while_ident,        stmnt_dealloc_while},
   [RETURN_STMNT]       = {stmnt_print_return_ident,       stmnt_dealloc_return},
+  [FUNCCALL_STMNT]     = {stmnt_print_funccall_ident,     stmnt_dealloc_funccall},
 };
 
-void (*stmnt_dealloc_funcs[])(Statement *) = {
-  [ASSIGNMENT_STMNT] = stmnt_dealloc_assignment,
-  [DECLARATION_STMNT] = stmnt_dealloc_declaration,
-  [BLOCK_STMNT] = stmnt_dealloc_block,
-  [IF_ELSE_STMNT] = stmnt_dealloc_if_else,
-  [WHILE_STMNT] = stmnt_dealloc_while,
-  [RETURN_STMNT] = stmnt_dealloc_return,
-};
-
-#define STMNT_SIZE_OF_DEALLOC_FUNCS sizeof(stmnt_dealloc_funcs)/sizeof(void (*)(Statement *))
+#define STMNT_SIZE_OF_FUNCS_MAP (sizeof(stmnt_funcs_map)/sizeof(void *))/COUNT_FUNC
 
 void stmnt_dealloc(Statement *stmnt) {
-  assert(COUNT_STMNT == STMNT_SIZE_OF_DEALLOC_FUNCS);
+  assert(COUNT_STMNT == STMNT_SIZE_OF_FUNCS_MAP);
   if (stmnt == NULL)
     return;
-  stmnt_dealloc_funcs[stmnt->type](stmnt);
+  ((STMNT_DEALLOC_SIGN)stmnt_funcs_map[stmnt->type][DEALLOC_FUNC])(stmnt);
   free(stmnt);
 }
 
-void (*stmnt_print_funcs[])(Statement *, FILE *, size_t) = {
-  [ASSIGNMENT_STMNT] = stmnt_print_assignment_ident,
-  [DECLARATION_STMNT] = stmnt_print_declaration_ident,
-  [BLOCK_STMNT] = stmnt_print_block_ident,
-  [IF_ELSE_STMNT] = stmnt_print_if_else_ident,
-  [WHILE_STMNT] = stmnt_print_while_ident,
-  [RETURN_STMNT] = stmnt_print_return_ident,
-};
-
-#define STMNT_SIZE_OF_PRINT_FUNCS sizeof(stmnt_print_funcs)/sizeof(void (*)(Statement *, FILE *))
+void stmnt_print_ident(Statement *stmnt, FILE *file, size_t ident) {
+  assert(COUNT_STMNT == STMNT_SIZE_OF_FUNCS_MAP);
+  ((STMNT_PRINT_SIGN)stmnt_funcs_map[stmnt->type][PRINT_FUNC])(stmnt, file, ident);
+}
 
 void stmnt_print(Statement *stmnt, FILE *file) {
-  assert(COUNT_STMNT == STMNT_SIZE_OF_PRINT_FUNCS);
-  stmnt_print_funcs[stmnt->type](stmnt, file, 0);
+  stmnt_print_ident(stmnt, file, 0);
 }
-
-void stmnt_print_ident(Statement *stmnt, FILE *file, size_t ident) {
-  assert(COUNT_STMNT == STMNT_SIZE_OF_PRINT_FUNCS);
-  stmnt_print_funcs[stmnt->type](stmnt, file, ident);
-}
-

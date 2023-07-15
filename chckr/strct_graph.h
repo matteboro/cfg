@@ -1,7 +1,6 @@
-#ifndef STRCT_GRAPH_HEADER
-#define STRCT_GRAPH_HEADER
+#pragma once
 
-#include "../prsr/ast.h"
+#include "../prsr/strct_decl.h"
 
 // FORWARD DECLARATIONS
 
@@ -247,5 +246,3 @@ void strct_graph_dealloc(StructGraph *graph) {
   free(graph->structs);
   free(graph);
 }
-
-#endif // end STRCT_GRAPH_HEADER
