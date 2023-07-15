@@ -46,3 +46,13 @@ func main (int :: n_args, int arr[10] :: args) {
 }
 
 main(0, null);
+int :: i1 = 10;
+string :: f2 = "Hello, world";
+struct1 :: f3;
+{
+  int :: s2 = 10;
+  string :: g4 = "Hello, world";
+  struct1 :: t8;
+}
+
+int arr[6] :: t8;

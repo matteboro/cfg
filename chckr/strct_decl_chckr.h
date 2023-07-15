@@ -35,7 +35,7 @@ bool strct_decl_chckr_check_double_attributes(StructDeclarationList *structs) {
   return True;
 }
 
-bool strct_decl_check_atribute_type_existence(StructDeclarationList *structs) {
+bool strct_decl_check_attribute_type_existence(StructDeclarationList *structs) {
   FOR_EACH(StructDeclarationList, strct_it, structs) {
     AttributeList *attrbs = strct_it->node->attributes;
     FOR_EACH(AttributeList, attrb_it, attrbs) {
@@ -47,20 +47,20 @@ bool strct_decl_check_atribute_type_existence(StructDeclarationList *structs) {
   return True;
 }
 
-bool strct_decl_chckr_check(ASTProgram *program) {
+bool strct_decl_chckr_check(StructDeclarationList *structs) {
 
-  if(!strct_decl_chckr_check_double_attributes(program->struct_declarations)) {
+  if(!strct_decl_chckr_check_double_attributes(structs)) {
     fprintf(stdout, "ERROR, did not pass struct declaration analysis. There are attributes with same names within a struct.\n");
     return False;
   }
 
-  if(!strct_decl_check_atribute_type_existence(program->struct_declarations)) {
+  if(!strct_decl_check_attribute_type_existence(structs)) {
     fprintf(stdout, "ERROR, did not pass struct declaration analysis. One of the attribute has non existent type.\n");
     return False;
   }
 
   bool result = True;
-  StructGraph* struct_graph = strct_graph_maker(program->struct_declarations);
+  StructGraph* struct_graph = strct_graph_maker(structs);
   if(!strct_graph_analyzer(struct_graph)) {
     result = False;
   }

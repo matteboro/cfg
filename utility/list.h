@@ -16,7 +16,7 @@ typedef struct s_##type_name##List{             \
 
 
 #define DEFAULT_LIST_CREATE_EMPTY(prefix, type_name)                                \
-type_name##List * prefix##_list_create_empty() {                                   \
+type_name##List * prefix##_list_create_empty() {                                    \
   type_name##List *list = (type_name##List *)LIST_ALLOC(sizeof(type_name##List));   \
   list->next = NULL;                                                                \
   list->node = NULL;                                                                \
@@ -24,7 +24,7 @@ type_name##List * prefix##_list_create_empty() {                                
 }
 
 #define DEFAULT_LIST_CREATE(prefix, type_name)                                      \
-type_name##List * prefix##_list_create(type_name *node) {                          \
+type_name##List * prefix##_list_create(type_name *node) {                           \
   type_name##List *list = (type_name##List *)LIST_ALLOC(sizeof(type_name##List));   \
   list->next = NULL;                                                                \
   list->node = node;                                                                \
@@ -104,8 +104,8 @@ type_name *prefix##_list_pop_last(type_name##List *list) {   \
     }                                                        \
   }                                                          \
   if (list->next->next == NULL) {                            \
-    type_name##List *last_node = list->next;                  \
-    type_name *ret_val = last_node->node;                          \
+    type_name##List *last_node = list->next;                 \
+    type_name *ret_val = last_node->node;                    \
     list->next = NULL;                                       \
     free(last_node);                                         \
     return ret_val;                                          \

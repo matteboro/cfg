@@ -8,6 +8,12 @@
 #define STMNT_CAST_PAYLOAD(type, obj) type *payload = (type *)obj->payload
 #define STMNT_ALLOC(type) (type *)malloc(sizeof(type))
 #define print_spaces(n, file) {for (size_t spaces_counter=0; spaces_counter<n; ++spaces_counter) fprintf(file, " ");}
+#define STMNT_GETTER(stmnt_prefix, obj_type, obj_name, payload_type, stmnt_type)  \
+obj_type *stmnt_## stmnt_prefix ## _get_ ## obj_name  (Statement* stmnt) {               \
+  assert(stmnt->type == stmnt_type);                                              \
+  STMNT_CAST_PAYLOAD(payload_type, stmnt);                                        \
+  return payload->obj_name;                                                       \
+} 
 
 
 enum StatementType_e;
@@ -65,6 +71,9 @@ struct AssignmentPayload_s {
   Expression *value;
 };
 
+STMNT_GETTER(assignment, AssignableElement, assgnbl, AssignmentPayload, ASSIGNMENT_STMNT)
+STMNT_GETTER(assignment, Expression, value, AssignmentPayload, ASSIGNMENT_STMNT)
+
 Statement *stmnt_create_assignment(AssignableElement *assgnbl, Expression *value) {
   STMNT_ALLOC_PAYLOAD(AssignmentPayload);
   payload->assgnbl = assgnbl;
@@ -101,6 +110,9 @@ struct DeclarationPayload_s {
   NameTypeBinding *nt_bind;
   ExpressionList *init_values;
 };
+
+STMNT_GETTER(declaration, NameTypeBinding, nt_bind, DeclarationPayload, DECLARATION_STMNT)
+STMNT_GETTER(declaration, ExpressionList, init_values, DeclarationPayload, DECLARATION_STMNT)
 
 Statement *stmnt_create_declaration(NameTypeBinding *nt_bind, ExpressionList *init_values) {
   STMNT_ALLOC_PAYLOAD(DeclarationPayload);
@@ -148,6 +160,10 @@ struct IfElsePayload_s {
   Statement *if_body;
   Statement *else_body;
 };
+
+STMNT_GETTER(if_else, Expression, condition, IfElsePayload, IF_ELSE_STMNT)
+STMNT_GETTER(if_else, Statement, if_body, IfElsePayload, IF_ELSE_STMNT)
+STMNT_GETTER(if_else, Statement, else_body, IfElsePayload, IF_ELSE_STMNT)
 
 Statement *stmnt_create_if_else(Expression *condition, Statement *if_body, Statement *else_body) {
   STMNT_ALLOC_PAYLOAD(IfElsePayload);
@@ -208,6 +224,9 @@ struct WhilePayload_s {
   Statement *body;
 };
 
+STMNT_GETTER(while, Expression, condition, WhilePayload, WHILE_STMNT)
+STMNT_GETTER(while, Statement, body, WhilePayload, WHILE_STMNT)
+
 Statement *stmnt_create_while(Expression *condition, Statement *body) {
   STMNT_ALLOC_PAYLOAD(WhilePayload);
   payload->condition = condition;
@@ -251,6 +270,8 @@ struct ReturnPayload_s {
   Expression *ret_value;
 };
 
+STMNT_GETTER(return, Expression, ret_value, ReturnPayload, RETURN_STMNT)
+
 Statement *stmnt_create_return(Expression *ret_value) {
   STMNT_ALLOC_PAYLOAD(ReturnPayload);
   payload->ret_value = ret_value;
@@ -284,6 +305,8 @@ struct BlockPayload_s {
   StatementList *body;
 };
 
+STMNT_GETTER(block, StatementList, body, BlockPayload, BLOCK_STMNT)
+
 Statement *stmnt_create_block(StatementList *body) {
   STMNT_ALLOC_PAYLOAD(BlockPayload);
   payload->body = body;
@@ -291,11 +314,18 @@ Statement *stmnt_create_block(StatementList *body) {
 }
 
 void stmnt_print_block_ident(Statement *stmnt, FILE *file, size_t ident) {
-
   STMNT_CAST_PAYLOAD(BlockPayload, stmnt);
-
   FOR_EACH(StatementList, stmnt_it, payload->body) {
-    stmnt_print_ident(stmnt_it->node, file, ident);
+    if (stmnt_it->node->type == BLOCK_STMNT) {
+      print_spaces(ident, file);
+      fprintf(file, "{\n");
+      stmnt_print_ident(stmnt_it->node, file, ident+2);
+      fprintf(file, "\n");
+      print_spaces(ident, file);
+      fprintf(file, "}");
+    } else {
+      stmnt_print_ident(stmnt_it->node, file, ident);
+    }
     if (stmnt_it->next != NULL)
       fprintf(file, "\n");
   }
@@ -320,6 +350,8 @@ struct FunctionCallPayload_s {
   FunctionCall *funccall;
 };
 
+STMNT_GETTER(funccall, FunctionCall, funccall, FunctionCallPayload, FUNCCALL_STMNT)
+
 Statement *stmnt_create_funccall(FunctionCall *funccall) {
   STMNT_ALLOC_PAYLOAD(FunctionCallPayload);
   payload->funccall = funccall;
@@ -337,6 +369,7 @@ void stmnt_dealloc_funccall(Statement *stmnt) {
   funccall_dealloc(payload->funccall);
   free(payload);
 }
+
 
 // GENERAL DEFINITION
 
