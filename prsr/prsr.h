@@ -3,7 +3,7 @@
 #include <string.h>
 #include "../lxr/lxr.h"
 #include "../expr/expr.h"
-#include "ast.h"
+#include "prgrm.h"
 
 /*
 
@@ -264,12 +264,6 @@ Expression *prsr_parse_equation()
   }
 }
 
-ASTNode *prsr_parse_expression_node()
-{
-  Expression *expression = prsr_parse_equation();
-  return ast_create_expression_node(expression);
-}
-
 //// PARSE EXPRESSION
 
 ExpressionList *prsr_parse_arr_initializations_values() {
@@ -297,9 +291,6 @@ Statement *prsr_parse_assignment(Token start_deref)
   return stmnt_create_assignment(
     assgnbl_create_deref_list_assignable(derefs), 
     expression);
-  // return ast_create_assignment_node(
-  //   assgnbl_create_deref_list_assignable(derefs), 
-  //   expression_node);
 }
 
 Type *prsr_parse_type(Token start_type) {
@@ -349,11 +340,6 @@ Statement *prsr_parse_declaration(Token start_type) {
   return stmnt_create_declaration(
       nt_bind_create(idf_create_identifier_from_token(name_token), type),
       init_expr);
-  // return ast_create_declaration_node(
-  //     nt_bind_create(
-  //       idf_create_identifier_from_token(name_token),
-  //       type),
-  //     init_expr);
 }
 
 Statement *prsr_dispatch_declaration_assignment() {
@@ -453,11 +439,6 @@ FunctionDeclaration *prsr_parse_func_declaration()
     NULL,
     params, 
     body);
-
-  // return ast_create_func_declaration_node(
-  //   idf_create_identifier_from_token(func_name_id),
-  //   params, 
-  //   body);
 }
 
 Statement *prsr_parse_if_statement(bool first) 
@@ -474,7 +455,6 @@ Statement *prsr_parse_if_statement(bool first)
     prsr_match(ELSE_TOKEN);
     Statement *else_body = prsr_parse_statements();
     return stmnt_create_if_else(condition, if_body, else_body);
-    // return ast_create_if_else_node(expression, if_body, else_body);
   } 
   else if (lookhaed.type == ELIF_TOKEN) {
     Statement *else_body = prsr_parse_if_statement(False);
@@ -484,26 +464,6 @@ Statement *prsr_parse_if_statement(bool first)
     return stmnt_create_if_else(condition, if_body, NULL);
   }
 
-
-/*
-  if (first)
-    prsr_match(IF_TOKEN);
-  else  
-    prsr_match(ELIF_TOKEN);
-    
-  ASTNode *expression = prsr_parse_expression_node();
-  ASTNode *if_body = prsr_parse_statements();
-  if (lookhaed.type == ELSE_TOKEN) {
-    prsr_match(ELSE_TOKEN);
-    ASTNode *else_body = prsr_parse_statements();
-    return ast_create_if_else_node(expression, if_body, else_body);
-  } else if (lookhaed.type == ELIF_TOKEN) {
-    ASTNode *else_body = prsr_parse_if_statement(False);
-    return ast_create_if_else_node(expression, if_body, else_body);
-  } else {
-    return ast_create_if_node(expression, if_body);
-  }
-*/
 }
 
 Statement *prsr_parse_while_statement() 
@@ -512,7 +472,6 @@ Statement *prsr_parse_while_statement()
   Expression *condition = prsr_parse_expression();
   Statement *body = prsr_parse_statements();
   return stmnt_create_while(condition, body);
-  // return ast_create_while_node(expression, body);
 }
 
 StructDeclaration *prsr_parse_struct_declaration() {
@@ -541,15 +500,11 @@ StructDeclaration *prsr_parse_struct_declaration() {
     idf_create_identifier_from_token(name),
     attributes
   );
-  // return ast_create_struct_declaration_node(
-  //   idf_create_identifier_from_token(name),
-  //   attributes);
 }
 
-ASTNode *prsr_parse_program()
+ASTProgram *prsr_parse_program()
 {
   FunctionDeclarationList *functions = func_decl_list_create_empty();
-  // ASTNodeList *global_stmnts = ast_list_create_empty();
   StructDeclarationList *struct_declarations = strct_decl_list_create_empty();
   StatementList *global_stmnts = stmnt_list_create_empty();
   while (lookhaed.type != END_TOKEN) {
@@ -560,20 +515,21 @@ ASTNode *prsr_parse_program()
     else
       stmnt_list_append(global_stmnts, prsr_parse_statement());
   }
-  return ast_create_program_node(
-    functions, 
-    ast_create_statement_node(stmnt_create_block(global_stmnts)),
-    struct_declarations);
+  return prgrm_create(struct_declarations, functions, stmnt_create_block(global_stmnts));
+  // return ast_create_program_node(
+  //   functions, 
+  //   ast_create_statement_node(stmnt_create_block(global_stmnts)),
+  //   struct_declarations);
 }
 
-ASTNode *prsr_parse(const char *data)
+ASTProgram *prsr_parse(const char *data)
 {
   Lexer lexer = lxr_init(data);
   lexer_ptr = &lexer;
 
   prsr_next_token();
 
-  ASTNode *ast = prsr_parse_program();
+  ASTProgram *ast = prsr_parse_program();
 
   if (lookhaed.type == END_TOKEN)
     return ast;

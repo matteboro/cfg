@@ -488,7 +488,7 @@ TODO list:
   [/] distinguish the ASTNodeList type of node between all the cases;
   [ ] pointers;
   [ ] undefined arr sizes in function declaration parameters;
-  [ ] re-implement Parameter;
+  [x] re-implement Parameter;
   [ ] clean AST of garbage (maybe remove it, leave only Program);
   [ ] function call as statement;
   [ ] add return statement to parsing phase;

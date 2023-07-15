@@ -1,7 +1,7 @@
 #ifndef STRCT_DECL_CHCKR_HEADER
 #define STRCT_DECL_CHCKR_HEADER
 
-#include "../prsr/ast.h"
+#include "../prsr/prgrm.h"
 #include "strct_graph.h"
 
 int strct_decl_chckr_count_identifier_in_attributes(Identifier *id, AttributeList *attrbs) {
@@ -34,17 +34,15 @@ bool strct_decl_chckr_check_double_attributes(StructDeclarationList *structs) {
   return True;
 }
 
-bool strct_decl_chckr_check(ASTNode *program) {
+bool strct_decl_chckr_check(ASTProgram *program) {
 
-  ProgramNodeData *program_data = (ProgramNodeData *) program->data;
-
-  if(!strct_decl_chckr_check_double_attributes(program_data->struct_declarations)) {
+  if(!strct_decl_chckr_check_double_attributes(program->struct_declarations)) {
     fprintf(stdout, "ERROR, did not pass struct declaration analysis. There are attributes with same names within a struct.\n");
     return False;
   }
 
   bool result = True;
-  StructGraph* struct_graph = strct_graph_maker(program_data->struct_declarations);
+  StructGraph* struct_graph = strct_graph_maker(program->struct_declarations);
   if(!strct_graph_analyzer(struct_graph)) {
     result = False;
   }
