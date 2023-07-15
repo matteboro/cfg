@@ -53,10 +53,21 @@ void strct_decl_print(StructDeclaration *decl, FILE *file) {
 }
 
 void strct_decl_print_ident(StructDeclaration *decl, FILE *file, size_t ident) {
+  // print_spaces(ident, file);
+  // idf_print_identifier(decl->name, file);
+  // fprintf(file, ": ");
+  // attrb_list_print(decl->attributes, file);
+
   print_spaces(ident, file);
   idf_print_identifier(decl->name, file);
-  fprintf(file, ": ");
-  attrb_list_print(decl->attributes, file);
+  fprintf(file, " {\n");
+  FOR_EACH(AttributeList, attrb_it, decl->attributes) {
+    print_spaces(ident+2, file);
+    attrb_print(attrb_it->node, file);
+    fprintf(file, "\n");
+  }
+  print_spaces(ident, file);
+  fprintf(file, "}");
 }
 
 

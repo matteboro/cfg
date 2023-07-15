@@ -3,6 +3,7 @@
 
 #include "../prsr/prgrm.h"
 #include "strct_graph.h"
+#include "type_exst.h"
 
 int strct_decl_chckr_count_identifier_in_attributes(Identifier *id, AttributeList *attrbs) {
   int counter = 0;
@@ -34,10 +35,27 @@ bool strct_decl_chckr_check_double_attributes(StructDeclarationList *structs) {
   return True;
 }
 
+bool strct_decl_check_atribute_type_existence(StructDeclarationList *structs) {
+  FOR_EACH(StructDeclarationList, strct_it, structs) {
+    AttributeList *attrbs = strct_it->node->attributes;
+    FOR_EACH(AttributeList, attrb_it, attrbs) {
+      Type *type = attrb_it->node->nt_bind->type;
+      if (!type_exists(structs, type))
+        return False;
+    }
+  }
+  return True;
+}
+
 bool strct_decl_chckr_check(ASTProgram *program) {
 
   if(!strct_decl_chckr_check_double_attributes(program->struct_declarations)) {
     fprintf(stdout, "ERROR, did not pass struct declaration analysis. There are attributes with same names within a struct.\n");
+    return False;
+  }
+
+  if(!strct_decl_check_atribute_type_existence(program->struct_declarations)) {
+    fprintf(stdout, "ERROR, did not pass struct declaration analysis. One of the attribute has non existent type.\n");
     return False;
   }
 

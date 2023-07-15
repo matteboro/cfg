@@ -1,5 +1,4 @@
-#ifndef NT_BIND_HEADER
-#define NT_BIND_HEADER
+#pragma once
 
 #include "idf.h"
 #include "type.h"
@@ -16,6 +15,13 @@ NameTypeBinding *nt_bind_create(Identifier *name, Type *type) {
   return nt_bind;
 }
 
+NameTypeBinding *nt_bind_copy(NameTypeBinding *nt_bind) {
+  NameTypeBinding *nt_bind_copy = (NameTypeBinding *) malloc(sizeof(NameTypeBinding));
+  nt_bind_copy->name = idf_copy_identifier(nt_bind->name);
+  nt_bind_copy->type = type_copy(nt_bind->type);
+  return nt_bind_copy;
+}
+
 void nt_bind_print(NameTypeBinding *nt_bind, FILE *file) {
   type_print(nt_bind->type, file);
   fprintf(file, " ");
@@ -27,5 +33,3 @@ void nt_bind_dealloc(NameTypeBinding *nt_bind) {
   type_dealloc(nt_bind->type);
   free(nt_bind);
 }
-
-#endif // end NT_BIND_HEADER

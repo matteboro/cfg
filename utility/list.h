@@ -90,6 +90,30 @@ void prefix##_list_print(type_name##List *list, FILE *file) {   \
   }                                                             \
 }
 
+#define DEFAULT_LIST_POP_LAST(prefix, type_name)             \
+type_name *prefix##_list_pop_last(type_name##List *list) {   \
+  if (list == NULL)                                          \
+    return NULL;                                             \
+  if(list->next == NULL) {                                   \
+    if (list->node == NULL) {                                \
+      return NULL;                                           \
+    } else {                                                 \
+      type_name* ret_val = list->node;                       \
+      list->node = NULL;                                     \
+      return ret_val;                                        \
+    }                                                        \
+  }                                                          \
+  if (list->next->next == NULL) {                            \
+    type_name##List *last_node = list->next;                  \
+    type_name *ret_val = last_node->node;                          \
+    list->next = NULL;                                       \
+    free(last_node);                                         \
+    return ret_val;                                          \
+  }                                                          \
+  return prefix##_list_pop_last(list->next);                 \
+}
+
+
 #define LIST(prefix, type_name, dealloc_func, print_func) \
 DEFAULT_LIST_IMPLEMENTATION(type_name)                    \
 DEFAULT_LIST_CREATE_EMPTY(prefix, type_name)              \
@@ -98,7 +122,15 @@ DEFAULT_LIST_APPEND(prefix, type_name)                    \
 DEFAULT_LIST_DEALLOC(prefix, type_name, dealloc_func)     \
 DEFAULT_LIST_SIZE(prefix, type_name)                      \
 DEFAULT_LIST_GET_AT(prefix, type_name)                    \
-DEFAULT_LIST_PRINT(prefix, type_name, print_func)     
+DEFAULT_LIST_PRINT(prefix, type_name, print_func)         \
+DEFAULT_LIST_POP_LAST(prefix, type_name)
+
+
+void print_int(int *val, FILE *file) {
+  fprintf(file, "%d", *val);
+}
+
+LIST(int, int, free, print_int)
 
 
 #endif // end LIST_IMPLMENTATION

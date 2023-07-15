@@ -1,3 +1,20 @@
+data struct1 {
+  int :: att1,
+  string :: att2
+}
+
+data struct2 {
+  struct1 :: s1,
+  int :: val
+}
+
+data struct3 {
+  struct2 :: s2,
+  string :: name,
+  struct1 :: s1
+  # animal arr[10] :: arr_an
+}
+
 func exp (int :: val) {
   int :: ret_val = val * val;
   return ret_val;
@@ -27,3 +44,5 @@ func main (int :: n_args, int arr[10] :: args) {
   print_int(f);
   return f + j * i;
 }
+
+main(0, null);

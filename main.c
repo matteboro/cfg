@@ -2,19 +2,28 @@
 
 int main () {
 
-  Identifier *id = idf_create_identifier("boo");
-  idf_print_identifier(id, stdout); fprintf(stdout, "\n");
-  idf_dealloc_identifier(id);
+  int *val;
 
+  intList *list = int_list_create_empty();
 
-  id = idf_create_identifier("boo");
-  Operand *op = oprnd_create_operand(IDENTIFIER_OPERAND, id);
-  oprnd_print_operand(op, stdout); fprintf(stdout, "\n");
-  oprnd_dealloc_operand(op);
+  for(int i=0; i<0; ++i) {
+    val = malloc(sizeof(int));
+    *val = i;
+    int_list_append(list, val);
+  }
 
-  Expression *expr = prsr_parse_expression_from_string("(boo * f) + bar(69, foo, 420 - 69 * baz)");
-  expr_print_expression(expr, stdout); fprintf(stdout, "\n");
-  expr_dealloc_expression(expr);
+  fprintf(stdout, "list: [ ");
+  int_list_print(list, stdout); fprintf(stdout, " ]\n");
+  val = int_list_pop_last(list);
+
+  if (val != NULL) {
+    fprintf(stdout, "new list:  [ ");
+    int_list_print(list, stdout); 
+    fprintf(stdout, " ], elem popped: %d\n", *val);
+
+    free(val);
+  }
+  int_list_dealloc(list);
 
   return 0;
 }
@@ -439,24 +448,7 @@ Checks:
         |---> this give me another idea: probably Statement should be an object of himself; it could
               have its own sub-types (Assignment, Declaration, If, While for the moment);
 
-  How do we know the type returned by an expression?
-
-    Let's think about how we could calculate the type returned by an expression. My idea is to have
-    a function with this signature:
-      bool expr_returned_type(Expression *expr, Type **ret_type);
-    The value returned by this function is True if the expression is consistent inside and it does
-    return a value of a valid type. If the value returned is True then ret_type points to a pointer
-    that points to the returned type.
-    How to know the type of an operand? 
-      - if it is a literal it is easy: either int or string; 
-      - if it is an expression, we recursively calculate the type of the sub-expression; 
-      - if it is a function call, we check the return type of the function;
-      - if it is a dereference object we need to do some more work:
-        - We probably need some sort of table that holds the knowledge about all declared object (so all)
-          the NameTypeBinding valid to that point) and a table holding information about all the declared 
-          types (for the latter the part regarding declared structs is already inside the program node of
-          the outputted AST). I will think about it in the future...
-
+DONE
 A couple of things to do:
   - re-implement the Parameter object, there should not be different type of parameter. It should
     contain a NameTypeBinding (for the moment just that, maybe in the future a default type or 
@@ -466,6 +458,55 @@ A couple of things to do:
   - we need to implement the possibility of having function call as statement; as for the moment
     those are parsed only has operands in expressions;
   - add the parsing of return statement (pretty straight-forward);
+
+How do we know the type returned by an expression?
+
+  Let's think about how we could calculate the type returned by an expression. My idea is to have
+  a function with this signature:
+    bool expr_returned_type(Expression *expr, Type **ret_type);
+  The value returned by this function is True if the expression is consistent inside and it does
+  return a value of a valid type. If the value returned is True then ret_type points to a pointer
+  that points to the returned type.
+  How to know the type of an operand? 
+    - if it is a literal it is easy: either int or string; 
+    - if it is an expression, we recursively calculate the type of the sub-expression; 
+    - if it is a function call, we check the return type of the function;
+    - if it is a dereference object we need to do some more work:
+      - We probably need some sort of table that holds the knowledge about all declared object (so all)
+        the NameTypeBinding valid to that point) and a table holding information about all the declared 
+        types (for the latter the part regarding declared structs is already inside the program node of
+        the outputted AST). I will think about it in the future...
+
+We could start simple and check for all variable declarations and check if the type actually exists. To do
+we need a way to query the struct declarations for the existence of a struct with a specific name. But 
+actually the same task has to be done in other checkers, for example in function return type, parameter's
+type or struct's attribute's type.
+
+Statement checks:
+  - variable declaration checks:
+    - type exists,
+    - name is avalilable,
+    - init values matches type,
+  - function call checks:
+    - function exists,
+    - number of params is correct,
+    - types of params are correct,
+  - assignment checks:
+    - variable exists,
+    - type of assigned value is correct,
+  - return checks:
+    - type of expression match return type of function,
+
+To do all if these we need to keep a list of all the variable alive. A Variable is just a NameTypeBinding.
+The AliveVariableTable is a list of Variable and a way to decide wich variables have to be forgotten a the
+next end of a block statement. This system is a sort of stack of set of variables. Next exit of a blok 
+statement we remove the higher set in the stack. We could do it with a list of list of variable. When we
+enter a block we create a new list of variable and append it to the list of list of variables. The new
+variables declared are always appended to the last element of the list of list of variables. When we exit a 
+block statement we remove the last element of the list of list of variables.
+
+To check if a name is available we scan all the elements of the list of list of variables to see if there
+is already a variable with that name.
 
 ============================================================================================
 
@@ -484,13 +525,13 @@ TODO list:
    |  [x] parsing of structs;
   [x] ObjectDereference (and move it where it is used);
   [x] string operations;
+  [x] re-implement Parameter;
+  [x] clean AST of garbage (maybe remove it, leave only Program);
+  [x] function call as statement;
+  [x] add return statement to parsing phase;
   [/] distinguish the ASTNodeList type of node between all the cases;
   [ ] pointers;
   [ ] undefined arr sizes in function declaration parameters;
-  [x] re-implement Parameter;
-  [x] clean AST of garbage (maybe remove it, leave only Program);
-  [ ] function call as statement;
-  [ ] add return statement to parsing phase;
 
 ============================================================================================
 */

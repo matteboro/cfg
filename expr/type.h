@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "idf.h"
 
 #define TYPE_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
@@ -126,4 +128,62 @@ void type_dealloc(Type *type) {
     default: TYPE_ERROR();
   }
   free(type);
+}
+
+// NOTE: this function is needed when the type is an array, 
+// it returns the type of the values in the array.
+// it also works for multidemnsional array if in the future 
+// will be added
+Type *type_extract_ultimate_type(Type *type) {
+  if (type->type == ARR_TYPE) {
+    ArrayTypeData *data = (ArrayTypeData *)type->data;
+    return type_extract_ultimate_type(data->type); 
+  }
+  return type;
+}
+
+// COPY
+
+Type *type_copy(Type *type);
+
+void *type_copy_int_type(Type *type) { 
+  (void) type;
+  return malloc(sizeof(IntTypeData));
+}
+
+void *type_copy_string_type(Type *type) {
+  (void) type;
+  return malloc(sizeof(StringTypeData));
+}
+
+void *type_copy_struct_type(Type *type) {
+  casted_data(StructTypeData, type);
+  StructTypeData *data_copy = (StructTypeData *) malloc(sizeof(StructTypeData));
+  data_copy->name = idf_copy_identifier(data->name);
+  return data_copy;
+}
+
+void *type_copy_array_type(Type *type) {
+  casted_data(ArrayTypeData, type);
+  ArrayTypeData *data_copy = (ArrayTypeData *) malloc(sizeof(ArrayTypeData));
+  data_copy->size = data->size;
+  data_copy->type = type_copy(data->type);
+  return data_copy;
+}
+
+Type *type_copy(Type *type) {
+  if (type == NULL)
+    return NULL;
+  Type *type_copy = (Type *) malloc(sizeof(Type));
+  type_copy->type = type->type;
+  void *data = NULL;
+  switch (type->type) {
+    case INT_TYPE:      data = type_copy_int_type(type);     break;
+    case STRING_TYPE:   data = type_copy_string_type(type);  break;
+    case STRUCT_TYPE:   data = type_copy_struct_type(type);  break;
+    case ARR_TYPE:      data = type_copy_array_type(type);   break;
+    default: TYPE_ERROR();
+  }
+  type_copy->data = data;
+  return type_copy;
 }
