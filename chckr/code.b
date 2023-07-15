@@ -1,9 +1,10 @@
 func exp (int :: val) {
   int :: ret_val = val * val;
+  return ret_val;
 }
 
 func print_int (int :: i) {
-
+  # this function should print an integer to the screen
 }
 
 func main (int :: n_args, int arr[10] :: args) {
@@ -24,5 +25,5 @@ func main (int :: n_args, int arr[10] :: args) {
     f =  < dknow >;
   }
   print_int(f);
-  f = f + j * i;
+  return f + j * i;
 }

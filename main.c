@@ -467,7 +467,6 @@ A couple of things to do:
     those are parsed only has operands in expressions;
   - add the parsing of return statement (pretty straight-forward);
 
-  
 ============================================================================================
 
 TODO list:

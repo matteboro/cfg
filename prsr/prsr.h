@@ -358,19 +358,22 @@ Statement *prsr_dispatch_id_started_statement() {
 }
 
 Statement *prsr_parse_while_statement(); 
+Statement *prsr_parse_return_statement(); 
 Statement *prsr_parse_if_statement(bool first);
 Statement *prsr_parse_statements();
 
 Statement *prsr_parse_statement() 
 {
   PRSR_DEBUG_PRINT();
-  if (lookhaed.type == OPEN_CURLY_TOKEN){
+  if (lookhaed.type == OPEN_CURLY_TOKEN) {
     return prsr_parse_statements();
-  } else if (lookhaed.type == IF_TOKEN){
+  } else if (lookhaed.type == IF_TOKEN) {
     return prsr_parse_if_statement(True);
-  } else if (lookhaed.type == WHILE_TOKEN){
+  } else if (lookhaed.type == WHILE_TOKEN) {
     return prsr_parse_while_statement();
-  } 
+  } else if (lookhaed.type == RETURN_TOKEN) {
+    return prsr_parse_return_statement();
+  }
   Statement *statement = NULL;
   statement = prsr_dispatch_id_started_statement();
   prsr_match(SEMICOLON_TOKEN);
@@ -388,6 +391,47 @@ Statement *prsr_parse_statements()
   }
   prsr_match(CLOSE_CURLY_TOKEN);
   return stmnt_create_block(stmnt_list);
+}
+
+Statement *prsr_parse_return_statement() 
+{
+  prsr_match(RETURN_TOKEN);
+  Expression *ret_value = prsr_parse_expression();
+  prsr_match(SEMICOLON_TOKEN);
+  return stmnt_create_return(ret_value);
+}
+
+Statement *prsr_parse_if_statement(bool first) 
+{
+  if (first)
+    prsr_match(IF_TOKEN);
+  else  
+    prsr_match(ELIF_TOKEN);
+    
+  Expression *condition = prsr_parse_expression();
+  Statement *if_body = prsr_parse_statements();
+
+  if (lookhaed.type == ELSE_TOKEN) {
+    prsr_match(ELSE_TOKEN);
+    Statement *else_body = prsr_parse_statements();
+    return stmnt_create_if_else(condition, if_body, else_body);
+  } 
+  else if (lookhaed.type == ELIF_TOKEN) {
+    Statement *else_body = prsr_parse_if_statement(False);
+    return stmnt_create_if_else(condition, if_body, else_body);
+  } 
+  else {
+    return stmnt_create_if_else(condition, if_body, NULL);
+  }
+
+}
+
+Statement *prsr_parse_while_statement() 
+{
+  prsr_match(WHILE_TOKEN);
+  Expression *condition = prsr_parse_expression();
+  Statement *body = prsr_parse_statements();
+  return stmnt_create_while(condition, body);
 }
 
 ParameterList *prsr_parse_func_declaration_params() 
@@ -437,39 +481,6 @@ FunctionDeclaration *prsr_parse_func_declaration()
     NULL,
     params, 
     body);
-}
-
-Statement *prsr_parse_if_statement(bool first) 
-{
-  if (first)
-    prsr_match(IF_TOKEN);
-  else  
-    prsr_match(ELIF_TOKEN);
-    
-  Expression *condition = prsr_parse_expression();
-  Statement *if_body = prsr_parse_statements();
-
-  if (lookhaed.type == ELSE_TOKEN) {
-    prsr_match(ELSE_TOKEN);
-    Statement *else_body = prsr_parse_statements();
-    return stmnt_create_if_else(condition, if_body, else_body);
-  } 
-  else if (lookhaed.type == ELIF_TOKEN) {
-    Statement *else_body = prsr_parse_if_statement(False);
-    return stmnt_create_if_else(condition, if_body, else_body);
-  } 
-  else {
-    return stmnt_create_if_else(condition, if_body, NULL);
-  }
-
-}
-
-Statement *prsr_parse_while_statement() 
-{
-  prsr_match(WHILE_TOKEN);
-  Expression *condition = prsr_parse_expression();
-  Statement *body = prsr_parse_statements();
-  return stmnt_create_while(condition, body);
 }
 
 StructDeclaration *prsr_parse_struct_declaration() {
