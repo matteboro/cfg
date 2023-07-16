@@ -11,6 +11,13 @@
   void type_dealloc_##infix##_type(Type *type) \
     { if (!type->data) return; data_type *data = (data_type *)type->data; dealloc_code; free(data); }
 
+#define TYPE_GETTER(prefix, obj_type, obj_name, payload_type, type_type)  \
+obj_type *type_## prefix ## _get_ ## obj_name  (Type* type) {             \
+  assert(type->type == type_type);                                        \
+  casted_data(payload_type, type);                                        \
+  return data->obj_name;                                                  \
+} 
+
 typedef enum {
   INT_TYPE,
   STRING_TYPE,
@@ -40,6 +47,9 @@ typedef struct {
 
 } IntTypeData;
 
+TYPE_GETTER(struct, Identifier, name, StructTypeData, STRUCT_TYPE)
+
+TYPE_GETTER(array, Type, type, ArrayTypeData, ARR_TYPE)
 
 // CREATE
 
@@ -186,4 +196,14 @@ Type *type_copy(Type *type) {
   }
   type_copy->data = data;
   return type_copy;
+}
+
+// UTILITY
+
+// TODO: have list of basic types and iterate through them
+bool type_is_basic(Type *type) {
+  type = type_extract_ultimate_type(type);
+  if (type->type == INT_TYPE || type->type == STRING_TYPE)
+    return True;
+  return False;
 }

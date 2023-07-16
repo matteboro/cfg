@@ -13,6 +13,7 @@ bool avlb_vars_name_available(AvailableVariables *, Identifier *);
 void avlb_vars_add_var(AvailableVariables *, Var *);
 void avlb_vars_enter_block(AvailableVariables *);
 void avlb_vars_exit_block(AvailableVariables *);
+Var *avlb_vars_get_var_from_identifier(AvailableVariables *, Identifier *);
 
 struct AvailableVariables_s {
   VarListList *vars;
@@ -62,3 +63,12 @@ void avlb_vars_exit_block(AvailableVariables *av_vars) {
   var_list_dealloc(new_list);
 }
 
+Var *avlb_vars_get_var_from_identifier(AvailableVariables *av_vars, Identifier *idf) {
+  FOR_EACH(VarListList, var_ll_it, av_vars->vars) {
+    FOR_EACH(VarList, var_list_it, var_ll_it->node) {
+      if (idf_equal_identifiers(var_list_it->node->nt_bind->name, idf))
+        return var_list_it->node;
+    }
+  }
+  return NULL;
+}

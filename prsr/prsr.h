@@ -286,7 +286,7 @@ Statement *prsr_parse_assignment(Token start_deref)
   prsr_match(EQUAL_TOKEN);
   Expression *expression = prsr_parse_expression();
   return stmnt_create_assignment(
-    assgnbl_create_deref_list_assignable(derefs), 
+    assgnbl_create(derefs), 
     expression);
 }
 

@@ -9,6 +9,35 @@
 #define typed_data(type) type *data = (type *) malloc(sizeof(type))
 #define casted_data(type, elem) type *data = (type *) elem->data
 
+struct AssignableElement_s;
+typedef struct AssignableElement_s AssignableElement;
+
+AssignableElement *assgnbl_create(ObjectDerefList *);
+void assgnbl_print(AssignableElement *, FILE *);
+void assgnbl_dealloc(AssignableElement *);
+
+struct AssignableElement_s {
+  ObjectDerefList *obj_derefs;
+};
+
+AssignableElement *assgnbl_create(ObjectDerefList *obj_derefs) {
+  AssignableElement *assgnbl = (AssignableElement *) malloc(sizeof(AssignableElement));
+  assgnbl->obj_derefs = obj_derefs;
+  return assgnbl;
+}
+void assgnbl_print(AssignableElement *assgnbl, FILE *file) {
+  obj_drf_list_print(assgnbl->obj_derefs, file);
+}
+
+void assgnbl_dealloc(AssignableElement *assgnbl) {
+  obj_drf_list_dealloc(assgnbl->obj_derefs);
+  free(assgnbl);
+}
+
+
+/*
+
+
 //// DEFINITIONS
 
 typedef enum {
@@ -129,3 +158,5 @@ void assgnbl_dealloc(AssignableElement *element) {
   }
   free(element);
 }
+
+*/

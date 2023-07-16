@@ -1,5 +1,5 @@
 data struct1 {
-  int :: att1,
+  int arr[10]:: att1,
   string :: att2
 }
 
@@ -46,9 +46,12 @@ func main (int :: n_args, int arr[10] :: args) {
 }
 
 main(0, null);
+print_int(100);
+exp(0);
+# print_string("heyy\n");
 int :: i1 = 10;
 string :: f2 = "Hello, world";
-struct1 :: f3;
+struct3 :: f3;
 {
   int :: s2 = 10;
   string :: g4 = "Hello, world";
@@ -56,3 +59,7 @@ struct1 :: f3;
 }
 
 int arr[6] :: t8;
+
+t8 = 10;
+
+f3.s2.s1.att1 = 10;

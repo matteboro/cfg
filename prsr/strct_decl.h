@@ -17,6 +17,8 @@ void strct_decl_dealloc(StructDeclaration *decl);
 void strct_decl_print(StructDeclaration *decl, FILE *file);
 void strct_decl_print_ident(StructDeclaration *decl, FILE *file, size_t ident);
 
+Type *strct_decl_get_type_of_attribute_from_identifier(StructDeclaration *strct, Identifier *name);
+
 LIST(strct_decl, StructDeclaration, strct_decl_dealloc, strct_decl_print)
 
 void strct_decl_list_print_ident(StructDeclarationList *list, FILE *file, size_t ident) {
@@ -70,4 +72,11 @@ void strct_decl_print_ident(StructDeclaration *decl, FILE *file, size_t ident) {
   fprintf(file, "}");
 }
 
-
+Type *strct_decl_get_type_of_attribute_from_identifier(StructDeclaration *strct, Identifier *name) {
+  FOR_EACH(AttributeList, attrb_it, strct->attributes) {
+    if (idf_equal_identifiers(attrb_it->node->nt_bind->name, name)) {
+      return attrb_it->node->nt_bind->type;
+    }
+  }
+  return NULL;
+}

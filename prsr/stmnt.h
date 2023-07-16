@@ -9,7 +9,7 @@
 #define STMNT_ALLOC(type) (type *)malloc(sizeof(type))
 #define print_spaces(n, file) {for (size_t spaces_counter=0; spaces_counter<n; ++spaces_counter) fprintf(file, " ");}
 #define STMNT_GETTER(stmnt_prefix, obj_type, obj_name, payload_type, stmnt_type)  \
-obj_type *stmnt_## stmnt_prefix ## _get_ ## obj_name  (Statement* stmnt) {               \
+obj_type *stmnt_## stmnt_prefix ## _get_ ## obj_name  (Statement* stmnt) {        \
   assert(stmnt->type == stmnt_type);                                              \
   STMNT_CAST_PAYLOAD(payload_type, stmnt);                                        \
   return payload->obj_name;                                                       \

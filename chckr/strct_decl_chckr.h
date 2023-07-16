@@ -3,7 +3,7 @@
 
 #include "../prsr/prgrm.h"
 #include "strct_graph.h"
-#include "type_exst.h"
+#include "type_chckr.h"
 
 int strct_decl_chckr_count_identifier_in_attributes(Identifier *id, AttributeList *attrbs) {
   int counter = 0;
@@ -40,7 +40,7 @@ bool strct_decl_check_attribute_type_existence(StructDeclarationList *structs) {
     AttributeList *attrbs = strct_it->node->attributes;
     FOR_EACH(AttributeList, attrb_it, attrbs) {
       Type *type = attrb_it->node->nt_bind->type;
-      if (!type_exists(structs, type))
+      if (!type_chckr_type_exists(structs, type))
         return False;
     }
   }
