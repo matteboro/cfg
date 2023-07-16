@@ -1,5 +1,5 @@
 data struct1 {
-  int arr[10]:: att1,
+  int arr[10] :: att1,
   string :: att2
 }
 
@@ -10,9 +10,9 @@ data struct2 {
 
 data struct3 {
   struct2 :: s2,
+  struct2 arr[10] :: s2_arr,
   string :: name,
   struct1 :: s1
-  # animal arr[10] :: arr_an
 }
 
 func exp (int :: val) {
@@ -58,8 +58,10 @@ struct3 :: f3;
   struct1 :: t8;
 }
 
-int arr[6] :: t8;
+int :: t8;
 
 t8 = 10;
 
-f3.s2.s1.att1 = 10;
+# f3 = 10;
+
+f3.s2_arr[10].s1.att1[10] = 10;

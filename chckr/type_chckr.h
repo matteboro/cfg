@@ -12,6 +12,8 @@ bool type_chckr_type_exists(StructDeclarationList *structs, Type *type) {
 
   if (type_is_basic(type))
     return True;
+
+  type = type_extract_ultimate_type(type);
   
   Identifier *type_name = ((StructTypeData *)type->data)->name;
   FOR_EACH(StructDeclarationList, strct_it, structs) {

@@ -10,7 +10,8 @@ int main() {
 
   if (prgrm_chckr_check(ast))
     fprintf(stdout, "all checks passed!\n");
-
+  else
+    fprintf(stdout, "ERRORS!!!\n");
   prgrm_print(ast, stdout); fprintf(stdout, "\n");
   prgrm_dealloc(ast);
 

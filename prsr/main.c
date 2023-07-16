@@ -9,6 +9,8 @@ int main() {
 
   ASTProgram *ast = prsr_parse(code);
 
+  //strct_decl_list_print(ast->struct_declarations, stdout);
+
   prgrm_print(ast, stdout);
   prgrm_dealloc(ast);
 
