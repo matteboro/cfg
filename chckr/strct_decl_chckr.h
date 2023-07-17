@@ -23,7 +23,6 @@ bool strct_decl_chckr_check_double_attributes(StructDeclarationList *structs) {
       }
     }
   }
-
   return True;
 }
 
@@ -58,6 +57,8 @@ bool strct_decl_chckr_check(StructDeclarationList *structs) {
   if(!strct_graph_analyzer(struct_graph)) {
     result = False;
   }
+
+  // strct_graph_dump_dot(struct_graph, stdout);
 
   strct_graph_dealloc(struct_graph);
   return result;

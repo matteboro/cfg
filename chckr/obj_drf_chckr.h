@@ -4,6 +4,14 @@
 #include "../prsr/strct_decl.h"
 #include "avlb_vars.h"
 
+// TODO: I think this function should be moved to obj_drf.h
+// Type *obj_drf_chckr_get_last_element_type(ObjectDerefList *obj_derefs) {
+//   assert(obj_derefs != NULL);
+//   assert(obj_derefs->node != NULL);
+//   ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, obj_drf_list_size(obj_derefs)-1);
+// }
+
+// TODO: I think this function should be move to strct_decl.h with strct_decl_list prefix
 StructDeclaration *obj_drf_chckr_get_struct_decl_from_identifier(StructDeclarationList *structs, Identifier *name) {
   FOR_EACH(StructDeclarationList, strct_it, structs) {
     if (idf_equal_identifiers(name, strct_it->node->name))
@@ -46,7 +54,7 @@ bool obj_drf_check_not_for_basic_type(Type *type, ObjectDerefList *obj_derefs, I
   return False;
 }
 
-bool obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_vars, StructDeclarationList *structs) {
+Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_vars, StructDeclarationList *structs) {
 
   assert(obj_drf_list_size(obj_derefs) > 0);
   ObjectDeref *first_elem = obj_drf_list_get_at(obj_derefs, 0);
@@ -54,21 +62,21 @@ bool obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_var
 
   if (var == NULL) {
     fprintf(stdout, "ERROR, did not pass object deref analysis. Var with name %s does not exist\n", first_elem->name->name);
-    return False;
+    return NULL;
   }
 
   if (!obj_drf_chckr_check_for_array_correspondence(var->nt_bind->type, first_elem))
-    return False;
+    return NULL;
 
   if (obj_drf_list_size(obj_derefs) == 1) {
     if (obj_drf_check_not_for_basic_type(var->nt_bind->type, obj_derefs, var->nt_bind->name))
-      return False;
-    return True;
+      return NULL;
+    return var->nt_bind->type;
   }
 
   // (obj_drf_list_size(obj_derefs) > 1)
   if (obj_drf_check_for_basic_type(var->nt_bind->type, obj_derefs, var->nt_bind->name))
-    return False;
+    return NULL;
 
   StructDeclaration *prev_struct = 
     obj_drf_chckr_get_struct_decl_from_identifier(
@@ -76,25 +84,33 @@ bool obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_var
       type_struct_get_name(
         type_extract_ultimate_type(var->nt_bind->type)));
 
+  Type *elem_type = var->nt_bind->type;
   FOR_EACH(ObjectDerefList, obj_drf_it, obj_derefs->next) {
-    Type *elem_type = strct_decl_get_type_of_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
+    elem_type = strct_decl_get_type_of_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
+
+    if (elem_type == NULL) {
+      fprintf(stdout, "ERROR, did not pass object deref analysis. Object dereference %s of ", obj_drf_it->node->name->name);
+      obj_drf_list_print(obj_derefs, stdout);
+      fprintf(stdout, " is not an attribute in the struct %s\n", prev_struct->name->name);
+      return NULL;
+    }
+
     if (obj_drf_it->next == NULL) { // on last element
       if (obj_drf_check_not_for_basic_type(elem_type, obj_derefs, obj_drf_it->node->name))
-        return False;
+        return NULL;
       if (!obj_drf_chckr_check_for_array_correspondence(elem_type, obj_drf_it->node))
-        return False;
+        return NULL;
       break;
     }
 
     if (obj_drf_check_for_basic_type(elem_type, obj_derefs, obj_drf_it->node->name))
-      return False;
+      return NULL;
     if (!obj_drf_chckr_check_for_array_correspondence(elem_type, obj_drf_it->node))
-      return False;
+      return NULL;
     
     prev_struct = 
       obj_drf_chckr_get_struct_decl_from_identifier(structs, type_struct_get_name(type_extract_ultimate_type(elem_type)));
   }
 
-
-  return True;
+  return elem_type;
 }

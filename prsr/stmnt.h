@@ -4,6 +4,13 @@
 #include "assgnbl.h"
 #include "../expr/funccall.h"
 
+
+// FORWARD DEFINITIONS
+struct FunctionDeclaration_s;
+typedef struct FunctionDeclaration_s FunctionDeclaration;
+void func_decl_dealloc(FunctionDeclaration *func);
+void func_decl_print_signature(FunctionDeclaration *func, FILE *file);
+
 #define STMNT_ALLOC_PAYLOAD(type) type *payload = (type *)malloc(sizeof(type))
 #define STMNT_CAST_PAYLOAD(type, obj) type *payload = (type *)obj->payload
 #define STMNT_ALLOC(type) (type *)malloc(sizeof(type))
@@ -15,6 +22,17 @@ obj_type *stmnt_## stmnt_prefix ## _get_ ## obj_name  (Statement* stmnt) {      
   return payload->obj_name;                                                       \
 } 
 
+#define STMNT_SETTER(stmnt_prefix, obj_type, obj_name, payload_type, stmnt_type)        \
+void stmnt_## stmnt_prefix ## _set_ ## obj_name  (Statement* stmnt, obj_type *obj) {    \
+  assert(stmnt->type == stmnt_type);                                                    \
+  STMNT_CAST_PAYLOAD(payload_type, stmnt);                                              \
+  payload->obj_name = obj;                                                              \
+  return;                                                                               \
+} 
+
+#define STMNT_SET_GET(stmnt_prefix, obj_type, obj_name, payload_type, stmnt_type) \
+  STMNT_SETTER(stmnt_prefix, obj_type, obj_name, payload_type, stmnt_type)        \
+  STMNT_GETTER(stmnt_prefix, obj_type, obj_name, payload_type, stmnt_type)        \
 
 enum StatementType_e;
 typedef enum StatementType_e StatementType;
@@ -259,6 +277,15 @@ void stmnt_dealloc_while(Statement *stmnt) {
 // RETURN
 // payload {Expression *ret_value}
 
+// TODO: the return statement should also include the FunctionDeclarations which is part of
+//   that is how I want to do it: 
+//     I want a method 
+//       void stmnt_set_funtion_declaration_to_return(Statement *s, FunctionDeclaration *f) 
+//     that receive a statement and:
+//       - if the statementnis a return, set the attribute func_decl to f;
+//       - if is a block statement calls stmnt_set_funtion_declaration_to_return(s, f) to all 
+//         the statements inside;
+
 struct ReturnPayload_s;
 typedef struct ReturnPayload_s ReturnPayload;
 
@@ -268,13 +295,20 @@ void stmnt_dealloc_return(Statement *);
 
 struct ReturnPayload_s {
   Expression *ret_value;
+  FunctionDeclaration *func_decl;
 };
 
+STMNT_SETTER(return, Expression, ret_value, ReturnPayload, RETURN_STMNT)
+STMNT_SETTER(return, FunctionDeclaration, func_decl, ReturnPayload, RETURN_STMNT)
+
 STMNT_GETTER(return, Expression, ret_value, ReturnPayload, RETURN_STMNT)
+STMNT_GETTER(return, FunctionDeclaration, func_decl, ReturnPayload, RETURN_STMNT)
+
 
 Statement *stmnt_create_return(Expression *ret_value) {
   STMNT_ALLOC_PAYLOAD(ReturnPayload);
   payload->ret_value = ret_value;
+  payload->func_decl = NULL;
   return stmnt_create(payload, RETURN_STMNT);
 }
 
@@ -283,11 +317,14 @@ void stmnt_print_return_ident(Statement *stmnt, FILE *file, size_t ident) {
   print_spaces(ident, file);
   fprintf(file, "return ");
   expr_print_expression(payload->ret_value, file);
+  fprintf(file, " <-- ");
+  func_decl_print_signature(payload->func_decl, file);
 }
 
 void stmnt_dealloc_return(Statement *stmnt) {
   STMNT_CAST_PAYLOAD(ReturnPayload, stmnt);
   expr_dealloc_expression(payload->ret_value);
+  // func_decl_dealloc(payload->func_decl);
   free(payload);
 }
 
@@ -370,8 +407,18 @@ void stmnt_dealloc_funccall(Statement *stmnt) {
   free(payload);
 }
 
+// GENERAL DEFINITIONS
 
-// GENERAL DEFINITION
+void stmnt_set_funtion_declaration_to_return(Statement *stmnt, FunctionDeclaration *func_decl) {
+  if (stmnt->type == RETURN_STMNT) {
+    stmnt_return_set_func_decl(stmnt, func_decl);
+  } else if (stmnt->type == BLOCK_STMNT) {
+    FOR_EACH(StatementList, stmnt_it, stmnt_block_get_body(stmnt)) {
+      stmnt_set_funtion_declaration_to_return(stmnt_it->node, func_decl);
+    }
+  }
+  return;
+}
 
 #define STMNT_PRINT_SIGN   void (*)(Statement *, FILE *, size_t)
 #define STMNT_DEALLOC_SIGN void (*)(Statement *)

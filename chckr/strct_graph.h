@@ -28,6 +28,8 @@ struct StructGraph_s {
   size_t num_structs;
 };
 
+
+// TODO: correct leak here
 StructGraph *strct_graph_maker(StructDeclarationList *struct_declarations) {
 
   // INIT VALUES
@@ -47,30 +49,16 @@ StructGraph *strct_graph_maker(StructDeclarationList *struct_declarations) {
     FOR_EACH(AttributeList, attrb_it, strct->attributes) 
     {
       Attribute *attrb = attrb_it->node;
-      if (attrb->nt_bind->type->type == STRUCT_TYPE) 
+      Type *type = type_extract_ultimate_type(attrb->nt_bind->type);
+      if (type->type == STRUCT_TYPE) 
       {
-        StructTypeData *struct_type_data = (StructTypeData *)attrb->nt_bind->type->data;
+        StructTypeData *struct_type_data = (StructTypeData *)type->data;
         Identifier *id = idf_copy_identifier(struct_type_data->name);
         if (idf_list_find(graph_elem->sub_structs, id) < 0)
           idf_list_append(graph_elem->sub_structs, id);
+        else // I do not need id anymore
+          idf_dealloc_identifier(id);
       } 
-      else if (attrb->nt_bind->type->type == ARR_TYPE) 
-      {
-        ArrayTypeData *array_type_data = (ArrayTypeData *)attrb->nt_bind->type->data;
-        if (array_type_data->type->type == STRUCT_TYPE)
-        {
-          StructTypeData *struct_type_data = (StructTypeData *)array_type_data->type->data;
-          Identifier *id = idf_copy_identifier(struct_type_data->name);
-          if (idf_list_find(graph_elem->sub_structs, id) < 0)
-            idf_list_append(graph_elem->sub_structs, id);
-        } 
-        else if (array_type_data->type->type == ARR_TYPE) 
-        {
-          fprintf(stdout, 
-                  "ERROR in %s, if type of multi-dimensional array is struct it is not inserted in StructGraphElem object\n",
-                  __FUNCTION__);
-        }
-      }
     }
     structs[idx++] = graph_elem;
   }

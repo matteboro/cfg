@@ -57,11 +57,7 @@ struct3 :: f3;
   string :: g4 = "Hello, world";
   struct1 :: t8;
 }
-
 int :: t8;
-
 t8 = 10;
-
 # f3 = 10;
-
 f3.s2_arr[10].s1.att1[10] = 10;

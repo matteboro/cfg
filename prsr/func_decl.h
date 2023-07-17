@@ -24,7 +24,19 @@ FunctionDeclaration *func_decl_create(Identifier *name, Type *ret_type, Paramete
   func->ret_type = ret_type;
   func->params = params;
   func->body = body;
+  stmnt_set_funtion_declaration_to_return(body, func);
   return func;
+}
+
+void func_decl_print_signature(FunctionDeclaration *func, FILE *file) {
+  type_print(func->ret_type, file);
+
+  fprintf(file, " :: ");
+  idf_print_identifier(func->name, file);
+
+  fprintf(file, "(");
+  prmt_list_print(func->params, file);
+  fprintf(file, ")");
 }
 
 void func_decl_print(FunctionDeclaration *func, FILE *file) {
@@ -50,6 +62,8 @@ void func_decl_print_ident(FunctionDeclaration *func, FILE *file, size_t ident) 
 }
 
 void func_decl_dealloc(FunctionDeclaration *func) {
+  if (func == NULL)
+    return;
   idf_dealloc_identifier(func->name);
   type_dealloc(func->ret_type);
   prmt_list_dealloc(func->params);

@@ -279,17 +279,6 @@ ExpressionList *prsr_parse_arr_initializations_values() {
   return init_values;
 }
 
-Statement *prsr_parse_assignment(Token start_deref)
-{
-  PRSR_DEBUG_PRINT();
-  ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
-  prsr_match(EQUAL_TOKEN);
-  Expression *expression = prsr_parse_expression();
-  return stmnt_create_assignment(
-    assgnbl_create(derefs), 
-    expression);
-}
-
 Type *prsr_parse_type(Token start_type) {
 
   Type *type = NULL;
@@ -312,6 +301,18 @@ Type *prsr_parse_type(Token start_type) {
 
   return type;
 }
+
+Statement *prsr_parse_assignment(Token start_deref)
+{
+  PRSR_DEBUG_PRINT();
+  ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
+  prsr_match(EQUAL_TOKEN);
+  Expression *expression = prsr_parse_expression();
+  return stmnt_create_assignment(
+    assgnbl_create(derefs), 
+    expression);
+}
+
 
 Statement *prsr_parse_declaration(Token start_type) {
   Type *type = prsr_parse_type(start_type);
@@ -475,12 +476,12 @@ FunctionDeclaration *prsr_parse_func_declaration()
     params = prmt_list_create_empty();
   prsr_match(CLOSE_PAREN_TOKEN);
   Statement *body = prsr_parse_statements();
-
-  return func_decl_create(
+  FunctionDeclaration *func_decl = func_decl_create(
     idf_create_identifier_from_token(func_name_id),
     NULL,
     params, 
     body);
+  return func_decl;
 }
 
 StructDeclaration *prsr_parse_struct_declaration() {
