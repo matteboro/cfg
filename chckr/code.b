@@ -15,16 +15,16 @@ data struct3 {
   struct1 :: s1
 }
 
-func exp (int :: val) {
+func int :: exp(int :: val) {
   int :: ret_val = val * val;
   return ret_val;
 }
 
-func print_int (int :: i) {
+func int arr[10] :: print_int(int :: i) {
   # this function should print an integer to the screen
 }
 
-func main (int :: n_args, int arr[10] :: args) {
+func int :: main(int :: n_args, int arr[10] :: args) {
   int :: i = 0;
   while (i < n_args) {
     int :: garbage = print(args[i]);

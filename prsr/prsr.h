@@ -466,8 +466,9 @@ FunctionDeclaration *prsr_parse_func_declaration()
 {
   PRSR_DEBUG_PRINT();
   prsr_match(FUNC_TOKEN);
-  Token func_name_id = lookhaed;
-  prsr_match(IDENTIFIER_TOKEN);
+  Type *return_type = prsr_parse_type(prsr_match(lookhaed.type));
+  prsr_match(DOUBLE_COLON_TOKEN);
+  Token func_name_id = prsr_match(IDENTIFIER_TOKEN);
   prsr_match(OPEN_PAREN_TOKEN);
   ParameterList *params = NULL;
   if (lookhaed.type != CLOSE_PAREN_TOKEN)
@@ -478,7 +479,7 @@ FunctionDeclaration *prsr_parse_func_declaration()
   Statement *body = prsr_parse_statements();
   FunctionDeclaration *func_decl = func_decl_create(
     idf_create_identifier_from_token(func_name_id),
-    NULL,
+    return_type,
     params, 
     body);
   return func_decl;

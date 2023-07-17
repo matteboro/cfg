@@ -76,11 +76,15 @@ bool stmnt_chckr_check_funccall(STMNT_CHCKR_PARAMS) {
 
 bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {
   (void) stmnt; (void) av_vars; (void) structs; (void) functions;
-  // Expression *ret_val = stmnt_return_get_ret_value(stmnt);
+  Expression *ret_val = stmnt_return_get_ret_value(stmnt);
 
   // check if the function return type and ret_val type are equal
-  stmnt_print(stmnt, stdout); fprintf(stdout, " --> ");
-  idf_print_identifier(stmnt_return_get_func_decl(stmnt)->name, stdout); fprintf(stdout, "\n");
+  Type *func_return_type = stmnt_return_get_func_decl(stmnt)->ret_type;
+
+  (void) ret_val;
+  (void) func_return_type;
+
+  // type_equal(expr_get_return_type(ret_val, func_return_type))
 
   return True;
 }
