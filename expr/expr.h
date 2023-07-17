@@ -25,106 +25,35 @@
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
 #define expr_string_to_int(string) atoi(string)
 
-// EXPRESSION LIST
+#define expr_typed_data(type) type *data = (type *) malloc(sizeof(type))
+#define expr_casted_data(type, elem) type *data = (type *) elem->enclosed_expression
 
-struct ExpressionList_s{
-  struct ExpressionList_s *next;
-  Expression *expression;
-};
-
-//// CREATE EMPTY
-
-ExpressionList *expr_list_create_empty() {
-  ExpressionList *list = (ExpressionList *)malloc(sizeof(ExpressionList));
-  list->next = NULL;
-  list->expression = NULL;
-  return list;
-  // return NULL;
+#define EXPR_GETTER(expr_prefix, obj_type, obj_name, data_type, expr_type)                 \
+obj_type *expr_## expr_prefix ## _expression_get_ ## obj_name  (Expression* expr) {        \
+  assert(expr->type == expr_type);                                                         \
+  expr_casted_data(data_type, expr);                                                       \
+  return data->obj_name;                                                                   \
 }
 
-ExpressionList *expr_list_create(Expression *expression) {
-  ExpressionList *list = (ExpressionList *)malloc(sizeof(ExpressionList));
-  list->next = NULL;
-  list->expression = expression;
-  return list;
+#define EXPR_NON_PTR_GETTER(expr_prefix, obj_type, obj_name, data_type, expr_type)         \
+obj_type expr_## expr_prefix ## _expression_get_ ## obj_name  (Expression* expr) {         \
+  assert(expr->type == expr_type);                                                         \
+  expr_casted_data(data_type, expr);                                                       \
+  return data->obj_name;                                                                   \
 }
 
-//// APPEND
+#define EXPR_SETTER(expr_prefix, obj_type, obj_name, data_type, expr_type)                            \
+void expr_## expr_prefix ## _expression_set_ ## obj_name  (Expression* expr, obj_type *obj) {         \
+  assert(expr->type == expr_type);                                                                    \
+  expr_casted_data(data_type, expr);                                                                  \
+  data->obj_name = obj;                                                                               \
+  return;                                                                                             \
+} 
 
-void expr_list_append(ExpressionList *list, Expression *expression) {
-  if (list->next == NULL) {
-    if (list->expression == NULL) {
-      list->expression = expression;
-    } else {
-      list->next = expr_list_create(expression);
-    }
-    return;
-  }
+#define EXPR_SET_GET(expr_prefix, obj_type, obj_name, data_type, expr_type)  \
+  EXPR_SETTER(expr_prefix, obj_type, obj_name, data_type, expr_type)         \
+  EXPR_GETTER(expr_prefix, obj_type, obj_name, data_type, expr_type)         \
 
-  ExpressionList *n = list->next;
-  while(n->next != NULL)
-    n = n->next;
-
-  n->next = expr_list_create(expression);
-  return;
-}
-
-//// DEALLOC
-
-void expr_list_dealloc(ExpressionList *list) {
-  if (list == NULL)
-    return;
-  if (list->next != NULL)
-    expr_list_dealloc(list->next);
-  if (list->expression != NULL)
-    expr_dealloc_expression(list->expression);
-  free(list);
-}
-
-//// SIZE
-
-size_t expr_list_size(ExpressionList *list) {
-  if (list->next != NULL)
-    return expr_list_size(list->next) + 1;
-  
-  if (list->expression != NULL)
-    return 1;
-  
-  return 0;
-}
-
-//// GET AT
-
-Expression *expr_list_get_at(ExpressionList *list, size_t index) {
-  if (list->next == NULL && list->expression == NULL && index == 0)
-    return NULL;
-  assert(index < expr_list_size(list));
-  ExpressionList *n = list;
-  for (size_t i=0; i<index; ++i)
-    n = n->next;
-  return n->expression;
-}
-
-//// PRINT
-
-void expr_list_print(ExpressionList *list, FILE *file) {
-  if_null_print(list, file);
-  if (list->expression != NULL)
-    expr_print_expression(list->expression, file);
-  
-  if (list->next != NULL){
-    fprintf(file, ", ");
-    expr_list_print(list->next, file);
-  }
-}
-
-// END EXPRESSION LIST
-
-/*
-  - a Parameter can be a Integer, Identifier, FuncCall, Expression,
-  - a FuncCall has a list of Parameter,
-  - an Operand can be a FuncCall, Integer, Identifier
-*/
 
 // DEFINITIONS
 
@@ -172,6 +101,19 @@ typedef struct {
   OperationType operation;
 } UnaryExpression;
 
+typedef struct {
+  Operand *operand;
+} OperandExpression;
+
+EXPR_SET_GET(operand, Operand, operand, OperandExpression, OPERAND_EXP_TYPE)
+
+EXPR_SET_GET(binary, Expression, left, BinaryExpression, BINARY_EXPRESSION_EXP_TYPE)
+EXPR_SET_GET(binary, Expression, right, BinaryExpression, BINARY_EXPRESSION_EXP_TYPE)
+EXPR_NON_PTR_GETTER(binary, OperationType, operation, BinaryExpression, BINARY_EXPRESSION_EXP_TYPE)
+
+EXPR_SET_GET(unary, Expression, operand, UnaryExpression, UNARY_EXPRESSION_EXP_TYPE)
+EXPR_NON_PTR_GETTER(unary, OperationType, operation, UnaryExpression, UNARY_EXPRESSION_EXP_TYPE)
+
 // CREATE
 
 Expression *expr_create_expression(ExpressionType type, void *enclosed_expression) {
@@ -182,7 +124,7 @@ Expression *expr_create_expression(ExpressionType type, void *enclosed_expressio
 }
 
 Expression *expr_create_binary_expression(Expression *left, OperationType op_type, Expression *right) {
-  BinaryExpression *binary_expression = (BinaryExpression *)malloc(sizeof(BinaryExpression));
+  BinaryExpression *binary_expression = (BinaryExpression *) malloc(sizeof(BinaryExpression));
   binary_expression->left = left;
   binary_expression->right = right;
   binary_expression->operation = op_type;
@@ -190,15 +132,21 @@ Expression *expr_create_binary_expression(Expression *left, OperationType op_typ
 }
 
 Expression *expr_create_unary_expression(Expression *operand, OperationType op_type) {
-  UnaryExpression *unary_expression = (UnaryExpression *)malloc(sizeof(UnaryExpression));
+  UnaryExpression *unary_expression = (UnaryExpression *) malloc(sizeof(UnaryExpression));
   unary_expression->operand = operand;
   unary_expression->operation = op_type;
   return expr_create_expression(UNARY_EXPRESSION_EXP_TYPE, unary_expression);
 }
 
+Expression *expr_create_operand_expression(Operand *operand) {
+  OperandExpression *operand_expression = (OperandExpression *) malloc(sizeof(OperandExpression));
+  operand_expression->operand = operand;
+  return expr_create_expression(OPERAND_EXP_TYPE, operand_expression);
+}
+
 Expression *expr_create_funccall_operand_expression(FunctionCall *func_call) {
   Operand *operand = oprnd_create_operand(FUNCCALL_OPERAND, func_call);
-  return expr_create_expression(OPERAND_EXP_TYPE, operand);
+  return expr_create_operand_expression(operand);
 }
 
 Expression *expr_create_array_deref_operand_expression(Identifier *id, Expression *index) {
@@ -206,7 +154,7 @@ Expression *expr_create_array_deref_operand_expression(Identifier *id, Expressio
     oprnd_create_operand(
       ARRAY_DEREF_OPERAND, 
       oprnd_create_array_deref_operand_data(id, index));
-  return expr_create_expression(OPERAND_EXP_TYPE, operand);
+  return expr_create_operand_expression(operand);
 }
 
 Expression *expr_create_object_deref_operand_expression(ObjectDerefList *derefs) {
@@ -214,10 +162,10 @@ Expression *expr_create_object_deref_operand_expression(ObjectDerefList *derefs)
     oprnd_create_operand(
       OBJ_DEREF_OPERAND, 
       oprnd_create_object_deref_operand_data(derefs));
-  return expr_create_expression(OPERAND_EXP_TYPE, operand);
+  return expr_create_operand_expression(operand);
 }
 
-Expression *expr_create_operand_expression(OperandType type, const char *data) {
+Expression *expr_create_operand_expression_from_operand_type_and_data(OperandType type, const char *data) {
   void *my_data = NULL;
 
   if (type == IDENTIFIER_OPERAND) {
@@ -237,7 +185,7 @@ Expression *expr_create_operand_expression(OperandType type, const char *data) {
   }
 
   Operand *operand = oprnd_create_operand(type, my_data);
-  return expr_create_expression(OPERAND_EXP_TYPE, operand);
+  return expr_create_operand_expression(operand);
 }
 
 Expression *expr_create_operand_expression_from_token(Token token) {
@@ -251,7 +199,7 @@ Expression *expr_create_operand_expression_from_token(Token token) {
   default: EXPR_ERROR();
   }
 
-  Expression* result = expr_create_operand_expression(type, token_data_string);
+  Expression* result = expr_create_operand_expression_from_operand_type_and_data(type, token_data_string);
   free(token_data_string);
   return result;
 }
@@ -275,13 +223,21 @@ void expr_dealloc_unary_expression(UnaryExpression *expression) {
   free(expression);
 }
 
+void expr_dealloc_operand_expression(OperandExpression *expression) {
+  EXPR_DEBUG_PRINT()
+  if (expression == NULL) 
+    return;
+  oprnd_dealloc_operand(expression->operand);
+  free(expression);
+}
+
 void expr_dealloc_expression(Expression *expression) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
     return;
   switch (expression->type) {
   case OPERAND_EXP_TYPE:
-    oprnd_dealloc_operand((Operand *) (expression->enclosed_expression));
+    expr_dealloc_operand_expression((OperandExpression *) (expression->enclosed_expression));
   break;
   case BINARY_EXPRESSION_EXP_TYPE: {
     expr_dealloc_binary_expression((BinaryExpression *) (expression->enclosed_expression));
@@ -323,7 +279,13 @@ void expr_print_unary_expression(UnaryExpression *expression, FILE *file) {
     expr_print_expression(expression->operand, file);
     fprintf(file, ")");
   }
- 
+}
+
+void expr_print_operand_expression(OperandExpression *expression, FILE *file) {
+  EXPR_DEBUG_PRINT()
+  if (expression == NULL) 
+    return;
+  oprnd_print_operand(expression->operand, file);
 }
 
 void expr_print_expression(Expression *expression, FILE *file) {
@@ -332,7 +294,7 @@ void expr_print_expression(Expression *expression, FILE *file) {
     return;
   switch (expression->type) {
   case OPERAND_EXP_TYPE:
-    oprnd_print_operand((Operand *) expression->enclosed_expression, file);
+    expr_print_operand_expression((OperandExpression *) expression->enclosed_expression, file);
   break;
   case BINARY_EXPRESSION_EXP_TYPE:
     expr_print_binary_expression((BinaryExpression *) expression->enclosed_expression, file);
