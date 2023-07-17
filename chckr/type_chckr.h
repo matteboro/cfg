@@ -4,6 +4,7 @@
 #include "../expr/type.h"
 #include "../prsr/assgnbl.h"
 #include "avlb_vars.h"
+#include "chckr_env.h"
 
 bool type_chckr_type_exists(StructDeclarationList *, Type *);
 Type *type_chckr_get_type_of_assignable_element(AssignableElement *, AvailableVariables *, StructDeclarationList *);

@@ -7,12 +7,11 @@
 #include "avlb_vars.h"
 #include "type_chckr.h"
 #include "obj_drf_chckr.h"
+#include "chckr_env.h"
 
 #define STMNT_CHCKR_PARAMS                    \
   Statement *stmnt,                           \
-  AvailableVariables *av_vars,                \
-  FunctionDeclarationList *functions,         \
-  StructDeclarationList *structs
+  ASTCheckingAnalysisState *an_state          \
 
 bool stmnt_chckr_check(STMNT_CHCKR_PARAMS);
 
@@ -26,7 +25,11 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS);
 
 
 bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
   (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+
   AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
   // Expression *value = stmnt_assignment_get_value(stmnt);
 
@@ -46,8 +49,12 @@ bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
 }
 
 bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
-  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
   NameTypeBinding *nt_bind = stmnt_declaration_get_nt_bind(stmnt);
+  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+
   // ExpressionList *init_values = stmnt_declaration_get_init_values(stmnt);
 
   // check type exists
@@ -69,13 +76,21 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
 } 
 
 bool stmnt_chckr_check_funccall(STMNT_CHCKR_PARAMS) {
-  // (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
+  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+
   FunctionCall *funccall = stmnt_funccall_get_funccall(stmnt);
   return funccall_chckr_check(funccall, av_vars, functions, structs); 
 }
 
 bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
   (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+
   Expression *ret_val = stmnt_return_get_ret_value(stmnt);
 
   // check if the function return type and ret_val type are equal
@@ -90,11 +105,15 @@ bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {
 }
 
 bool stmnt_chckr_check_block(STMNT_CHCKR_PARAMS) {
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
   (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+
   StatementList* body = stmnt_block_get_body(stmnt);
   avlb_vars_enter_block(av_vars);
   FOR_EACH(StatementList, stmnt_it, body) {
-    if(!stmnt_chckr_check(stmnt_it->node, av_vars, functions, structs))
+    if(!stmnt_chckr_check(stmnt_it->node, an_state))
       return False;
   }
   avlb_vars_exit_block(av_vars);
@@ -102,7 +121,11 @@ bool stmnt_chckr_check_block(STMNT_CHCKR_PARAMS) {
 }
 
 bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
   (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+
   // Expression *condition = stmnt_if_else_get_condition(stmnt);
   // Statement *if_body = stmnt_if_else_get_if_body(stmnt);
   // Statement *else_body = stmnt_if_else_get_else_body(stmnt);
@@ -115,7 +138,11 @@ bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
 }
 
 bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS) {
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
   (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+
   // Expression *condition = stmnt_while_get_condition(stmnt);
   // Statement *body = stmnt_while_get_body(stmnt);
 
@@ -144,5 +171,5 @@ bool stmnt_chckr_check(STMNT_CHCKR_PARAMS) {
   assert(stmnt->type >= 0 && stmnt->type < COUNT_STMNT);
   // fprintf(stdout, "checking statement: ");
   // stmnt_print(stmnt, stdout); fprintf(stdout, "\n");
-  return stmnt_chckr_func_maps[stmnt->type](stmnt, av_vars, functions, structs);
+  return stmnt_chckr_func_maps[stmnt->type](stmnt, an_state);
 }

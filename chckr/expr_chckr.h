@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../expr/expr.h"
+#include "chckr_env.h"
 
-Type *expr_chckr_get_returned_type(Expression *expr);
+Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *an_state);
 
 typedef struct {
   TypeType left;
@@ -43,13 +44,14 @@ UnaryOpExpectedIO unary_ops_expected_io[] = {
   [STR_LEN_UNARY_OPERATION] = {{STRING_TYPE}, INT_TYPE},
 };
 
-Type *expr_chckr_get_returned_type(Expression *expr) {
+Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *an_state) {
   if (expr->type == BINARY_EXPRESSION_EXP_TYPE) {
     Expression *left = expr_binary_expression_get_left(expr);
     Expression *right = expr_binary_expression_get_right(expr);
-    Type *left_type = expr_chckr_get_returned_type(left);
-    Type *right_type = expr_chckr_get_returned_type(right);
-    if (left_type == NULL || right_type == NULL) return NULL;
+    Type *left_type = expr_chckr_get_returned_type(left, an_state);
+    Type *right_type = expr_chckr_get_returned_type(right, an_state);
+    if (left_type == NULL || right_type == NULL) 
+      return NULL;
     BinaryOpExpectedIO io = binary_ops_expected_io[expr_binary_expression_get_operation(expr)];
     BinaryOpExpectedInput exp_input = io.input;
     TypeType output = io.output;
@@ -58,8 +60,9 @@ Type *expr_chckr_get_returned_type(Expression *expr) {
   } 
   else if (expr->type == UNARY_EXPRESSION_EXP_TYPE) {
     Expression *operand = expr_unary_expression_get_operand(expr);
-    Type *type = expr_chckr_get_returned_type(operand);
-    if (type == NULL) return NULL;
+    Type *type = expr_chckr_get_returned_type(operand, an_state);
+    if (type == NULL) 
+      return NULL;
     UnaryOpExpectedIO io = unary_ops_expected_io[expr_unary_expression_get_operation(expr)];
     UnaryOpExpectedInput exp_input = io.input;
     TypeType output = io.output;
@@ -70,15 +73,3 @@ Type *expr_chckr_get_returned_type(Expression *expr) {
   }
   return NULL;
 }
-
-
-/*
-I should have a map
-
-  for binary expression:
-    OperationType --> TypeType X TypeType --> TypeType
-
-  for unary expression:
-    OperationType --> TypeType --> TypeType
-
-*/

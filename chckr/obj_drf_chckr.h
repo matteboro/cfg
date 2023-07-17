@@ -3,13 +3,7 @@
 #include "../expr/obj_drf.h"
 #include "../prsr/strct_decl.h"
 #include "avlb_vars.h"
-
-// TODO: I think this function should be moved to obj_drf.h
-// Type *obj_drf_chckr_get_last_element_type(ObjectDerefList *obj_derefs) {
-//   assert(obj_derefs != NULL);
-//   assert(obj_derefs->node != NULL);
-//   ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, obj_drf_list_size(obj_derefs)-1);
-// }
+#include "chckr_env.h"
 
 // TODO: I think this function should be move to strct_decl.h with strct_decl_list prefix
 StructDeclaration *obj_drf_chckr_get_struct_decl_from_identifier(StructDeclarationList *structs, Identifier *name) {
@@ -65,8 +59,7 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_va
   //        if it is I should return the ultimate type, else the normal type.
   //        NOTE: it should handle the case of multi-dimensional arrays.
 
-  // TODO: modify the check for array correspondance onlast element, error only if deref is array whil eattribute is not
-
+  // TODO: modify the check for array correspondance on last element, error only if deref is array while attribute is not
 
   assert(obj_drf_list_size(obj_derefs) > 0);
   ObjectDeref *first_elem = obj_drf_list_get_at(obj_derefs, 0);

@@ -1,9 +1,9 @@
-#ifndef STRCT_DECL_CHCKR_HEADER
-#define STRCT_DECL_CHCKR_HEADER
+#pragma once
 
 #include "../prsr/prgrm.h"
 #include "strct_graph.h"
 #include "type_chckr.h"
+#include "chckr_env.h"
 
 int strct_decl_chckr_count_identifier_in_attributes(Identifier *id, AttributeList *attrbs) {
   int counter = 0;
@@ -63,6 +63,3 @@ bool strct_decl_chckr_check(StructDeclarationList *structs) {
   strct_graph_dealloc(struct_graph);
   return result;
 }
-
-
-#endif // end STRCT_DECL_CHCKR_HEADER

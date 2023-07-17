@@ -212,6 +212,7 @@ Type *type_create_basic_type(TypeType t_type) {
   switch (t_type) {
     case INT_TYPE:      return type_create_int_type();
     case STRING_TYPE:   return type_create_string_type();
+    default:            return NULL;
   }
   return NULL;
 }
