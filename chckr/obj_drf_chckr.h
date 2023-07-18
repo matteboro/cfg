@@ -48,8 +48,9 @@ bool obj_drf_check_not_for_basic_type(Type *type, ObjectDerefList *obj_derefs, I
   return False;
 }
 
-Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_vars, StructDeclarationList *structs) {
-
+Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState *an_state) {
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
   // NOTE: 
   //   if I have: data struct { int arr[10] :: s1 }
   //   and the function return a int arr[10] this: return s1; is valid while: return s1[1]; is not,
@@ -78,7 +79,7 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_va
   if (obj_drf_list_size(obj_derefs) == 1) {
     if (obj_drf_check_not_for_basic_type(var->nt_bind->type, obj_derefs, var->nt_bind->name))
       return NULL;
-    return var->nt_bind->type;
+    return type_copy(var->nt_bind->type);
   }
 
   // (obj_drf_list_size(obj_derefs) > 1)
@@ -106,7 +107,7 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_va
       if (obj_drf_check_not_for_basic_type(elem_type, obj_derefs, obj_drf_it->node->name))
         return NULL;
 
-      if (elem_type->type == ARR_DEREF && obj_drf_it->node->type == ARR_DEREF) {
+      if (elem_type->type == ARR_TYPE && obj_drf_it->node->type == ARR_DEREF) {
         elem_type = type_extract_ultimate_type(elem_type);
       } 
       else if ((obj_drf_it->node->type == ARR_DEREF && elem_type->type != ARR_TYPE)) {
@@ -127,5 +128,5 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_va
       obj_drf_chckr_get_struct_decl_from_identifier(structs, type_struct_get_name(type_extract_ultimate_type(elem_type)));
   }
 
-  return elem_type;
+  return type_copy(elem_type);
 }

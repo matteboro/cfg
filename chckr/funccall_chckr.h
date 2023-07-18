@@ -1,20 +1,22 @@
 #pragma once
 
 #include "../expr/funccall.h"
-#include "avlb_vars.h"
-#include "../prsr/func_decl.h"
-#include "../prsr/strct_decl.h"
+#include "chckr_env.h"
 
 #define FUNCCALL_CHCKR_PARAMS                 \
   FunctionCall *funccall,                     \
-  AvailableVariables *av_vars,                \
-  FunctionDeclarationList *functions,         \
-  StructDeclarationList *structs
+  ASTCheckingAnalysisState *an_state
+
+// FORWARD DECLARATIONS
+Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *an_state);
 
 
 bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS);
 
 bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
+  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
+  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
+  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
 
   // check existance of function
   bool function_found = False;

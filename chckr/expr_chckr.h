@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../expr/expr.h"
+#include "oprnd_chckr.h"
 #include "chckr_env.h"
 
 Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *an_state);
@@ -68,8 +69,9 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
     TypeType output = io.output;
     if (type->type == exp_input.type)
       return type_create_basic_type(output);
-  } else if (expr->type == OPERAND_EXP_TYPE){
-    return NULL;
+  } 
+  else if (expr->type == OPERAND_EXP_TYPE){
+    return oprnd_chckr_get_type(expr_operand_expression_get_operand(expr), an_state);
   }
   return NULL;
 }

@@ -8,6 +8,13 @@
 #define OPRND_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
 
+#define OPRND_GETTER(oprnd_prefix, obj_type, obj_name, data_type, oprnd_type)   \
+obj_type *oprnd_## oprnd_prefix ## _get_ ## obj_name  (Operand* oprnd) {        \
+  assert(oprnd->type == oprnd_type);                                            \
+  casted_data(data_type, oprnd);                                                \
+  return data->obj_name;                                                        \
+}
+
 typedef enum {
   INTEGER_OPERAND,
   STRING_OPERAND,
@@ -33,6 +40,8 @@ Operand *oprnd_create(OperandType type, void *data) {
 typedef struct {
   ObjectDerefList *derefs;
 } ObjectDerefOperandData;
+
+OPRND_GETTER(object_deref, ObjectDerefList, derefs, ObjectDerefOperandData, OBJ_DEREF_OPERAND)
 
 Operand *oprnd_create_object_deref(ObjectDerefList *derefs);
 void oprnd_dealloc_object_deref(Operand *obj_drf);
@@ -61,6 +70,8 @@ typedef struct {
   FunctionCall *funccall;
 } FunctionCallOperandData;
 
+OPRND_GETTER(funccall, FunctionCall, funccall, FunctionCallOperandData, FUNCCALL_OPERAND)
+
 Operand *oprnd_create_funccall(FunctionCall *funccall);
 void oprnd_dealloc_funccall(Operand *obj_drf);
 void oprnd_print_funccall(Operand *obj_drf, FILE *file);
@@ -88,6 +99,8 @@ typedef struct {
   int *integer;
 } IntegerOperandData;
 
+OPRND_GETTER(integer, int, integer, IntegerOperandData, INTEGER_OPERAND)
+
 Operand *oprnd_create_integer(int *integer);
 void oprnd_dealloc_integer(Operand *obj_drf);
 void oprnd_print_integer(Operand *obj_drf, FILE *file);
@@ -114,6 +127,8 @@ void oprnd_print_integer(Operand *operand, FILE *file) {
 typedef struct {
   char *string;
 } StringOperandData;
+
+OPRND_GETTER(string, char, string, StringOperandData, STRING_OPERAND)
 
 Operand *oprnd_create_string(char *string);
 void oprnd_dealloc_string(Operand *obj_drf);

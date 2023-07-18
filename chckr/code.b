@@ -1,5 +1,5 @@
 data struct1 {
-  int arr[10] :: att1,
+  int arr[10]:: att1,
   string :: att2
 }
 
@@ -60,4 +60,4 @@ struct3 :: f3;
 int :: t8;
 t8 = 10;
 # f3 = 10;
-f3.s2_arr[10].s1.att1[10] = 10;
+f3.s2_arr[10].s1.att1[9] = 10;

@@ -8,6 +8,7 @@
 #include "type_chckr.h"
 #include "obj_drf_chckr.h"
 #include "chckr_env.h"
+#include "expr_chckr.h"
 
 #define STMNT_CHCKR_PARAMS                    \
   Statement *stmnt,                           \
@@ -25,26 +26,44 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS);
 
 
 bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
-  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
-  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
-  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
-  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
 
   AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
-  // Expression *value = stmnt_assignment_get_value(stmnt);
+  Expression *value = stmnt_assignment_get_value(stmnt);
 
   // check dereference
-  Type *last_deref_type = obj_drf_chckr_check(assgnbl->obj_derefs, av_vars, structs);
-  if(last_deref_type == NULL)
+  Type *deref_type = obj_drf_chckr_check(assgnbl->obj_derefs, an_state);
+  if(deref_type == NULL)
     return False;
 
-  // type_print(last_deref_type, stdout); fprintf(stdout, "\n");
+  Type *expr_type = expr_chckr_get_returned_type(value, an_state);
+  if (expr_type == NULL) {
+    type_dealloc(deref_type);
+    return False;
+  }
 
-  // TODO: check type of expression match type of dereference object
-  //   get type of dereference object < DONE >
-  //   get type of expression
-  //     compare them
+  // fprintf(stdout, "  statement: ");
+  // stmnt_print(stmnt, stdout);
+  // fprintf(stdout, ", types: left -> ");
+  // type_print(deref_type, stdout);
+  // fprintf(stdout, " and right -> ");
+  // type_print(expr_type, stdout);
+  // fprintf(stdout, "\n");
 
+  if (!type_equal(deref_type, expr_type)) {
+    fprintf(stdout, "ERROR, did not pass assignment statement analysis. In statement ");
+    stmnt_print(stmnt, stdout);
+    fprintf(stdout, ", uncompatible types: left -> ");
+    type_print(deref_type, stdout);
+    fprintf(stdout, " and right -> ");
+    type_print(expr_type, stdout);
+    fprintf(stdout, "\n");
+    type_dealloc(deref_type);
+    type_dealloc(expr_type);
+    return False;
+  }
+
+  type_dealloc(deref_type);
+  type_dealloc(expr_type);
   return True;
 }
 
@@ -76,13 +95,8 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
 } 
 
 bool stmnt_chckr_check_funccall(STMNT_CHCKR_PARAMS) {
-  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
-  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
-  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
-  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
-
   FunctionCall *funccall = stmnt_funccall_get_funccall(stmnt);
-  return funccall_chckr_check(funccall, av_vars, functions, structs); 
+  return funccall_chckr_check(funccall, an_state); 
 }
 
 bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {

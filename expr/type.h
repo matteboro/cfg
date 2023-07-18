@@ -18,6 +18,14 @@ obj_type *type_## prefix ## _get_ ## obj_name  (Type* type) {             \
   return data->obj_name;                                                  \
 } 
 
+#define TYPE_NON_PTR_GETTER(prefix, obj_type, obj_name, payload_type, type_type)  \
+obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {             \
+  assert(type->type == type_type);                                        \
+  casted_data(payload_type, type);                                        \
+  return data->obj_name;                                                  \
+} 
+
+
 typedef enum {
   INT_TYPE,
   STRING_TYPE,
@@ -50,6 +58,7 @@ typedef struct {
 TYPE_GETTER(struct, Identifier, name, StructTypeData, STRUCT_TYPE)
 
 TYPE_GETTER(array, Type, type, ArrayTypeData, ARR_TYPE)
+TYPE_NON_PTR_GETTER(array, int, size, ArrayTypeData, ARR_TYPE)
 
 // CREATE
 
@@ -140,18 +149,6 @@ void type_dealloc(Type *type) {
   free(type);
 }
 
-// NOTE: this function is needed when the type is an array, 
-// it returns the type of the values in the array.
-// it also works for multidemnsional array if in the future 
-// will be added
-Type *type_extract_ultimate_type(Type *type) {
-  if (type->type == ARR_TYPE) {
-    ArrayTypeData *data = (ArrayTypeData *)type->data;
-    return type_extract_ultimate_type(data->type); 
-  }
-  return type;
-}
-
 // COPY
 
 Type *type_copy(Type *type);
@@ -200,6 +197,18 @@ Type *type_copy(Type *type) {
 
 // UTILITY
 
+// NOTE: this function is needed when the type is an array, 
+// it returns the type of the values in the array.
+// it also works for multidemnsional array if in the future 
+// will be added
+Type *type_extract_ultimate_type(Type *type) {
+  if (type->type == ARR_TYPE) {
+    ArrayTypeData *data = (ArrayTypeData *)type->data;
+    return type_extract_ultimate_type(data->type); 
+  }
+  return type;
+}
+
 // TODO: have list of basic types and iterate through them
 bool type_is_basic(Type *type) {
   type = type_extract_ultimate_type(type);
@@ -215,4 +224,23 @@ Type *type_create_basic_type(TypeType t_type) {
     default:            return NULL;
   }
   return NULL;
+}
+
+
+
+bool type_equal(Type *type1, Type *type2) {
+  if (type1 == NULL || type2 == NULL)
+    return False;
+  if (type1->type == type2->type) {
+    if(type_is_basic(type1))
+      return True;
+    if(type1->type == STRUCT_TYPE) {
+      return idf_equal_identifiers(type_struct_get_name(type1), type_struct_get_name(type2));
+    } 
+    else if (type1->type == ARR_TYPE) {
+      if (type_array_get_size(type1) == type_array_get_size(type2))
+        return type_equal(type_array_get_type(type1), type_array_get_type(type2));
+    }
+  }
+  return False;
 }
