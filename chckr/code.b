@@ -45,6 +45,10 @@ func int :: main(int :: n_args, int arr[10] :: args) {
   return f + j * i;
 }
 
+func string :: int_to_string(int :: val) {
+
+}
+
 main(0, null);
 print_int(100);
 exp(0);
@@ -61,5 +65,9 @@ int :: t8;
 t8 = 10;
 # f3 = 10;
 f3.s2_arr[10].s1.att1[9] = 10;
-int arr[5] :: my_arr = [1, 2, 3, 4, 5];
+int arr[5] :: my_arr = [1, 2, 3, < int_to_string(< "hello, " | "world" >) >, 5];
 int :: my_var = < "hello" >;
+
+if (int_to_string(t8 > 10)) {
+  int :: dodo;
+}

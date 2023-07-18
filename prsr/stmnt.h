@@ -205,6 +205,9 @@ void stmnt_print_if_else_ident(Statement *stmnt, FILE *file, size_t ident) {
   print_spaces(ident, file);
   fprintf(file, "}");
 
+  if (payload->else_body == NULL)
+    return;
+
   if (payload->else_body->type == IF_ELSE_STMNT) {
     fprintf (file, " else \n");
     stmnt_print_ident(payload->else_body, file, ident);

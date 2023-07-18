@@ -14,6 +14,10 @@
   Statement *stmnt,                           \
   ASTCheckingAnalysisState *an_state          \
 
+#define STMNT_CHCKR_ERROR_HEADER(stmnt_type_str) \
+  fprintf(stdout, "ERROR: did not pass " stmnt_type_str " analysis.\n\n  In statement: \n    "); \
+  stmnt_print(stmnt, stdout); fprintf(stdout, ",\n  ");
+
 bool stmnt_chckr_check(STMNT_CHCKR_PARAMS);
 
 bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS);
@@ -26,7 +30,6 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS);
 
 
 bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
-
   AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
   Expression *value = stmnt_assignment_get_value(stmnt);
 
@@ -41,18 +44,9 @@ bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
     return False;
   }
 
-  // fprintf(stdout, "  statement: ");
-  // stmnt_print(stmnt, stdout);
-  // fprintf(stdout, ", types: left -> ");
-  // type_print(deref_type, stdout);
-  // fprintf(stdout, " and right -> ");
-  // type_print(expr_type, stdout);
-  // fprintf(stdout, "\n");
-
   if (!type_equal(deref_type, expr_type)) {
-    fprintf(stdout, "ERROR, did not pass assignment statement analysis. In statement ");
-    stmnt_print(stmnt, stdout);
-    fprintf(stdout, ", uncompatible types: left -> ");
+    STMNT_CHCKR_ERROR_HEADER("assignment");
+    fprintf(stdout, "uncompatible types: left -> ");
     type_print(deref_type, stdout);
     fprintf(stdout, " and right -> ");
     type_print(expr_type, stdout);
@@ -75,13 +69,15 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
 
   // check type exists
   if (!type_chckr_type_exists(structs, type)) {
-    fprintf(stdout, "ERROR, did not pass declaration statement analysis. The type of %s does not exists\n", nt_bind->name->name);
+    STMNT_CHCKR_ERROR_HEADER("declaration");
+    fprintf(stdout, "the type of %s does not exists\n", nt_bind->name->name);
     return False;
   }
 
   // check name is available
   if (!avlb_vars_name_available(av_vars, nt_bind->name)) {
-    fprintf(stdout, "ERROR, did not pass declaration statement analysis. The name %s is already taken\n", nt_bind->name->name);
+    STMNT_CHCKR_ERROR_HEADER("declaration");
+    fprintf(stdout, "the name %s is already taken\n", nt_bind->name->name);
     return False;
   }
 
@@ -94,12 +90,11 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
     size_t init_values_size = expr_list_size(init_values);
     size_t array_size = type_array_get_size(type);
     if (init_values_size != array_size) {
-      fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
-      stmnt_print(stmnt, stdout);
+      STMNT_CHCKR_ERROR_HEADER("declaration");
       if (init_values_size > array_size) {
-        fprintf(stdout, " to many initializing values");
+        fprintf(stdout, "to many initializing values");
       } else {
-        fprintf(stdout, " to few initializing values");
+        fprintf(stdout, "to few initializing values");
       }
       fprintf(stdout, " (you gave %lu, array needs %lu)\n\n", init_values_size, array_size);
       return False;
@@ -109,17 +104,15 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
     FOR_EACH(ExpressionList, expr_it, init_values) {
       Type *init_value_type = expr_chckr_get_returned_type(expr_it->node, an_state);
       if (init_value_type == NULL) {
-        fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
-        stmnt_print(stmnt, stdout);
-        fprintf(stdout, ", initializing expression number %lu: ", counter);
+        STMNT_CHCKR_ERROR_HEADER("declaration");
+        fprintf(stdout, "initializing expression number %lu: ", counter);
         expr_print_expression(expr_it->node, stdout);
         fprintf(stdout, " does not yield a valid return type\n\n");
         return False; 
       }
       if (!type_equal(init_value_type, ultimate_type)) {
-        fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
-        stmnt_print(stmnt, stdout);
-        fprintf(stdout, ", initializing expression number %lu: ", counter);
+        STMNT_CHCKR_ERROR_HEADER("declaration");
+        fprintf(stdout, "initializing expression number %lu: ", counter);
         expr_print_expression(expr_it->node, stdout);
         fprintf(stdout, " does not yield a correct return type: expected -> ");
         type_print(ultimate_type, stdout);
@@ -144,23 +137,23 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
     Expression *init_expr = expr_list_get_at(init_values, 0);
     Type *init_value_type = expr_chckr_get_returned_type(init_expr, an_state);
     if (init_value_type == NULL) {
-      fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
-      stmnt_print(stmnt, stdout);
-      fprintf(stdout, ", initializing expression: ");
+      STMNT_CHCKR_ERROR_HEADER("declaration");
+      fprintf(stdout, "initializing expression: ");
       expr_print_expression(init_expr, stdout);
       fprintf(stdout, " does not yield a valid return type\n\n");
+
       return False; 
     }
     if (!type_equal(init_value_type, type)) {
-      fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
-      stmnt_print(stmnt, stdout);
-      fprintf(stdout, ", initializing expression: ");
+      STMNT_CHCKR_ERROR_HEADER("declaration");
+      fprintf(stdout, "initializing expression: ");
       expr_print_expression(init_expr, stdout);
       fprintf(stdout, " does not yield a correct return type: expected -> ");
       type_print(type, stdout);
       fprintf(stdout,", received -> ");
       type_print(init_value_type, stdout);
       fprintf(stdout, "\n\n");
+
       type_dealloc(init_value_type);
       return False;
     }
@@ -175,25 +168,41 @@ ret_true:
 
 bool stmnt_chckr_check_funccall(STMNT_CHCKR_PARAMS) {
   FunctionCall *funccall = stmnt_funccall_get_funccall(stmnt);
-  return funccall_chckr_check(funccall, an_state); 
+  if(!funccall_chckr_check(funccall, an_state)) {
+    STMNT_CHCKR_ERROR_HEADER("funccall");
+    return False;
+  }
+  return True;
 }
 
 bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {
-  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
-  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
-  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
-  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
-
   Expression *ret_val = stmnt_return_get_ret_value(stmnt);
-
-  // check if the function return type and ret_val type are equal
   Type *func_return_type = stmnt_return_get_func_decl(stmnt)->ret_type;
+  Type *ret_val_type = expr_chckr_get_returned_type(ret_val, an_state);
 
-  (void) ret_val;
-  (void) func_return_type;
+  if (ret_val_type == NULL) {
+    STMNT_CHCKR_ERROR_HEADER("return");
+    fprintf(stdout, "returning expression: ");
+    expr_print_expression(ret_val, stdout);
+    fprintf(stdout, " does not yield a valid return type\n\n");
 
-  // type_equal(expr_get_return_type(ret_val, func_return_type))
+    return False;
+  }
+  if (!type_equal(func_return_type, ret_val_type)) {
+    STMNT_CHCKR_ERROR_HEADER("return");
+    fprintf(stdout, "returning expression: ");
+    expr_print_expression(ret_val, stdout);
+    fprintf(stdout, " does not yield a correct return type: expected -> ");
+    type_print(func_return_type, stdout);
+    fprintf(stdout,", received -> ");
+    type_print(ret_val_type, stdout);
+    fprintf(stdout, "\n\n");
 
+    type_dealloc(ret_val_type);
+    return False;
+  }
+
+  type_dealloc(ret_val_type);
   return True;
 }
 
@@ -214,33 +223,79 @@ bool stmnt_chckr_check_block(STMNT_CHCKR_PARAMS) {
 }
 
 bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
-  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
-  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
-  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
-  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+  Expression *condition = stmnt_if_else_get_condition(stmnt);
+  Statement *if_body = stmnt_if_else_get_if_body(stmnt);
+  Statement *else_body = stmnt_if_else_get_else_body(stmnt);
+  Type *condition_type = expr_chckr_get_returned_type(condition, an_state);
 
-  // Expression *condition = stmnt_if_else_get_condition(stmnt);
-  // Statement *if_body = stmnt_if_else_get_if_body(stmnt);
-  // Statement *else_body = stmnt_if_else_get_else_body(stmnt);
+  if (condition_type == NULL) {
+    fprintf(stdout, "ERROR: did not pass if else analysis.\n\n  ");
+    fprintf(stdout, "condition expression: ");
+    expr_print_expression(condition, stdout);
+    fprintf(stdout, " does not yield a valid return type\n\n");
+    return False;
+  }
 
-  // check condition is of type int
-  // check if_body
-  // check else_body (if not NULL)
+  Type *expected_type = type_create_int_type();
+  if (!type_equal(expected_type, condition_type)) {
+    fprintf(stdout, "ERROR: did not pass if else analysis.\n\n  ");
+    fprintf(stdout, "condition expression: ");
+    expr_print_expression(condition, stdout);
+    fprintf(stdout, " does not yield a correct return type: expected -> ");
+    type_print(expected_type, stdout);
+    fprintf(stdout,", received -> ");
+    type_print(condition_type, stdout);
+    fprintf(stdout, "\n\n");
+    type_dealloc(condition_type);
+    type_dealloc(expected_type);
+    return False;
+  }
+
+  type_dealloc(condition_type);
+  type_dealloc(expected_type);
+
+  if (stmnt_chckr_check(if_body, an_state))
+    return False;
+
+  if (else_body != NULL)
+    if (!stmnt_chckr_check(else_body, an_state))
+      return False;
 
   return True;
 }
 
 bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS) {
-  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
-  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
-  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
-  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
+  Expression *condition = stmnt_while_get_condition(stmnt);
+  Statement *body = stmnt_while_get_body(stmnt);
 
-  // Expression *condition = stmnt_while_get_condition(stmnt);
-  // Statement *body = stmnt_while_get_body(stmnt);
+  Type *condition_type = expr_chckr_get_returned_type(condition, an_state);
+  if (condition_type == NULL) {
+    fprintf(stdout, "ERROR: did not pass while analysis.\n\n  ");
+    fprintf(stdout, "condition expression: ");
+    expr_print_expression(condition, stdout);
+    fprintf(stdout, " does not yield a valid return type\n\n");
+    return False;
+  }
+  Type *expected_type = type_create_int_type();
+  if (!type_equal(expected_type, condition_type)) {
+    fprintf(stdout, "ERROR: did not pass while analysis.\n\n  ");
+    fprintf(stdout, "condition expression: ");
+    expr_print_expression(condition, stdout);
+    fprintf(stdout, " does not yield a correct return type: expected -> ");
+    type_print(expected_type, stdout);
+    fprintf(stdout,", received -> ");
+    type_print(condition_type, stdout);
+    fprintf(stdout, "\n\n");
+    type_dealloc(condition_type);
+    type_dealloc(expected_type);
+    return False;
+  }
 
-  // check condition is of type int
-  // check body
+  type_dealloc(condition_type);
+  type_dealloc(expected_type);
+
+  if (stmnt_chckr_check(body, an_state))
+    return False;
 
   return True;
 }
