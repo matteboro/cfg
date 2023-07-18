@@ -18,9 +18,9 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
 
 bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS);
 
+
+// TODO: here is where I should modify the code to permit overloading of functions
 bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
-  AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
-  StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
   FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
 
   // check existance of function
@@ -40,8 +40,9 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
   }
 
   // check number of params is correct
+  ExpressionList *params_values = funccall->params_values;
   size_t func_decl_params_size = prmt_list_size(matched_function->params);
-  size_t funccall_params_size = expr_list_size(funccall->params_values);
+  size_t funccall_params_size = expr_list_size(params_values);
   if (func_decl_params_size != funccall_params_size) {
     FUNCCALL_CHCKR_ERROR_HEADER();
     fprintf(stdout, 
@@ -53,9 +54,46 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
     return False;
   }
 
-  // TODO: check types of params passed are correct
-  (void) structs;
-  (void) av_vars;
+  if (funccall_params_size == 0)
+    return True;
+
+  // func_decl_print_signature(matched_function, stdout); fprintf(stdout, "\n");
+  FOR_EACH_ENUM(ParameterList, prmt_it, matched_function->params, counter) {
+    // fprintf(stdout, "  param n. %d: ", counter);
+    // prmt_print(prmt_it->node, stdout);
+    // fprintf(stdout, "\n");
+
+    Type *param_type = prmt_it->node->nt_bind->type;
+    Expression *init_expr = expr_list_get_at(params_values, counter);
+    Type *init_expr_type = expr_chckr_get_returned_type(init_expr, an_state);
+
+    if (init_expr_type == NULL) {
+      FUNCCALL_CHCKR_ERROR_HEADER();
+      fprintf(stdout, "initialize expression : ");
+      expr_print_expression(init_expr, stdout);
+      fprintf(stdout, ", for paramter n.%lu: ", counter);
+      prmt_print(prmt_it->node, stdout);
+      fprintf(stdout, ", does not yield a valid return type\n\n");
+
+      return False;
+    }
+    if (!type_equal(param_type, init_expr_type)) {
+      FUNCCALL_CHCKR_ERROR_HEADER();
+      fprintf(stdout, "initialize expression : ");
+      expr_print_expression(init_expr, stdout);
+      fprintf(stdout, ", for paramter n.%lu: ", counter);
+      prmt_print(prmt_it->node, stdout);
+      fprintf(stdout, " does not yield a correct return type: expected -> ");
+      type_print(param_type, stdout);
+      fprintf(stdout,", received -> ");
+      type_print(init_expr_type, stdout);
+      fprintf(stdout, "\n\n");
+
+      type_dealloc(init_expr_type);
+      return False;
+    }
+    type_dealloc(init_expr_type);
+  }
 
   return True;
 }

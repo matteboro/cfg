@@ -7,6 +7,12 @@
 #define LIST_FREE free
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
 #define FOR_EACH(type, name, list) for (type *name = list; (name != NULL && name->node != NULL); name = name->next)
+#define FOR_EACH_ENUM(type, name, list, counter) \
+  size_t counter = 0;                            \
+  for (type *name = list;                        \
+      (name != NULL && name->node != NULL);      \
+      name = name->next, ++counter)
+
 
 #define DEFAULT_LIST_IMPLEMENTATION(type_name)  \
 typedef struct s_##type_name##List{             \

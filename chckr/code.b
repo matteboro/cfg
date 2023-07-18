@@ -49,7 +49,8 @@ func string :: int_to_string(int :: val) {
 
 }
 
-main(0, null);
+int arr[10] :: args;
+main(0, args);
 print_int(100);
 exp(0);
 # print_string("heyy\n");
@@ -68,6 +69,6 @@ f3.s2_arr[10].s1.att1[9] = 10;
 int arr[5] :: my_arr = [1, 2, 3, < int_to_string(< "hello, " | "world" >) >, 5];
 int :: my_var = < "hello" >;
 
-if (int_to_string(t8 > 10)) {
+if (< int_to_string(t8 > 10) > >= 10) {
   int :: dodo;
 }

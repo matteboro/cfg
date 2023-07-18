@@ -100,8 +100,8 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
       return False;
     }
     Type *ultimate_type = type_extract_ultimate_type(type);
-    size_t counter = 1;
-    FOR_EACH(ExpressionList, expr_it, init_values) {
+    
+    FOR_EACH_ENUM(ExpressionList, expr_it, init_values, counter) {
       Type *init_value_type = expr_chckr_get_returned_type(expr_it->node, an_state);
       if (init_value_type == NULL) {
         STMNT_CHCKR_ERROR_HEADER("declaration");

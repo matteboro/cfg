@@ -71,18 +71,29 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
     return NULL;
   }
 
-  if (!obj_drf_chckr_check_for_array_correspondence(var->nt_bind->type, first_elem))
-    return NULL;
-
   // TODO: should check index expression is of type int
 
   if (obj_drf_list_size(obj_derefs) == 1) {
-    if (obj_drf_check_not_for_basic_type(var->nt_bind->type, obj_derefs, var->nt_bind->name))
+    Type *var_type = var->nt_bind->type;
+    Identifier *var_name = var->nt_bind->name;
+    if (var_type->type != ARR_TYPE && first_elem->type == ARR_DEREF) {
+      fprintf(stdout, "ERROR, did not pass object deref analysis. The object dereference ");
+      obj_drf_print(first_elem, stdout);
+      fprintf(stdout, " should not be referenced as an array\n");
+      return NULL;
+    } 
+    else if (var_type->type == ARR_TYPE && first_elem->type == ARR_DEREF) {
+      var_type = type_extract_ultimate_type(var_type);
+    }
+    if (obj_drf_check_not_for_basic_type(var_type, obj_derefs, var_name))
       return NULL;
     return type_copy(var->nt_bind->type);
   }
 
   // (obj_drf_list_size(obj_derefs) > 1)
+  if (!obj_drf_chckr_check_for_array_correspondence(var->nt_bind->type, first_elem))
+    return NULL;
+
   if (obj_drf_check_for_basic_type(var->nt_bind->type, obj_derefs, var->nt_bind->name))
     return NULL;
 
