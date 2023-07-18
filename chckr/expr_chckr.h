@@ -51,13 +51,18 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
     Expression *right = expr_binary_expression_get_right(expr);
     Type *left_type = expr_chckr_get_returned_type(left, an_state);
     Type *right_type = expr_chckr_get_returned_type(right, an_state);
-    if (left_type == NULL || right_type == NULL) 
+    if (left_type == NULL || right_type == NULL)  {
+      type_dealloc(left_type); type_dealloc(right_type);
       return NULL;
+    }
     BinaryOpExpectedIO io = binary_ops_expected_io[expr_binary_expression_get_operation(expr)];
     BinaryOpExpectedInput exp_input = io.input;
     TypeType output = io.output;
-    if (left_type->type == exp_input.left && right_type->type == exp_input.right)
+    if (left_type->type == exp_input.left && right_type->type == exp_input.right) {
+      type_dealloc(left_type); type_dealloc(right_type);
       return type_create_basic_type(output);
+    }
+    type_dealloc(left_type); type_dealloc(right_type);
   } 
   else if (expr->type == UNARY_EXPRESSION_EXP_TYPE) {
     Expression *operand = expr_unary_expression_get_operand(expr);
@@ -67,8 +72,11 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
     UnaryOpExpectedIO io = unary_ops_expected_io[expr_unary_expression_get_operation(expr)];
     UnaryOpExpectedInput exp_input = io.input;
     TypeType output = io.output;
-    if (type->type == exp_input.type)
+    if (type->type == exp_input.type) {
+      type_dealloc(type);
       return type_create_basic_type(output);
+    }
+    type_dealloc(type);
   } 
   else if (expr->type == OPERAND_EXP_TYPE){
     return oprnd_chckr_get_type(expr_operand_expression_get_operand(expr), an_state);

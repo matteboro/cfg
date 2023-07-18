@@ -61,3 +61,5 @@ int :: t8;
 t8 = 10;
 # f3 = 10;
 f3.s2_arr[10].s1.att1[9] = 10;
+int arr[5] :: my_arr = [1, 2, 3, 4, 5];
+int :: my_var = < "hello" >;

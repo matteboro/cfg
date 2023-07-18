@@ -70,14 +70,11 @@ bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
 bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
   AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
   StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
-  FunctionDeclarationList* functions = chckr_analysis_state_get_functions(an_state);
   NameTypeBinding *nt_bind = stmnt_declaration_get_nt_bind(stmnt);
-  (void) stmnt; (void) av_vars; (void) structs; (void) functions;
-
-  // ExpressionList *init_values = stmnt_declaration_get_init_values(stmnt);
+  Type *type = nt_bind->type;
 
   // check type exists
-  if (!type_chckr_type_exists(structs, nt_bind->type)) {
+  if (!type_chckr_type_exists(structs, type)) {
     fprintf(stdout, "ERROR, did not pass declaration statement analysis. The type of %s does not exists\n", nt_bind->name->name);
     return False;
   }
@@ -87,10 +84,92 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
     fprintf(stdout, "ERROR, did not pass declaration statement analysis. The name %s is already taken\n", nt_bind->name->name);
     return False;
   }
+
+  // if I do not have initial values I am done
+  ExpressionList *init_values = stmnt_declaration_get_init_values(stmnt);
+  if (init_values == NULL)
+    goto ret_true;
+
+  if (type->type == ARR_TYPE) {
+    size_t init_values_size = expr_list_size(init_values);
+    size_t array_size = type_array_get_size(type);
+    if (init_values_size != array_size) {
+      fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
+      stmnt_print(stmnt, stdout);
+      if (init_values_size > array_size) {
+        fprintf(stdout, " to many initializing values");
+      } else {
+        fprintf(stdout, " to few initializing values");
+      }
+      fprintf(stdout, " (you gave %lu, array needs %lu)\n\n", init_values_size, array_size);
+      return False;
+    }
+    Type *ultimate_type = type_extract_ultimate_type(type);
+    size_t counter = 1;
+    FOR_EACH(ExpressionList, expr_it, init_values) {
+      Type *init_value_type = expr_chckr_get_returned_type(expr_it->node, an_state);
+      if (init_value_type == NULL) {
+        fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
+        stmnt_print(stmnt, stdout);
+        fprintf(stdout, ", initializing expression number %lu: ", counter);
+        expr_print_expression(expr_it->node, stdout);
+        fprintf(stdout, " does not yield a valid return type\n\n");
+        return False; 
+      }
+      if (!type_equal(init_value_type, ultimate_type)) {
+        fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
+        stmnt_print(stmnt, stdout);
+        fprintf(stdout, ", initializing expression number %lu: ", counter);
+        expr_print_expression(expr_it->node, stdout);
+        fprintf(stdout, " does not yield a correct return type: expected -> ");
+        type_print(ultimate_type, stdout);
+        fprintf(stdout,", received -> ");
+        type_print(init_value_type, stdout);
+        fprintf(stdout, "\n\n");
+        type_dealloc(init_value_type);
+        return False;
+      }
+      type_dealloc(init_value_type);
+      ++counter;
+    }
+    goto ret_true;
+  } 
+  else if (type->type == STRUCT_TYPE) {
+    // TODO: error
+    // should never get here for the moment (until I parse struct initializations values)
+    fprintf(stdout, "UNREACHABLE in %s\n", __FUNCTION__);
+    exit(1); 
+  } 
+  else { /* I am in a basic type */
+    Expression *init_expr = expr_list_get_at(init_values, 0);
+    Type *init_value_type = expr_chckr_get_returned_type(init_expr, an_state);
+    if (init_value_type == NULL) {
+      fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
+      stmnt_print(stmnt, stdout);
+      fprintf(stdout, ", initializing expression: ");
+      expr_print_expression(init_expr, stdout);
+      fprintf(stdout, " does not yield a valid return type\n\n");
+      return False; 
+    }
+    if (!type_equal(init_value_type, type)) {
+      fprintf(stdout, "ERROR: did not pass declaration statement analysis.\n\n  In statement ");
+      stmnt_print(stmnt, stdout);
+      fprintf(stdout, ", initializing expression: ");
+      expr_print_expression(init_expr, stdout);
+      fprintf(stdout, " does not yield a correct return type: expected -> ");
+      type_print(type, stdout);
+      fprintf(stdout,", received -> ");
+      type_print(init_value_type, stdout);
+      fprintf(stdout, "\n\n");
+      type_dealloc(init_value_type);
+      return False;
+    }
+    type_dealloc(init_value_type);
+    goto ret_true;
+  }
+
+ret_true:
   avlb_vars_add_var(av_vars, var_create(nt_bind));
-
-  // TODO: check type of expression match type of variable
-
   return True;
 } 
 
