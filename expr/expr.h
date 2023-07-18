@@ -145,47 +145,34 @@ Expression *expr_create_operand_expression(Operand *operand) {
 }
 
 Expression *expr_create_funccall_operand_expression(FunctionCall *func_call) {
-  Operand *operand = oprnd_create_operand(FUNCCALL_OPERAND, func_call);
-  return expr_create_operand_expression(operand);
-}
-
-Expression *expr_create_array_deref_operand_expression(Identifier *id, Expression *index) {
-  Operand *operand = 
-    oprnd_create_operand(
-      ARRAY_DEREF_OPERAND, 
-      oprnd_create_array_deref_operand_data(id, index));
+  Operand *operand = oprnd_create_funccall(func_call);
   return expr_create_operand_expression(operand);
 }
 
 Expression *expr_create_object_deref_operand_expression(ObjectDerefList *derefs) {
-  Operand *operand = 
-    oprnd_create_operand(
-      OBJ_DEREF_OPERAND, 
-      oprnd_create_object_deref_operand_data(derefs));
+  Operand *operand = oprnd_create_object_deref(derefs);
   return expr_create_operand_expression(operand);
 }
 
 Expression *expr_create_operand_expression_from_operand_type_and_data(OperandType type, const char *data) {
   void *my_data = NULL;
 
-  if (type == IDENTIFIER_OPERAND) {
-    my_data = idf_create_identifier(data);
-  } 
-  else if (type == INTEGER_OPERAND) {
+  if (type == INTEGER_OPERAND) {
     my_data = malloc(sizeof(int));
     int *int_data = (int *)my_data;
     *int_data = expr_string_to_int(data);
+    Operand *operand = oprnd_create_integer(my_data);
+    return expr_create_operand_expression(operand);
   } 
   else if (type == STRING_OPERAND) {
     my_data = malloc(strlen(data)+1);
     strcpy((char *) my_data, data);
+    Operand *operand = oprnd_create_string(my_data);
+    return expr_create_operand_expression(operand);
   } 
   else {
     EXPR_ERROR();
   }
-
-  Operand *operand = oprnd_create_operand(type, my_data);
-  return expr_create_operand_expression(operand);
 }
 
 Expression *expr_create_operand_expression_from_token(Token token) {
@@ -193,7 +180,6 @@ Expression *expr_create_operand_expression_from_token(Token token) {
   char *token_data_string = lxr_get_token_data_as_cstring(token);
 
   switch (token.type) {
-  case IDENTIFIER_TOKEN: type = IDENTIFIER_OPERAND; break;
   case INTEGER_TOKEN: type = INTEGER_OPERAND; break;
   case STRING_TOKEN: type = STRING_OPERAND; break;
   default: EXPR_ERROR();
@@ -227,7 +213,7 @@ void expr_dealloc_operand_expression(OperandExpression *expression) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
     return;
-  oprnd_dealloc_operand(expression->operand);
+  oprnd_dealloc(expression->operand);
   free(expression);
 }
 
@@ -285,7 +271,7 @@ void expr_print_operand_expression(OperandExpression *expression, FILE *file) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
     return;
-  oprnd_print_operand(expression->operand, file);
+  oprnd_print(expression->operand, file);
 }
 
 void expr_print_expression(Expression *expression, FILE *file) {

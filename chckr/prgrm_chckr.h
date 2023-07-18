@@ -15,12 +15,9 @@ bool prgrm_chckr_check(ASTProgram *program) {
 
   fprintf(stdout, "structs analysis passed\n");
 
-  AvailableVariables *av_vars = avlb_vars_create();
   if (!stmnt_chckr_check(program->global_statement, an_state)) {
-    avlb_vars_dealloc(av_vars);
     goto ret_false;
-  }
-  avlb_vars_dealloc(av_vars);  
+  } 
 
   fprintf(stdout, "global statements analysis passed\n");
 

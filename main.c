@@ -508,6 +508,36 @@ block statement we remove the last element of the list of list of variables.
 To check if a name is available we scan all the elements of the list of list of variables to see if there
 is already a variable with that name.
 
+Once I have the correct function for extracting the type of a object dereference list I should be able 
+easily to have the function that exctract the returned type of an expression. And then if I have that
+most of the checking inside the statements are done.
+
+  we have avlb_vars, structs and obj_derefs made like this:
+
+    obj_start :: obj1 :: obj2 :: obj3 :: obj_final
+
+  There are two special ObjectDereference: obj_start and obj_final. 
+    - obj_start.name has to be searched inside the available variables;
+  the the situation is usually like this:
+
+        ... :: obj_(i-1) :: obj_i :: obj_(i+1) :: ...
+                              
+  If I just get on obj_i I know the struct type of obj_(i-1) and it is called prev_struct,
+
+    find obj_i.name in prev_struct->attributes, if not error
+    if I am not on last element {
+      type <-- extract ultimate type
+      check if type is not basic, if it is error,
+      see if array deref match, if not error,
+      prev_struct <-- structs.get_from_type(type)
+    }
+    else { "" I am on last element ""
+      get ret_type ""  ""
+      ult_type <-- extract ultimate type
+      check if type is basic, if it is not error,
+      return ret_type
+    }
+
 ============================================================================================
 
 TODO list:

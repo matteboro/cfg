@@ -424,12 +424,12 @@ void stmnt_set_funtion_declaration_to_return(Statement *stmnt, FunctionDeclarati
 #define STMNT_DEALLOC_SIGN void (*)(Statement *)
 
 enum {
-  PRINT_FUNC   = 0,
-  DEALLOC_FUNC = 1,
-  COUNT_FUNC,
+  STMNT_PRINT_FUNC   = 0,
+  STMNT_DEALLOC_FUNC = 1,
+  STMNT_COUNT_FUNC,
 };
 
-void *stmnt_funcs_map[][COUNT_FUNC] = {
+void *stmnt_funcs_map[][STMNT_COUNT_FUNC] = {
   [ASSIGNMENT_STMNT]   = {stmnt_print_assignment_ident,   stmnt_dealloc_assignment},
   [DECLARATION_STMNT]  = {stmnt_print_declaration_ident,  stmnt_dealloc_declaration},
   [BLOCK_STMNT]        = {stmnt_print_block_ident,        stmnt_dealloc_block},
@@ -439,19 +439,19 @@ void *stmnt_funcs_map[][COUNT_FUNC] = {
   [FUNCCALL_STMNT]     = {stmnt_print_funccall_ident,     stmnt_dealloc_funccall},
 };
 
-#define STMNT_SIZE_OF_FUNCS_MAP (sizeof(stmnt_funcs_map)/sizeof(void *))/COUNT_FUNC
+#define STMNT_SIZE_OF_FUNCS_MAP (sizeof(stmnt_funcs_map)/sizeof(void *))/STMNT_COUNT_FUNC
 
 void stmnt_dealloc(Statement *stmnt) {
   assert(COUNT_STMNT == STMNT_SIZE_OF_FUNCS_MAP);
   if (stmnt == NULL)
     return;
-  ((STMNT_DEALLOC_SIGN)stmnt_funcs_map[stmnt->type][DEALLOC_FUNC])(stmnt);
+  ((STMNT_DEALLOC_SIGN)stmnt_funcs_map[stmnt->type][STMNT_DEALLOC_FUNC])(stmnt);
   free(stmnt);
 }
 
 void stmnt_print_ident(Statement *stmnt, FILE *file, size_t ident) {
   assert(COUNT_STMNT == STMNT_SIZE_OF_FUNCS_MAP);
-  ((STMNT_PRINT_SIGN)stmnt_funcs_map[stmnt->type][PRINT_FUNC])(stmnt, file, ident);
+  ((STMNT_PRINT_SIGN)stmnt_funcs_map[stmnt->type][STMNT_PRINT_FUNC])(stmnt, file, ident);
 }
 
 void stmnt_print(Statement *stmnt, FILE *file) {

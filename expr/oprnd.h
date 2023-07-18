@@ -1,5 +1,4 @@
-#ifndef OPRND_HEADER
-#define OPRND_HEADER
+#pragma once
 
 #include "expr_interface.h"
 #include "idf.h"
@@ -9,16 +8,12 @@
 #define OPRND_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
 
-
-// OPERAND
-
 typedef enum {
-  IDENTIFIER_OPERAND,
   INTEGER_OPERAND,
   STRING_OPERAND,
   FUNCCALL_OPERAND,
-  ARRAY_DEREF_OPERAND,
   OBJ_DEREF_OPERAND,
+  COUNT_OPRND,
 } OperandType;
 
 typedef struct {
@@ -26,92 +21,150 @@ typedef struct {
   void *data;
 } Operand;
 
-typedef struct {
-  Identifier *array_name;
-  Expression *index;
-} ArrayDereferenceOperandData;
-
-typedef struct {
-  ObjectDerefList *derefs;
-} ObjectDerefOperandData;
-
-ObjectDerefOperandData *oprnd_create_object_deref_operand_data(ObjectDerefList *derefs){
-  ObjectDerefOperandData *data = (ObjectDerefOperandData *) malloc(sizeof(ObjectDerefOperandData));
-  data->derefs = derefs;
-  return data;
-}
-
-ArrayDereferenceOperandData *oprnd_create_array_deref_operand_data(Identifier *array_name, Expression *index) {
-  ArrayDereferenceOperandData *data = (ArrayDereferenceOperandData *) malloc(sizeof(ArrayDereferenceOperandData));
-  data->array_name = array_name;
-  data->index = index;
-  return data;
-}
-
-void oprnd_dealloc_array_deref_operand_data(ArrayDereferenceOperandData *data) {
-  idf_dealloc_identifier(data->array_name);
-  expr_dealloc_expression(data->index);
-  free(data);
-}
-
-void oprnd_dealloc_object_deref_operand_data(ObjectDerefOperandData *data) {
-  obj_drf_list_dealloc(data->derefs);
-  free(data);
-}
-
-void oprnd_print_array_deref_operand_data(ArrayDereferenceOperandData *data, FILE *file) {
-  idf_print_identifier(data->array_name, file);
-  fprintf(file, "[");
-  expr_print_expression(data->index, file);
-  fprintf(file, "]");
-}
-
-void oprnd_print_object_deref_operand_data(ObjectDerefOperandData *data, FILE *file) {
-  obj_drf_list_print(data->derefs, file);
-}
- 
-Operand *oprnd_create_operand(OperandType type, void *data) {
-  Operand *operand = (Operand *)malloc(sizeof(Operand));
+Operand *oprnd_create(OperandType type, void *data) {
+  Operand *operand = (Operand *) malloc(sizeof(Operand));
   operand->type = type;
   operand->data = data;
   return operand;
 }
 
-void oprnd_dealloc_operand(Operand *operand) {
-  if (operand == NULL) 
-    return;
-  if (operand->type == IDENTIFIER_OPERAND) 
-    idf_dealloc_identifier((Identifier *) operand->data);
-  else if (operand->type == FUNCCALL_OPERAND)
-    funccall_dealloc((FunctionCall *) operand->data);
-  else if (operand->type == ARRAY_DEREF_OPERAND)
-    oprnd_dealloc_array_deref_operand_data((ArrayDereferenceOperandData *) operand->data);
-  else if (operand->type == OBJ_DEREF_OPERAND)
-    oprnd_dealloc_object_deref_operand_data((ObjectDerefOperandData *) operand->data);
-  else
-    free(operand->data);
-  free(operand);
+// OBJECT DEREF OPERAND
+
+typedef struct {
+  ObjectDerefList *derefs;
+} ObjectDerefOperandData;
+
+Operand *oprnd_create_object_deref(ObjectDerefList *derefs);
+void oprnd_dealloc_object_deref(Operand *obj_drf);
+void oprnd_print_object_deref(Operand *obj_drf, FILE *file);
+
+Operand *oprnd_create_object_deref(ObjectDerefList *derefs) {
+  typed_data(ObjectDerefOperandData);
+  data->derefs = derefs;
+  return oprnd_create(OBJ_DEREF_OPERAND, data);
 }
 
-void oprnd_print_operand(Operand *operand, FILE *file) {
-  if (operand == NULL) 
-    return;
-  switch (operand->type) {
-  case INTEGER_OPERAND:
-    fprintf(file, "%d", *((int *) operand->data)); break;
-  case IDENTIFIER_OPERAND:
-    idf_print_identifier((Identifier *) operand->data, file); break;
-  case FUNCCALL_OPERAND:
-    funccall_print((FunctionCall *) operand->data, file); break;
-  case STRING_OPERAND:
-    fprintf(file, "\"%s\"", (char * )operand->data); break;
-  case ARRAY_DEREF_OPERAND:
-    oprnd_print_array_deref_operand_data((ArrayDereferenceOperandData *) operand->data, file); break;
-  case OBJ_DEREF_OPERAND:
-    oprnd_print_object_deref_operand_data((ObjectDerefOperandData *) operand->data, file); break;
-  default:
-    OPRND_ERROR();
-  }
+void oprnd_dealloc_object_deref(Operand *operand) {
+  casted_data(ObjectDerefOperandData, operand);
+  obj_drf_list_dealloc(data->derefs);
+  free(data);
 }
 
-#endif // end OPRND_HEADER
+void oprnd_print_object_deref(Operand *operand, FILE *file) {
+  casted_data(ObjectDerefOperandData, operand);
+  obj_drf_list_print(data->derefs, file);
+}
+
+// FUNCTION CALL OPERAND
+
+typedef struct {
+  FunctionCall *funccall;
+} FunctionCallOperandData;
+
+Operand *oprnd_create_funccall(FunctionCall *funccall);
+void oprnd_dealloc_funccall(Operand *obj_drf);
+void oprnd_print_funccall(Operand *obj_drf, FILE *file);
+
+Operand *oprnd_create_funccall(FunctionCall *funccall) {
+  typed_data(FunctionCallOperandData);
+  data->funccall = funccall;
+  return oprnd_create(FUNCCALL_OPERAND, data);
+}
+
+void oprnd_dealloc_funccall(Operand *operand) {
+  casted_data(FunctionCallOperandData, operand);
+  funccall_dealloc(data->funccall);
+  free(data);
+}
+
+void oprnd_print_funccall(Operand *operand, FILE *file) {
+  casted_data(FunctionCallOperandData, operand);
+  funccall_print(data->funccall, file);
+}
+
+// INTEGER OPERAND
+
+typedef struct {
+  int *integer;
+} IntegerOperandData;
+
+Operand *oprnd_create_integer(int *integer);
+void oprnd_dealloc_integer(Operand *obj_drf);
+void oprnd_print_integer(Operand *obj_drf, FILE *file);
+
+Operand *oprnd_create_integer(int *integer) {
+  typed_data(IntegerOperandData);
+  data->integer = integer;
+  return oprnd_create(INTEGER_OPERAND, data);
+}
+
+void oprnd_dealloc_integer(Operand *operand) {
+  casted_data(IntegerOperandData, operand);
+  free(data->integer);
+  free(data);
+}
+
+void oprnd_print_integer(Operand *operand, FILE *file) {
+  casted_data(IntegerOperandData, operand);
+  fprintf(file, "%d", *data->integer);
+}
+
+// STRING OPERAND
+ 
+typedef struct {
+  char *string;
+} StringOperandData;
+
+Operand *oprnd_create_string(char *string);
+void oprnd_dealloc_string(Operand *obj_drf);
+void oprnd_print_string(Operand *obj_drf, FILE *file);
+
+Operand *oprnd_create_string(char *string) {
+  typed_data(StringOperandData);
+  data->string = string;
+  return oprnd_create(STRING_OPERAND, data);
+}
+
+void oprnd_dealloc_string(Operand *operand) {
+  casted_data(StringOperandData, operand);
+  free(data->string);
+  free(data);
+}
+
+void oprnd_print_string(Operand *operand, FILE *file) {
+  casted_data(StringOperandData, operand);
+  fprintf(file, "\"%s\"", data->string);
+}
+
+//  GENERAL
+
+#define OPRND_PRINT_SIGN   void (*)(Operand *, FILE *)
+#define OPRND_DEALLOC_SIGN void (*)(Operand *)
+
+enum {
+  OPRND_PRINT_FUNC   = 0,
+  OPRND_DEALLOC_FUNC = 1,
+  OPRND_COUNT_FUNC,
+};
+
+void *oprnd_funcs_map[][OPRND_COUNT_FUNC] = {
+  [INTEGER_OPERAND] = { oprnd_print_integer, oprnd_dealloc_integer},
+  [STRING_OPERAND] = { oprnd_print_string, oprnd_dealloc_string},
+  [FUNCCALL_OPERAND] = { oprnd_print_funccall, oprnd_dealloc_funccall},
+  [OBJ_DEREF_OPERAND] = { oprnd_print_object_deref, oprnd_dealloc_object_deref},
+};
+
+#define OPRND_SIZE_OF_FUNCS_MAP (sizeof(oprnd_funcs_map)/sizeof(void *))/OPRND_COUNT_FUNC
+
+void oprnd_dealloc(Operand *oprnd) {
+  assert(COUNT_OPRND == OPRND_SIZE_OF_FUNCS_MAP);
+  if (oprnd == NULL)
+    return;
+  ((OPRND_DEALLOC_SIGN)oprnd_funcs_map[oprnd->type][OPRND_DEALLOC_FUNC])(oprnd);
+  free(oprnd);
+}
+
+void oprnd_print(Operand *oprnd, FILE *file) {
+  assert(COUNT_OPRND == OPRND_SIZE_OF_FUNCS_MAP);
+  ((OPRND_PRINT_SIGN)oprnd_funcs_map[oprnd->type][OPRND_PRINT_FUNC])(oprnd, file);
+}

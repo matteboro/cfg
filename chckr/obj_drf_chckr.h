@@ -91,7 +91,7 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_va
       type_struct_get_name(
         type_extract_ultimate_type(var->nt_bind->type)));
 
-  Type *elem_type = var->nt_bind->type;
+  Type *elem_type = NULL;
   FOR_EACH(ObjectDerefList, obj_drf_it, obj_derefs->next) {
     elem_type = strct_decl_get_type_of_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
 
@@ -105,8 +105,16 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, AvailableVariables *av_va
     if (obj_drf_it->next == NULL) { // on last element
       if (obj_drf_check_not_for_basic_type(elem_type, obj_derefs, obj_drf_it->node->name))
         return NULL;
-      if (!obj_drf_chckr_check_for_array_correspondence(elem_type, obj_drf_it->node))
-        return NULL;
+
+      if (elem_type->type == ARR_DEREF && obj_drf_it->node->type == ARR_DEREF) {
+        elem_type = type_extract_ultimate_type(elem_type);
+      } 
+      else if ((obj_drf_it->node->type == ARR_DEREF && elem_type->type != ARR_TYPE)) {
+        fprintf(stdout, "ERROR, did not pass object deref analysis. The object dereference ");
+        obj_drf_print(obj_drf_it->node, stdout);
+        fprintf(stdout, " should not be referenced as an array\n");
+        elem_type = NULL;
+      }
       break;
     }
 
