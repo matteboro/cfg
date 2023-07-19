@@ -36,6 +36,7 @@ typedef enum {
 typedef struct {
   TypeType type;
   void *data;
+  FileInfo file_info;
 } Type;
 
 typedef struct {
@@ -62,34 +63,45 @@ TYPE_NON_PTR_GETTER(array, int, size, ArrayTypeData, ARR_TYPE)
 
 // CREATE
 
-Type *type_create(TypeType type_type, void *data) {
+Type *type_create(TypeType type_type, void *data, FileInfo file_info) {
   Type *type = (Type *) malloc(sizeof(Type));
   type->type = type_type;
   type->data = data;
+  type->file_info = file_info;
   return type;
 }
 
-Type *type_create_int_type() {
+Type *type_create_generic_int_type() {
   typed_data(IntTypeData);
-  return type_create(INT_TYPE, data);
+  return type_create(INT_TYPE, data, file_info_create_null());
 }
 
-Type *type_create_string_type() {
+Type *type_create_generic_string_type() {
   typed_data(StringTypeData);
-  return type_create(STRING_TYPE, data);
+  return type_create(STRING_TYPE, data, file_info_create_null());
+}
+
+Type *type_create_int_type(FileInfo file_info) {
+  typed_data(IntTypeData);
+  return type_create(INT_TYPE, data, file_info);
+}
+
+Type *type_create_string_type(FileInfo file_info) {
+  typed_data(StringTypeData);
+  return type_create(STRING_TYPE, data, file_info);
 }
 
 Type *type_create_struct_type(Identifier *name) {
   typed_data(StructTypeData);
   data->name = name;
-  return type_create(STRUCT_TYPE, data);
+  return type_create(STRUCT_TYPE, data, name->file_info);
 }
 
-Type *type_create_array_type(int size, Type *type) {
+Type *type_create_array_type(int size, Type *type, FileInfo file_info) {
   typed_data(ArrayTypeData);
   data->size = size;
   data->type = type;
-  return type_create(ARR_TYPE, data);
+  return type_create(ARR_TYPE, data, file_info);
 }
 
 // PRINT
@@ -192,6 +204,7 @@ Type *type_copy(Type *type) {
     default: TYPE_ERROR();
   }
   type_copy->data = data;
+  type_copy->file_info = type->file_info;
   return type_copy;
 }
 
@@ -219,13 +232,12 @@ bool type_is_basic(Type *type) {
 
 Type *type_create_basic_type(TypeType t_type) {
   switch (t_type) {
-    case INT_TYPE:      return type_create_int_type();
-    case STRING_TYPE:   return type_create_string_type();
+    case INT_TYPE:      return type_create_generic_int_type();
+    case STRING_TYPE:   return type_create_generic_string_type();
     default:            return NULL;
   }
   return NULL;
 }
-
 
 
 bool type_equal(Type *type1, Type *type2) {

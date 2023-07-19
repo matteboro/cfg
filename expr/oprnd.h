@@ -26,12 +26,14 @@ typedef enum {
 typedef struct {
   OperandType type;
   void *data;
+  FileInfo file_info;
 } Operand;
 
-Operand *oprnd_create(OperandType type, void *data) {
+Operand *oprnd_create(OperandType type, void *data, FileInfo file_info) {
   Operand *operand = (Operand *) malloc(sizeof(Operand));
   operand->type = type;
   operand->data = data;
+  operand->file_info= file_info;
   return operand;
 }
 
@@ -50,7 +52,7 @@ void oprnd_print_object_deref(Operand *obj_drf, FILE *file);
 Operand *oprnd_create_object_deref(ObjectDerefList *derefs) {
   typed_data(ObjectDerefOperandData);
   data->derefs = derefs;
-  return oprnd_create(OBJ_DEREF_OPERAND, data);
+  return oprnd_create(OBJ_DEREF_OPERAND, data, obj_drf_list_merged_file_info(derefs));
 }
 
 void oprnd_dealloc_object_deref(Operand *operand) {
@@ -79,7 +81,7 @@ void oprnd_print_funccall(Operand *obj_drf, FILE *file);
 Operand *oprnd_create_funccall(FunctionCall *funccall) {
   typed_data(FunctionCallOperandData);
   data->funccall = funccall;
-  return oprnd_create(FUNCCALL_OPERAND, data);
+  return oprnd_create(FUNCCALL_OPERAND, data, file_info_create_null());
 }
 
 void oprnd_dealloc_funccall(Operand *operand) {
@@ -101,14 +103,14 @@ typedef struct {
 
 OPRND_GETTER(integer, int, integer, IntegerOperandData, INTEGER_OPERAND)
 
-Operand *oprnd_create_integer(int *integer);
+Operand *oprnd_create_integer(int *integer, FileInfo file_info);
 void oprnd_dealloc_integer(Operand *obj_drf);
 void oprnd_print_integer(Operand *obj_drf, FILE *file);
 
-Operand *oprnd_create_integer(int *integer) {
+Operand *oprnd_create_integer(int *integer, FileInfo file_info) {
   typed_data(IntegerOperandData);
   data->integer = integer;
-  return oprnd_create(INTEGER_OPERAND, data);
+  return oprnd_create(INTEGER_OPERAND, data, file_info);
 }
 
 void oprnd_dealloc_integer(Operand *operand) {
@@ -130,14 +132,14 @@ typedef struct {
 
 OPRND_GETTER(string, char, string, StringOperandData, STRING_OPERAND)
 
-Operand *oprnd_create_string(char *string);
+Operand *oprnd_create_string(char *string, FileInfo file_info);
 void oprnd_dealloc_string(Operand *obj_drf);
 void oprnd_print_string(Operand *obj_drf, FILE *file);
 
-Operand *oprnd_create_string(char *string) {
+Operand *oprnd_create_string(char *string, FileInfo file_info) {
   typed_data(StringOperandData);
   data->string = string;
-  return oprnd_create(STRING_OPERAND, data);
+  return oprnd_create(STRING_OPERAND, data, file_info);
 }
 
 void oprnd_dealloc_string(Operand *operand) {

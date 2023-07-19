@@ -1,5 +1,4 @@
-#ifndef OBJ_DRF_HEADER
-#define OBJ_DRF_HEADER
+#pragma once
 
 #include "idf.h"
 #include "expr_interface.h"
@@ -21,6 +20,7 @@ typedef struct {
   ObjectDerefType type;
   Identifier *name;
   void *data;
+  FileInfo file_info;
 } ObjectDeref;
 
 typedef struct { 
@@ -33,23 +33,24 @@ typedef struct {
 
 // CREATE
 
-ObjectDeref *obj_drf_create(ObjectDerefType type, Identifier* name, void *data) {
+ObjectDeref *obj_drf_create(ObjectDerefType type, Identifier* name, void *data, FileInfo file_info) {
   ObjectDeref *obj_drf = (ObjectDeref *) malloc(sizeof(ObjectDeref));
   obj_drf->name = name;
   obj_drf->type = type;
   obj_drf->data = data;
+  obj_drf->file_info = file_info;
   return obj_drf;
 }
 
-ObjectDeref *obj_drf_create_array_type_deref(Identifier *name, Expression *index) {
+ObjectDeref *obj_drf_create_array_type_deref(Identifier *name, Expression *index, FileInfo file_info) {
   typed_data(ArrayTypeObjectDerefData);
   data->index = index;
-  return obj_drf_create(ARR_DEREF, name, data);
+  return obj_drf_create(ARR_DEREF, name, data, file_info);
 }
 
 ObjectDeref *obj_drf_create_struct_or_basic_type_deref(Identifier *name) {
   typed_data(StructOrBasicTypeObjectDerefData);
-  return obj_drf_create(STRUCT_BASIC_DEREF, name, data);
+  return obj_drf_create(STRUCT_BASIC_DEREF, name, data, name->file_info);
 }
 
 // PRINT
@@ -114,7 +115,12 @@ DEFAULT_LIST_APPEND(prefix, type_name)                            \
 DEFAULT_LIST_DEALLOC(prefix, type_name, dealloc_func)             \
 DEFAULT_LIST_SIZE(prefix, type_name)                              \
 DEFAULT_LIST_GET_AT(prefix, type_name)                            \
-DEFAULT_LIST_POP_LAST(prefix, type_name)
+DEFAULT_LIST_POP_LAST(prefix, type_name)                          \
+DEFAULT_LIST_IS_EMPTY(prefix, type_name)                          \
+DEFAULT_LIST_GET_FIRST(prefix, type_name)                         \
+DEFAULT_LIST_GET_LAST(prefix, type_name)                          \
+DEFAULT_LIST_MERGED_FILE_INFO(prefix, type_name)
+
 
 OBJ_DRF_LIST(obj_drf, ObjectDeref, obj_drf_dealloc)
 
@@ -127,5 +133,3 @@ void obj_drf_list_print(ObjectDerefList *list, FILE *file) {
     obj_drf_list_print(list->next, file); 
   } 
 }
-
-#endif // end OBJ_DRF_HEADER

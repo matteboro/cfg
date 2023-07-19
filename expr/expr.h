@@ -154,20 +154,24 @@ Expression *expr_create_object_deref_operand_expression(ObjectDerefList *derefs)
   return expr_create_operand_expression(operand);
 }
 
-Expression *expr_create_operand_expression_from_operand_type_and_data(OperandType type, const char *data) {
+Expression *expr_create_operand_expression_from_operand_type_and_data(
+  OperandType type, 
+  const char *data, 
+  FileInfo file_info) {
+
   void *my_data = NULL;
 
   if (type == INTEGER_OPERAND) {
     my_data = malloc(sizeof(int));
     int *int_data = (int *)my_data;
     *int_data = expr_string_to_int(data);
-    Operand *operand = oprnd_create_integer(my_data);
+    Operand *operand = oprnd_create_integer(my_data, file_info);
     return expr_create_operand_expression(operand);
   } 
   else if (type == STRING_OPERAND) {
     my_data = malloc(strlen(data)+1);
     strcpy((char *) my_data, data);
-    Operand *operand = oprnd_create_string(my_data);
+    Operand *operand = oprnd_create_string(my_data, file_info);
     return expr_create_operand_expression(operand);
   } 
   else {
@@ -185,7 +189,7 @@ Expression *expr_create_operand_expression_from_token(Token token) {
   default: EXPR_ERROR();
   }
 
-  Expression* result = expr_create_operand_expression_from_operand_type_and_data(type, token_data_string);
+  Expression* result = expr_create_operand_expression_from_operand_type_and_data(type, token_data_string, token.file_info);
   free(token_data_string);
   return result;
 }

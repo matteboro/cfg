@@ -236,7 +236,7 @@ bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
     return False;
   }
 
-  Type *expected_type = type_create_int_type();
+  Type *expected_type = type_create_generic_int_type();
   if (!type_equal(expected_type, condition_type)) {
     fprintf(stdout, "ERROR: did not pass if else analysis.\n\n  ");
     fprintf(stdout, "condition expression: ");
@@ -254,7 +254,7 @@ bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
   type_dealloc(condition_type);
   type_dealloc(expected_type);
 
-  if (stmnt_chckr_check(if_body, an_state))
+  if (!stmnt_chckr_check(if_body, an_state))
     return False;
 
   if (else_body != NULL)
@@ -276,7 +276,7 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS) {
     fprintf(stdout, " does not yield a valid return type\n\n");
     return False;
   }
-  Type *expected_type = type_create_int_type();
+  Type *expected_type = type_create_generic_int_type();
   if (!type_equal(expected_type, condition_type)) {
     fprintf(stdout, "ERROR: did not pass while analysis.\n\n  ");
     fprintf(stdout, "condition expression: ");
@@ -294,7 +294,7 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS) {
   type_dealloc(condition_type);
   type_dealloc(expected_type);
 
-  if (stmnt_chckr_check(body, an_state))
+  if (!stmnt_chckr_check(body, an_state))
     return False;
 
   return True;

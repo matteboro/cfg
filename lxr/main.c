@@ -5,9 +5,9 @@
 
 int main() {
 
-  char *code = file_to_cstring("/home/matteo/github/cfg/chckr/code.b");
+  File *file = file_open("/home/matteo/github/cfg/chckr/code.b");
 
-  Lexer lexer = lxr_init(code);
+  Lexer lexer = lxr_init(file);
 
   lxr_dump_lexer(&lexer);
 
@@ -19,6 +19,6 @@ int main() {
     next_token = lxr_next_token(&lexer); 
   }
 
-  munmap(code, 0);
+  file_dealloc(file);
   return 0;
 }

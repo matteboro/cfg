@@ -101,6 +101,7 @@ ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
     else
       id_token = prsr_match(IDENTIFIER_TOKEN);
 
+    FileInfo file_info = id_token.file_info;
     if (lookhaed.type == OPEN_SQUARE_TOKEN) {
       prsr_match(OPEN_SQUARE_TOKEN);
       Expression *index_expr = prsr_parse_equation();
@@ -108,7 +109,8 @@ ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
         obj_derefs, 
         obj_drf_create_array_type_deref(
           idf_create_identifier_from_token(id_token), 
-          index_expr));
+          index_expr, 
+          file_info_merge(file_info, lookhaed.file_info)));
       prsr_match(CLOSE_SQUARE_TOKEN);
     } else {
       obj_drf_list_append(
@@ -283,20 +285,25 @@ Type *prsr_parse_type(Token start_type) {
 
   Type *type = NULL;
   if (start_type.type == INT_TYPE_TOKEN)
-    type = type_create_int_type();
+    type = type_create_int_type(start_type.file_info);
   else if (start_type.type == STRING_TYPE_TOKEN)
-    type = type_create_string_type();
+    type = type_create_string_type(start_type.file_info);
   else
     type = type_create_struct_type(idf_create_identifier_from_token(start_type));
 
+  FileInfo file_info = type->file_info;
   // for the moment we do not support multi dimensional array
   if (lookhaed.type == ARR_TOKEN) {
+    file_info = file_info_merge(file_info, lookhaed.file_info);
     prsr_match(ARR_TOKEN);
+    file_info = file_info_merge(file_info, lookhaed.file_info);
     prsr_match(OPEN_SQUARE_TOKEN);
     int size = lxr_get_integer_value_of_integer_token(lookhaed);
+    file_info = file_info_merge(file_info, lookhaed.file_info);
     prsr_match(INTEGER_TOKEN);
+    file_info = file_info_merge(file_info, lookhaed.file_info);
     prsr_match(CLOSE_SQUARE_TOKEN);
-    type = type_create_array_type(size, type);
+    type = type_create_array_type(size, type, file_info);
   }
 
   return type;
@@ -533,9 +540,9 @@ ASTProgram *prsr_parse_program()
   //   struct_declarations);
 }
 
-ASTProgram *prsr_parse(const char *data)
+ASTProgram *prsr_parse(File *file)
 {
-  Lexer lexer = lxr_init(data);
+  Lexer lexer = lxr_init(file);
   lexer_ptr = &lexer;
 
   prsr_next_token();
@@ -548,9 +555,9 @@ ASTProgram *prsr_parse(const char *data)
   return NULL;
 }
 
-Expression *prsr_parse_expression_from_string(const char *data)
+Expression *prsr_parse_expression_from_string(File *file)
 {
-  Lexer lexer = lxr_init(data);
+  Lexer lexer = lxr_init(file);
   lexer_ptr = &lexer;
 
   prsr_next_token();

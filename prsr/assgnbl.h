@@ -18,11 +18,13 @@ void assgnbl_dealloc(AssignableElement *);
 
 struct AssignableElement_s {
   ObjectDerefList *obj_derefs;
+  FileInfo file_info;
 };
 
 AssignableElement *assgnbl_create(ObjectDerefList *obj_derefs) {
   AssignableElement *assgnbl = (AssignableElement *) malloc(sizeof(AssignableElement));
   assgnbl->obj_derefs = obj_derefs;
+  assgnbl->file_info = obj_drf_list_merged_file_info(obj_derefs);
   return assgnbl;
 }
 void assgnbl_print(AssignableElement *assgnbl, FILE *file) {

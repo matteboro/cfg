@@ -57,12 +57,7 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
   if (funccall_params_size == 0)
     return True;
 
-  // func_decl_print_signature(matched_function, stdout); fprintf(stdout, "\n");
   FOR_EACH_ENUM(ParameterList, prmt_it, matched_function->params, counter) {
-    // fprintf(stdout, "  param n. %d: ", counter);
-    // prmt_print(prmt_it->node, stdout);
-    // fprintf(stdout, "\n");
-
     Type *param_type = prmt_it->node->nt_bind->type;
     Expression *init_expr = expr_list_get_at(params_values, counter);
     Type *init_expr_type = expr_chckr_get_returned_type(init_expr, an_state);

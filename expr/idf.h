@@ -1,5 +1,4 @@
-#ifndef IDF_HEADER
-#define IDF_HEADER
+#pragma once
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,22 +11,24 @@
 
 typedef struct {
   char *name;
+  FileInfo file_info;
 } Identifier;
 
-Identifier *idf_create_identifier(const char *name);
+Identifier *idf_create_identifier(const char *name, FileInfo f_info);
 void idf_dealloc_identifier(Identifier *id);
 void idf_print_identifier(Identifier *id, FILE *file);
 Identifier *idf_create_identifier_from_token(Token token);
 
-Identifier *idf_create_identifier(const char *name) {
+Identifier *idf_create_identifier(const char *name, FileInfo f_info) {
   Identifier *id = (Identifier *)malloc(sizeof(Identifier));
   id->name = (char *) malloc(strlen(name)+1);
+  id->file_info = f_info;
   strcpy(id->name, name);
   return id;
 }
 
 Identifier *idf_copy_identifier(Identifier *id) {
-  return idf_create_identifier(id->name);
+  return idf_create_identifier(id->name, id->file_info);
 } 
 
 bool idf_equal_identifiers(Identifier *id1, Identifier *id2) {
@@ -46,8 +47,9 @@ void idf_print_identifier(Identifier *id, FILE *file) {
 Identifier *idf_create_identifier_from_token(Token token) {
   // TODO : error handling, assume (token.type == IDENTIFIER_TOKEN)
   Identifier *id = (Identifier *)malloc(sizeof(Identifier));
-  id->name = (char *) malloc(token.data_length+1);
+  // id->name = (char *) malloc(token.data_length+1);
   id->name = lxr_get_token_data_as_cstring(token);
+  id->file_info = token.file_info;
   return id;
 }
 
@@ -65,8 +67,3 @@ int idf_list_find(IdentifierList *list, Identifier *id) {
   }
   return -1;
 }
-
-// END IDENTIFIER LIST
-
-// END IDENTIFIER
-#endif // end IDF_HEADER

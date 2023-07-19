@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include "../utility/file_man.h"
 
 #define TODO() fprintf(stdout, "TODO: %s is not implemented\n", __FUNCTION__); exit(1);
 #define bool int
@@ -144,12 +145,11 @@ static const char * const keyword_token_to_string[] = {
 #define keyword_token_to_string_size sizeof(keyword_token_to_string)/sizeof(char *)
 
 typedef struct {
-
   TokenType type;
   const char* data;
   int data_length;
   int position;
-
+  FileInfo file_info;
 } Token;
 
 void token_print_data(Token token) {
@@ -159,7 +159,6 @@ void token_print_data(Token token) {
 
 char *lxr_get_token_data_as_cstring(Token token){
   // TODO: error handling
-  // TODO: what should be returned in case of STRING_TOKEN --> DONE
   if (token.type == STRING_TOKEN) {
     char *string = (char *) malloc(token.data_length-1);
     memcpy(string, token.data + token.position + 1, token.data_length - 2);
@@ -185,9 +184,12 @@ void lxr_print_token_type(TokenType token_type){
 }
 
 void lxr_print_token(Token token){
-
   fprintf(stdout, "%-14s at %-5d", token_to_name[token.type], token.position);
-
+  fprintf(stdout, " start col: %-5lu end col: %-5lu start line: %-5lu end line: %-5lu", 
+          token.file_info.position.start_col, 
+          token.file_info.position.end_col,
+          token.file_info.position.start_line,
+          token.file_info.position.end_line);
   if (token.data_length > 0){
     fprintf(stdout, " data: ");
     token_print_data(token);
@@ -198,10 +200,13 @@ typedef struct {
   const char *data;
   unsigned int current;
   unsigned int data_length;
+  size_t curr_col, curr_line;
+  File *file;
 } Lexer;
 
 #define lxr_current_char(lexer) lexer->data[lexer->current]
-#define lxr_increment_current(lexer) ++lexer->current;
+#define lxr_increment_current(lexer) {++lexer->current; ++lexer->curr_col;}
+#define lxr_next_line(lexer) {++lexer->curr_line; lexer->curr_col = 0;}
 
 void lxr_dump_lexer(Lexer *lexer) {
   fprintf(stdout, "current: %d, current_char: %c\n", lexer->current, lexer->data[lexer->current]);
@@ -233,6 +238,8 @@ bool is_final_char(char c) {
 int eat_whitespace(Lexer *lexer) {
   int eaten = 0;
   while (is_whitespace(lxr_current_char(lexer))) {
+    if (lxr_current_char(lexer) == '\n') 
+      lxr_next_line(lexer);
     ++eaten;
     lxr_increment_current(lexer);
   }
@@ -256,12 +263,15 @@ TokenType lxr_get_keyword_token(const char *data, int start, unsigned int length
   return IDENTIFIER_TOKEN;
 }
 
-Lexer lxr_init(const char *data) {
+Lexer lxr_init(File *file) {
 
   Lexer lexer;
-  lexer.data = data;
-  lexer.data_length = strlen(data);
+  lexer.data = file->data;
+  lexer.data_length = strlen(file->data);
   lexer.current = 0;
+  lexer.curr_col = 0;
+  lexer.curr_line = 0;
+  lexer.file = file;
 
   return lexer;
 }
@@ -272,6 +282,8 @@ bool lxr_check_one_char_token(Lexer *lexer, Token *token) {
       token->type = (TokenType) i;
       token->data_length = 1;
       token->position = lexer->current;
+      token->file_info.position.data_length = 1;
+      token->file_info.position.end_col = lexer->curr_col;
       return True;
     }
   }
@@ -285,20 +297,36 @@ else if (lxr_current_char(lexer) == first_char) { \
     token.type = secnd_token; \
     token.position = lexer->current-1; \
     token.data_length = 2; \
+    token.file_info.position.data_length = 2; \
+    token.file_info.position.end_col = lexer->curr_col; \
     lxr_increment_current(lexer); \
   } else { \
     token.type = first_token; \
     token.position = lexer->current-1; \
     token.data_length = 1; \
+    token.file_info.position.data_length = 1; \
+    token.file_info.position.end_col = lexer->curr_col-1; \
   } \
 }   \
 
 Token lxr_create_null_token() {
-  Token t; 
-  t.type = NULL_TOKEN;
-  t.data = NULL;
-  t.position = 0;
-  t.data_length = 0;
+  Token t = {
+    .type = NULL_TOKEN,
+    .data = NULL,
+    .position = 0,
+    .data_length = 0,
+    .file_info = {
+      .file = NULL,
+      .position = {
+        .start_col = 0,
+        .start_line = 0,
+        .end_line = 0,
+        .end_col = 0,
+        .data_length = 0
+        
+      }
+    }
+  };
   return t;
 }
 
@@ -306,11 +334,22 @@ Token lxr_next_token(Lexer *lexer) {
 
   eat_whitespace(lexer);
 
-  Token token;
-  token.data = lexer->data;
-  token.type = NULL_TOKEN;
-  token.position = 0;
-  token.data_length = 0;
+  Token token = {
+    .type = NULL_TOKEN, 
+    .data = lexer->data, 
+    .data_length = 0, 
+    .position = 0,
+    .file_info = {
+      .file = lexer->file, 
+      .position = {
+        .start_col = lexer->curr_col,
+        .start_line = lexer->curr_line,
+        .end_line = lexer->curr_line,
+        .end_col = 0,
+        .data_length = 0
+      }
+    }
+  };
 
   if (lexer->current >= lexer->data_length) {
     token.type = END_TOKEN;
@@ -337,50 +376,61 @@ Token lxr_next_token(Lexer *lexer) {
     token.type = lxr_get_keyword_token(lexer->data, starting_position, id_name_length);
     token.position = starting_position;
     token.data_length = id_name_length;
+    token.file_info.position.end_col = lexer->curr_col-1;
+    token.file_info.position.data_length = id_name_length;
 
   }
   else if (is_integer_char(lxr_current_char(lexer))) {
     int starting_position = lexer->current;
-    int id_name_length = 1;
+    int int_literal_length = 1;
     lxr_increment_current(lexer);
 
     while(is_integer_char(lxr_current_char(lexer))) {
-      ++id_name_length;
+      ++int_literal_length;
       lxr_increment_current(lexer);
     }
     token.type = INTEGER_TOKEN;
     token.position = starting_position;
-    token.data_length = id_name_length;
+    token.data_length = int_literal_length;
+    token.file_info.position.end_col = lexer->curr_col-1;
+    token.file_info.position.data_length = int_literal_length;
   }
   else if (lxr_current_char(lexer) == '#') {
-
     token.type = COMMENT_TOKEN;
     token.position = lexer->current;
     token.data_length = 1;
+    token.file_info.position.data_length = 1;
 
     lxr_increment_current(lexer);
     while (lxr_current_char(lexer) != '\n') {
       ++token.data_length;
+      ++token.file_info.position.data_length;
       lxr_increment_current(lexer);
     }
+    token.file_info.position.end_col = lexer->curr_col-1;
   } 
   else if (lxr_current_char(lexer) == '"') {
     token.type = STRING_TOKEN;
     token.position = lexer->current;
     token.data_length = 1;
-
+    token.file_info.position.data_length = 1;
     lxr_increment_current(lexer);
     while (lxr_current_char(lexer) != '"') {
       ++token.data_length;
+      ++token.file_info.position.data_length;
       lxr_increment_current(lexer);
     }
     ++token.data_length;
+    ++token.file_info.position.data_length;
+    token.file_info.position.end_col = lexer->curr_col;
     lxr_increment_current(lexer);
   }
   else if (is_final_char(lxr_current_char(lexer))) {
     token.type = END_TOKEN;
     token.position = lexer->current;
     token.data_length = 1;
+    token.file_info.position.end_col = lexer->curr_col;
+    token.file_info.position.data_length = 1;
   } 
   else {
     fprintf(stdout, "ERROR: no possible token\n");

@@ -6,12 +6,14 @@
 typedef struct {
   Identifier *name;
   Type *type;
+  FileInfo file_info;
 } NameTypeBinding;
 
 NameTypeBinding *nt_bind_create(Identifier *name, Type *type) {
   NameTypeBinding *nt_bind = (NameTypeBinding *) malloc(sizeof(NameTypeBinding));
   nt_bind->name = name;
   nt_bind->type = type;
+  nt_bind->file_info = file_info_merge(name->file_info, type->file_info);
   return nt_bind;
 }
 

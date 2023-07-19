@@ -5,15 +5,15 @@
 
 int main() {
 
-  char *code = file_to_cstring("/home/matteo/github/cfg/chckr/code.b");
+  File *file = file_open("/home/matteo/github/cfg/chckr/code.b");
 
-  ASTProgram *ast = prsr_parse(code);
+  ASTProgram *ast = prsr_parse(file);
 
   //strct_decl_list_print(ast->struct_declarations, stdout);
 
   prgrm_print(ast, stdout);
   prgrm_dealloc(ast);
 
-  munmap(code, 0);
+  file_dealloc(file);
   return 0;
 }

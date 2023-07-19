@@ -4,16 +4,16 @@
 
 int main() {
 
-  char *code = file_to_cstring("/home/matteo/github/cfg/chckr/code.b");
+  File *file = file_open("/home/matteo/github/cfg/chckr/code.b");
 
-  ASTProgram *ast = prsr_parse(code);
+  ASTProgram *ast = prsr_parse(file);
 
   prgrm_chckr_check(ast);
 
   prgrm_print(ast, stdout); fprintf(stdout, "\n");
   prgrm_dealloc(ast);
 
-  munmap(code, 0);
+  file_dealloc(file);
 
   return 0;
 }

@@ -1,5 +1,4 @@
-#ifndef LIST_IMPLEMENTATION
-#define LIST_IMPLEMENTATION
+#pragma once
 
 #include "assert.h"
 
@@ -119,6 +118,34 @@ type_name *prefix##_list_pop_last(type_name##List *list) {   \
   return prefix##_list_pop_last(list->next);                 \
 }
 
+#define DEFAULT_LIST_IS_EMPTY(prefix, type_name)      \
+bool prefix##_list_is_empty(type_name##List *list) {  \
+  return prefix##_list_size(list) == 0;               \
+}
+
+#define DEFAULT_LIST_GET_LAST(prefix, type_name)              \
+type_name *prefix##_list_get_last(type_name##List *list) {    \
+  if (prefix##_list_is_empty(list))                           \
+    return NULL;                                              \
+  size_t list_size = prefix##_list_size(list);                \
+  return prefix##_list_get_at(list, list_size-1);             \
+}
+#define DEFAULT_LIST_GET_FIRST(prefix, type_name)             \
+type_name *prefix##_list_get_first(type_name##List *list) {   \
+  if (prefix##_list_is_empty(list))                           \
+    return NULL;                                              \
+  return prefix##_list_get_at(list, 0);                       \
+}
+
+#define DEFAULT_LIST_MERGED_FILE_INFO(prefix, type_name)                              \
+FileInfo prefix##_list_merged_file_info(type_name##List *list) {                      \
+  if (prefix##_list_is_empty(list))                                                   \
+    return file_info_create_null();                                                   \
+  FileInfo file_info = prefix##_list_get_first(list)->file_info;                      \
+  file_info = file_info_merge(file_info, prefix##_list_get_last(list)->file_info);    \
+  return file_info;                                                                   \
+}    
+
 
 #define LIST(prefix, type_name, dealloc_func, print_func) \
 DEFAULT_LIST_IMPLEMENTATION(type_name)                    \
@@ -129,7 +156,10 @@ DEFAULT_LIST_DEALLOC(prefix, type_name, dealloc_func)     \
 DEFAULT_LIST_SIZE(prefix, type_name)                      \
 DEFAULT_LIST_GET_AT(prefix, type_name)                    \
 DEFAULT_LIST_PRINT(prefix, type_name, print_func)         \
-DEFAULT_LIST_POP_LAST(prefix, type_name)
+DEFAULT_LIST_POP_LAST(prefix, type_name)                  \
+DEFAULT_LIST_IS_EMPTY(prefix, type_name)                  \
+DEFAULT_LIST_GET_FIRST(prefix, type_name)                 \
+DEFAULT_LIST_GET_LAST(prefix, type_name)
 
 
 void print_int(int *val, FILE *file) {
@@ -137,6 +167,3 @@ void print_int(int *val, FILE *file) {
 }
 
 LIST(int, int, free, print_int)
-
-
-#endif // end LIST_IMPLMENTATION

@@ -1,5 +1,4 @@
-#ifndef EXPR_INTERFACE_HEADER
-#define EXPR_INTERFACE_HEADER
+#pragma once
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -19,11 +18,11 @@ typedef void EnclosedExpression;
 typedef struct {
   ExpressionType type;
   EnclosedExpression *enclosed_expression;
+  FileInfo file_info;
 } Expression;
 
 void expr_dealloc_expression(Expression *expression);
 void expr_print_expression(Expression *expression, FILE *file);
 
 LIST(expr, Expression, expr_dealloc_expression, expr_print_expression)
-
-#endif // end EXPR_INTERFACE_HEADER
+DEFAULT_LIST_MERGED_FILE_INFO(expr, Expression)

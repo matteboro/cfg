@@ -51,16 +51,6 @@ bool obj_drf_check_not_for_basic_type(Type *type, ObjectDerefList *obj_derefs, I
 Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState *an_state) {
   AvailableVariables* av_vars = chckr_analysis_state_get_av_vars(an_state); 
   StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
-  // NOTE: 
-  //   if I have: data struct { int arr[10] :: s1 }
-  //   and the function return a int arr[10] this: return s1; is valid while: return s1[1]; is not,
-  //   instead if the function return a int this: return s1; is not valid while: return s1[1]; is.
-
-  //  TODO: when I return the type I should look if the last dereference is of type array as the attribute,
-  //        if it is I should return the ultimate type, else the normal type.
-  //        NOTE: it should handle the case of multi-dimensional arrays.
-
-  // TODO: modify the check for array correspondance on last element, error only if deref is array while attribute is not
 
   assert(obj_drf_list_size(obj_derefs) > 0);
   ObjectDeref *first_elem = obj_drf_list_get_at(obj_derefs, 0);
@@ -72,7 +62,6 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
   }
 
   // TODO: should check index expression is of type int
-
   if (obj_drf_list_size(obj_derefs) == 1) {
     Type *var_type = var->nt_bind->type;
     Identifier *var_name = var->nt_bind->name;
