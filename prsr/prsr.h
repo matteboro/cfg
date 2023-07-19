@@ -5,19 +5,6 @@
 #include "../expr/expr.h"
 #include "prgrm.h"
 
-/*
-
-ASSGNM     :: [ IDENTIFIER_TOKEN - EQUAL_TOKEN - < EXPRESSION > - SEMICOLON_TOKEN ]
-
-EXPRESSION :: [ < TERM > ( ( PLUS_TOKEN | MINUS_TOKEN ) - < TERM > )* ]
-
-TERM       :: [ < FACTOR > ( ( ASTERISK_TOKEN | SLASH_TOKEN ) - < FACTOR > )* ]
-
-FACTOR     :: [ IDENDIFIER_TOKEN ],
-              [ INTEGER_TOKEN ],
-              [ OPEN_PAREN_TOKEN - < EXPRESSION > - CLOSE_PAREN_TOKEN ]
-*/
-
 // #define PRSR_DEBUG
 #ifdef PRSR_DEBUG
 #define PRSR_DEBUG_PRINT() fprintf(stdout, "%s\n", __FUNCTION__);
@@ -311,6 +298,8 @@ Type *prsr_parse_type(Token start_type) {
   return type;
 }
 
+//// PARSE STATEMENT
+
 Statement *prsr_parse_assignment(Token start_deref)
 {
   PRSR_DEBUG_PRINT();
@@ -456,6 +445,8 @@ Statement *prsr_parse_while_statement()
   Statement *body = prsr_parse_statements();
   return stmnt_create_while(condition, body, file_info_merge(while_token.file_info, body->file_info));
 }
+
+//// END PARSE STATEMENT
 
 ParameterList *prsr_parse_func_declaration_params() 
 {

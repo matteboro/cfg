@@ -10,14 +10,19 @@
 #include "string.h"
 #include "assert.h"
 
+void red(FILE *file) {
+  fprintf(file, "\033[1;31m"); 
+} 
+
+void reset(FILE *file) {
+  fprintf(file, "\033[0m");
+} 
+
 typedef struct {
   char *name;
   const char *data;
+  size_t length;
 } File;
-
-int file_equal(File *f1, File *f2) {
-  return strcmp(f1->name, f2->name) == 0;
-}
 
 typedef struct {
   size_t start_col, end_col;
@@ -43,6 +48,7 @@ char *file_to_cstring(const char *filename) {
 File *file_open(const char* file_path) {
   File *file = (File *) malloc(sizeof(File));
   file->data = file_to_cstring(file_path);
+  file->length = strlen(file->data);
   file->name = (char *) malloc(strlen(file_path)+1);
   strcpy(file->name, file_path);
   return file;
@@ -83,7 +89,7 @@ FileInfo file_info_merge(FileInfo f1, FileInfo f2) {
   // fprintf(stdout, "fi.file_ptr: %lu, f2.file_ptr: %lu\n", f1.file, f2.file);
   assert(!file_info_is_null(f1));
   assert(!file_info_is_null(f2));
-  assert(file_equal(f1.file, f2.file));
+  assert(f1.file == f2.file);
 
   size_t start_col, end_col, start_line, end_line;
 
@@ -125,4 +131,28 @@ FileInfo file_info_merge(FileInfo f1, FileInfo f2) {
   };
 
   return f_res;
+}
+
+void file_info_print_highlighted(FileInfo file_info, FILE* out_file) {
+  size_t curr_line = 0;
+  size_t curr_col = 0;
+  File *file = file_info.file;
+  for (size_t i = 0; i < file->length; ++i) {
+    ++curr_col;
+    if (file->data[i] == '\n') {
+      ++curr_line;
+      curr_col = 0;
+    }
+    if (curr_line >= file_info.position.start_line) {
+      if (curr_col >= file_info.position.start_col) {
+        red(out_file);
+      } 
+    }
+    if (curr_line >= file_info.position.end_line) {
+      if (curr_col >= file_info.position.end_col) {
+        reset(out_file);
+      } 
+    }
+    fprintf(out_file, "%c", file->data[i]);
+  }
 }
