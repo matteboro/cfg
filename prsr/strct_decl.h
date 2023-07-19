@@ -10,9 +10,10 @@
 typedef struct {
   Identifier *name;
   AttributeList *attributes;
+  FileInfo file_info;
 } StructDeclaration;
 
-StructDeclaration *strct_decl_create(Identifier *name, AttributeList *attributes);
+StructDeclaration *strct_decl_create(Identifier *name, AttributeList *attributes, FileInfo file_info);
 void strct_decl_dealloc(StructDeclaration *decl);
 void strct_decl_print(StructDeclaration *decl, FILE *file);
 void strct_decl_print_ident(StructDeclaration *decl, FILE *file, size_t ident);
@@ -33,10 +34,11 @@ void strct_decl_list_print_ident(StructDeclarationList *list, FILE *file, size_t
   }
 }
 
-StructDeclaration *strct_decl_create(Identifier *name, AttributeList *attributes) {
+StructDeclaration *strct_decl_create(Identifier *name, AttributeList *attributes, FileInfo file_info) {
   StructDeclaration *decl = (StructDeclaration *)malloc(sizeof(StructDeclaration));
   decl->attributes = attributes;
   decl->name = name;
+  decl->file_info = file_info;
   return decl;
 }
 

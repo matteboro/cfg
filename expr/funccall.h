@@ -9,12 +9,14 @@
 typedef struct {
   Identifier *function_name;
   ExpressionList *params_values;
+  FileInfo file_info;
 } FunctionCall;
 
-FunctionCall *funccall_create(Identifier *func_name, ExpressionList *params_values){
+FunctionCall *funccall_create(Identifier *func_name, ExpressionList *params_values, FileInfo file_info){
   FunctionCall *func_call = (FunctionCall *)malloc(sizeof(FunctionCall));
   func_call->function_name = func_name;
   func_call->params_values = params_values;
+  func_call->file_info = file_info;
   return func_call;
 }
 

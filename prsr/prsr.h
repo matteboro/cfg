@@ -83,7 +83,8 @@ FunctionCall *prsr_parse_funccall(Token func_name)
       prsr_match(COMMA_TOKEN);
     }
   }
-  FunctionCall *func_call = funccall_create(idf_create_identifier_from_token(func_name), params_values);
+  FileInfo file_info = file_info_merge(func_name.file_info, lookhaed.file_info);
+  FunctionCall *func_call = funccall_create(idf_create_identifier_from_token(func_name), params_values, file_info);
   prsr_match(CLOSE_PAREN_TOKEN);
   return func_call;
 }
@@ -163,15 +164,16 @@ Expression *prsr_parse_factor()
   }
   case MINUS_TOKEN:
   {
-    prsr_match(MINUS_TOKEN);
+    Token op = prsr_match(MINUS_TOKEN);
     Expression *expression = prsr_parse_factor();
-    return expr_create_unary_expression(expression, MINUS_UNARY_OPERATION);
+    return expr_create_unary_expression(expression, MINUS_UNARY_OPERATION, file_info_merge(op.file_info, expression->file_info));
   }
   case EXCL_POINT_TOKEN:
   {
+    Token op = prsr_match(MINUS_TOKEN);
     prsr_match(EXCL_POINT_TOKEN);
     Expression *expression = prsr_parse_factor();
-    return expr_create_unary_expression(expression, NOT_UNARY_OPERATION);
+    return expr_create_unary_expression(expression, NOT_UNARY_OPERATION, file_info_merge(op.file_info, expression->file_info));
   }
   case LESS_TOKEN:
   {
@@ -186,10 +188,10 @@ Expression *prsr_parse_str_expression() {
   PRSR_DEBUG_PRINT();
   Expression *root = NULL;
   if (lookhaed.type == LESS_TOKEN) {
-    prsr_match(LESS_TOKEN);
+    Token left_bound = prsr_match(LESS_TOKEN);
     root = prsr_parse_expression();
-    prsr_match(GREATER_TOKEN);
-    root = expr_create_unary_expression(root, STR_LEN_UNARY_OPERATION);
+    Token right_bound = prsr_match(GREATER_TOKEN);
+    root = expr_create_unary_expression(root, STR_LEN_UNARY_OPERATION, file_info_merge(left_bound.file_info, right_bound.file_info));
   } else {
     root = prsr_parse_factor();
     while (lookhaed.type == BAR_TOKEN)
@@ -263,7 +265,7 @@ Expression *prsr_parse_equation()
   }
 }
 
-//// PARSE EXPRESSION
+//// END PARSE EXPRESSION
 
 ExpressionList *prsr_parse_arr_initializations_values() {
   ExpressionList *init_values = expr_list_create_empty();
@@ -315,11 +317,12 @@ Statement *prsr_parse_assignment(Token start_deref)
   ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
   prsr_match(EQUAL_TOKEN);
   Expression *expression = prsr_parse_expression();
+  AssignableElement *assgnbl = assgnbl_create(derefs);
   return stmnt_create_assignment(
-    assgnbl_create(derefs), 
-    expression);
+    assgnbl, 
+    expression, 
+    file_info_merge(assgnbl->file_info, lookhaed.file_info));
 }
-
 
 Statement *prsr_parse_declaration(Token start_type) {
   Type *type = prsr_parse_type(start_type);
@@ -341,10 +344,8 @@ Statement *prsr_parse_declaration(Token start_type) {
     }
     // TODO: add struct initialization using { val1, val2, ... val2 }
   }
-
-  return stmnt_create_declaration(
-      nt_bind_create(idf_create_identifier_from_token(name_token), type),
-      init_expr);
+  NameTypeBinding *nt_bind = nt_bind_create(idf_create_identifier_from_token(name_token), type);
+  return stmnt_create_declaration(nt_bind, init_expr, file_info_merge(nt_bind->file_info, lookhaed.file_info));
 }
 
 Statement *prsr_dispatch_id_started_statement() {
@@ -358,7 +359,9 @@ Statement *prsr_dispatch_id_started_statement() {
       lookhaed.type == POINT_TOKEN) {
     statement = prsr_parse_assignment(maybe_type_or_id);
   } else if (lookhaed.type == OPEN_PAREN_TOKEN) {
-    statement = stmnt_create_funccall(prsr_parse_funccall(maybe_type_or_id));
+    statement = stmnt_create_funccall(
+      prsr_parse_funccall(maybe_type_or_id), 
+      file_info_merge(maybe_type_or_id.file_info, lookhaed.file_info));
   } else {
     statement = prsr_parse_declaration(maybe_type_or_id);
   }
@@ -392,29 +395,30 @@ Statement *prsr_parse_statements()
 {
   PRSR_DEBUG_PRINT();
   StatementList *stmnt_list = stmnt_list_create_empty();
-  prsr_match(OPEN_CURLY_TOKEN);
+  Token open_curly_token = prsr_match(OPEN_CURLY_TOKEN);
   while (lookhaed.type != CLOSE_CURLY_TOKEN) {
     Statement *statement = prsr_parse_statement();
     stmnt_list_append(stmnt_list, statement);
   }
-  prsr_match(CLOSE_CURLY_TOKEN);
-  return stmnt_create_block(stmnt_list);
+  Token close_curly_token = prsr_match(CLOSE_CURLY_TOKEN);
+  return stmnt_create_block(stmnt_list, file_info_merge(open_curly_token.file_info, close_curly_token.file_info));
 }
 
 Statement *prsr_parse_return_statement() 
 {
-  prsr_match(RETURN_TOKEN);
+  Token return_token = prsr_match(RETURN_TOKEN);
   Expression *ret_value = prsr_parse_expression();
-  prsr_match(SEMICOLON_TOKEN);
-  return stmnt_create_return(ret_value);
+  Token semicolon_token = prsr_match(SEMICOLON_TOKEN);
+  return stmnt_create_return(ret_value, file_info_merge(return_token.file_info, semicolon_token.file_info));
 }
 
 Statement *prsr_parse_if_statement(bool first) 
 {
+  Token keyword_token;
   if (first)
-    prsr_match(IF_TOKEN);
+    keyword_token = prsr_match(IF_TOKEN);
   else  
-    prsr_match(ELIF_TOKEN);
+    keyword_token = prsr_match(ELIF_TOKEN);
     
   Expression *condition = prsr_parse_expression();
   Statement *if_body = prsr_parse_statements();
@@ -422,24 +426,35 @@ Statement *prsr_parse_if_statement(bool first)
   if (lookhaed.type == ELSE_TOKEN) {
     prsr_match(ELSE_TOKEN);
     Statement *else_body = prsr_parse_statements();
-    return stmnt_create_if_else(condition, if_body, else_body);
+    return stmnt_create_if_else(
+      condition, 
+      if_body, 
+      else_body, 
+      file_info_merge(keyword_token.file_info, else_body->file_info));
   } 
   else if (lookhaed.type == ELIF_TOKEN) {
     Statement *else_body = prsr_parse_if_statement(False);
-    return stmnt_create_if_else(condition, if_body, else_body);
+    return stmnt_create_if_else(
+      condition, 
+      if_body, 
+      else_body, 
+      file_info_merge(keyword_token.file_info, else_body->file_info));
   } 
   else {
-    return stmnt_create_if_else(condition, if_body, NULL);
+    return stmnt_create_if_else(
+      condition, 
+      if_body, 
+      NULL, 
+      file_info_merge(keyword_token.file_info, if_body->file_info));
   }
-
 }
 
 Statement *prsr_parse_while_statement() 
 {
-  prsr_match(WHILE_TOKEN);
+  Token while_token = prsr_match(WHILE_TOKEN);
   Expression *condition = prsr_parse_expression();
   Statement *body = prsr_parse_statements();
-  return stmnt_create_while(condition, body);
+  return stmnt_create_while(condition, body, file_info_merge(while_token.file_info, body->file_info));
 }
 
 ParameterList *prsr_parse_func_declaration_params() 
@@ -472,7 +487,7 @@ ParameterList *prsr_parse_func_declaration_params()
 FunctionDeclaration *prsr_parse_func_declaration() 
 {
   PRSR_DEBUG_PRINT();
-  prsr_match(FUNC_TOKEN);
+  Token func_token = prsr_match(FUNC_TOKEN);
   Type *return_type = prsr_parse_type(prsr_match(lookhaed.type));
   prsr_match(DOUBLE_COLON_TOKEN);
   Token func_name_id = prsr_match(IDENTIFIER_TOKEN);
@@ -488,12 +503,13 @@ FunctionDeclaration *prsr_parse_func_declaration()
     idf_create_identifier_from_token(func_name_id),
     return_type,
     params, 
-    body);
+    body, 
+    file_info_merge(func_token.file_info, body->file_info));
   return func_decl;
 }
 
 StructDeclaration *prsr_parse_struct_declaration() {
-  prsr_match(DATA_TOKEN);
+  Token data_token = prsr_match(DATA_TOKEN);
   Token name = prsr_match(IDENTIFIER_TOKEN);
   AttributeList *attributes = attrb_list_create_empty();  
   prsr_match(OPEN_CURLY_TOKEN);
@@ -512,11 +528,12 @@ StructDeclaration *prsr_parse_struct_declaration() {
     else
       break;
   }
-  prsr_match(CLOSE_CURLY_TOKEN);
+  Token close_curly_token = prsr_match(CLOSE_CURLY_TOKEN);
 
   return strct_decl_create(
     idf_create_identifier_from_token(name),
-    attributes
+    attributes,
+    file_info_merge(data_token.file_info, close_curly_token.file_info)
   );
 }
 
@@ -533,11 +550,7 @@ ASTProgram *prsr_parse_program()
     else
       stmnt_list_append(global_stmnts, prsr_parse_statement());
   }
-  return prgrm_create(struct_declarations, functions, stmnt_create_block(global_stmnts));
-  // return ast_create_program_node(
-  //   functions, 
-  //   ast_create_statement_node(stmnt_create_block(global_stmnts)),
-  //   struct_declarations);
+  return prgrm_create(struct_declarations, functions, stmnt_create_block(global_stmnts, file_info_create_null()));
 }
 
 ASTProgram *prsr_parse(File *file)

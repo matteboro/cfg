@@ -81,7 +81,7 @@ void oprnd_print_funccall(Operand *obj_drf, FILE *file);
 Operand *oprnd_create_funccall(FunctionCall *funccall) {
   typed_data(FunctionCallOperandData);
   data->funccall = funccall;
-  return oprnd_create(FUNCCALL_OPERAND, data, file_info_create_null());
+  return oprnd_create(FUNCCALL_OPERAND, data, funccall->file_info);
 }
 
 void oprnd_dealloc_funccall(Operand *operand) {

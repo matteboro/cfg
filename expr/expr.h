@@ -116,10 +116,11 @@ EXPR_NON_PTR_GETTER(unary, OperationType, operation, UnaryExpression, UNARY_EXPR
 
 // CREATE
 
-Expression *expr_create_expression(ExpressionType type, void *enclosed_expression) {
+Expression *expr_create_expression(ExpressionType type, void *enclosed_expression, FileInfo file_info) {
   Expression *expression = (Expression *)malloc(sizeof(Expression));
   expression->type = type;
   expression->enclosed_expression = (EnclosedExpression *) enclosed_expression;
+  expression->file_info = file_info;
   return expression;
 }
 
@@ -128,20 +129,26 @@ Expression *expr_create_binary_expression(Expression *left, OperationType op_typ
   binary_expression->left = left;
   binary_expression->right = right;
   binary_expression->operation = op_type;
-  return expr_create_expression(BINARY_EXPRESSION_EXP_TYPE, binary_expression);
+  return expr_create_expression(
+    BINARY_EXPRESSION_EXP_TYPE, 
+    binary_expression, 
+    file_info_merge(left->file_info, right->file_info));
 }
 
-Expression *expr_create_unary_expression(Expression *operand, OperationType op_type) {
+Expression *expr_create_unary_expression(Expression *operand, OperationType op_type, FileInfo file_info) {
   UnaryExpression *unary_expression = (UnaryExpression *) malloc(sizeof(UnaryExpression));
   unary_expression->operand = operand;
   unary_expression->operation = op_type;
-  return expr_create_expression(UNARY_EXPRESSION_EXP_TYPE, unary_expression);
+  return expr_create_expression(
+    UNARY_EXPRESSION_EXP_TYPE, 
+    unary_expression,
+    file_info);
 }
 
 Expression *expr_create_operand_expression(Operand *operand) {
   OperandExpression *operand_expression = (OperandExpression *) malloc(sizeof(OperandExpression));
   operand_expression->operand = operand;
-  return expr_create_expression(OPERAND_EXP_TYPE, operand_expression);
+  return expr_create_expression(OPERAND_EXP_TYPE, operand_expression, operand->file_info);
 }
 
 Expression *expr_create_funccall_operand_expression(FunctionCall *func_call) {

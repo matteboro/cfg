@@ -6,7 +6,7 @@
 struct FunctionDeclaration_s;
 typedef struct FunctionDeclaration_s FunctionDeclaration;
 
-FunctionDeclaration *func_decl_create(Identifier *name, Type *ret_type, ParameterList *params, Statement *body);
+FunctionDeclaration *func_decl_create(Identifier *, Type *, ParameterList *, Statement *, FileInfo);
 void func_decl_print(FunctionDeclaration *func, FILE *file);
 void func_decl_print_ident(FunctionDeclaration *func, FILE *file, size_t ident);
 void func_decl_dealloc(FunctionDeclaration *func);
@@ -16,14 +16,16 @@ struct FunctionDeclaration_s {
   Type *ret_type;
   ParameterList *params;
   Statement *body;
+  FileInfo file_info;
 };
 
-FunctionDeclaration *func_decl_create(Identifier *name, Type *ret_type, ParameterList *params, Statement *body) {
+FunctionDeclaration *func_decl_create(Identifier *name, Type *ret_type, ParameterList *params, Statement *body, FileInfo file_info) {
   FunctionDeclaration *func = (FunctionDeclaration *) malloc(sizeof(FunctionDeclaration));
   func->name = name;
   func->ret_type = ret_type;
   func->params = params;
   func->body = body;
+  func->file_info = file_info;
   stmnt_set_funtion_declaration_to_return(body, func);
   return func;
 }

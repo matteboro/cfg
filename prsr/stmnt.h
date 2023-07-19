@@ -42,7 +42,7 @@ typedef struct Statement_s Statement;
 
 typedef void * StatementPayload;
 
-Statement *stmnt_create(StatementPayload payload, StatementType type);
+Statement *stmnt_create(StatementPayload payload, StatementType type, FileInfo file_info);
 void stmnt_dealloc(Statement *stmnt);
 void stmnt_print(Statement *stmnt, FILE *file);
 void stmnt_print_ident(Statement *stmnt, FILE *file, size_t ident);
@@ -62,12 +62,14 @@ enum StatementType_e {
 struct Statement_s {
   StatementPayload payload;
   StatementType type;
+  FileInfo file_info;
 };
 
-Statement *stmnt_create(StatementPayload payload, StatementType type) {
+Statement *stmnt_create(StatementPayload payload, StatementType type, FileInfo file_info) {
   Statement *stmnt = STMNT_ALLOC(Statement);
   stmnt->payload = payload;
   stmnt->type = type;
+  stmnt->file_info = file_info;
   return stmnt;
 }
 
@@ -80,7 +82,7 @@ LIST(stmnt, Statement, stmnt_dealloc, stmnt_print)
 struct AssignmentPayload_s;
 typedef struct AssignmentPayload_s AssignmentPayload;
 
-Statement *stmnt_create_assignment(AssignableElement *, Expression *);
+Statement *stmnt_create_assignment(AssignableElement *, Expression *, FileInfo);
 void stmnt_print_assignment_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_assignment(Statement *);
 
@@ -92,11 +94,11 @@ struct AssignmentPayload_s {
 STMNT_GETTER(assignment, AssignableElement, assgnbl, AssignmentPayload, ASSIGNMENT_STMNT)
 STMNT_GETTER(assignment, Expression, value, AssignmentPayload, ASSIGNMENT_STMNT)
 
-Statement *stmnt_create_assignment(AssignableElement *assgnbl, Expression *value) {
+Statement *stmnt_create_assignment(AssignableElement *assgnbl, Expression *value, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(AssignmentPayload);
   payload->assgnbl = assgnbl;
   payload->value = value;
-  return stmnt_create(payload, ASSIGNMENT_STMNT);
+  return stmnt_create(payload, ASSIGNMENT_STMNT, file_info);
 }
 
 void stmnt_print_assignment_ident(Statement *stmnt, FILE *file, size_t ident) {
@@ -120,7 +122,7 @@ void stmnt_dealloc_assignment(Statement *stmnt) {
 struct DeclarationPayload_s;
 typedef struct DeclarationPayload_s DeclarationPayload;
 
-Statement *stmnt_create_declaration(NameTypeBinding *, ExpressionList *);
+Statement *stmnt_create_declaration(NameTypeBinding *, ExpressionList *, FileInfo);
 void stmnt_print_declaration_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_declaration(Statement *);
 
@@ -132,11 +134,11 @@ struct DeclarationPayload_s {
 STMNT_GETTER(declaration, NameTypeBinding, nt_bind, DeclarationPayload, DECLARATION_STMNT)
 STMNT_GETTER(declaration, ExpressionList, init_values, DeclarationPayload, DECLARATION_STMNT)
 
-Statement *stmnt_create_declaration(NameTypeBinding *nt_bind, ExpressionList *init_values) {
+Statement *stmnt_create_declaration(NameTypeBinding *nt_bind, ExpressionList *init_values, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(DeclarationPayload);
   payload->nt_bind = nt_bind;
   payload->init_values = init_values;
-  return stmnt_create(payload, DECLARATION_STMNT);
+  return stmnt_create(payload, DECLARATION_STMNT, file_info);
 }
 
 void stmnt_print_declaration_ident(Statement *stmnt, FILE *file, size_t ident) {
@@ -169,7 +171,7 @@ void stmnt_dealloc_declaration(Statement *stmnt) {
 struct IfElsePayload_s;
 typedef struct IfElsePayload_s IfElsePayload;
 
-Statement *stmnt_create_if_else(Expression *, Statement *, Statement *);
+Statement *stmnt_create_if_else(Expression *, Statement *, Statement *, FileInfo);
 void stmnt_print_if_else_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_if_else(Statement *);
 
@@ -183,12 +185,12 @@ STMNT_GETTER(if_else, Expression, condition, IfElsePayload, IF_ELSE_STMNT)
 STMNT_GETTER(if_else, Statement, if_body, IfElsePayload, IF_ELSE_STMNT)
 STMNT_GETTER(if_else, Statement, else_body, IfElsePayload, IF_ELSE_STMNT)
 
-Statement *stmnt_create_if_else(Expression *condition, Statement *if_body, Statement *else_body) {
+Statement *stmnt_create_if_else(Expression *condition, Statement *if_body, Statement *else_body, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(IfElsePayload);
   payload->condition = condition;
   payload->if_body = if_body;
   payload->else_body = else_body;
-  return stmnt_create(payload, IF_ELSE_STMNT);
+  return stmnt_create(payload, IF_ELSE_STMNT, file_info);
 }
 
 void stmnt_print_if_else_ident(Statement *stmnt, FILE *file, size_t ident) {
@@ -236,7 +238,7 @@ void stmnt_dealloc_if_else(Statement *stmnt) {
 struct WhilePayload_s;
 typedef struct WhilePayload_s WhilePayload;
 
-Statement *stmnt_create_while(Expression *, Statement *);
+Statement *stmnt_create_while(Expression *, Statement *, FileInfo);
 void stmnt_print_while_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_while(Statement *);
 
@@ -248,11 +250,11 @@ struct WhilePayload_s {
 STMNT_GETTER(while, Expression, condition, WhilePayload, WHILE_STMNT)
 STMNT_GETTER(while, Statement, body, WhilePayload, WHILE_STMNT)
 
-Statement *stmnt_create_while(Expression *condition, Statement *body) {
+Statement *stmnt_create_while(Expression *condition, Statement *body, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(WhilePayload);
   payload->condition = condition;
   payload->body = body;
-  return stmnt_create(payload, WHILE_STMNT);
+  return stmnt_create(payload, WHILE_STMNT, file_info);
 }
 
 void stmnt_print_while_ident(Statement *stmnt, FILE *file, size_t ident) {
@@ -280,19 +282,10 @@ void stmnt_dealloc_while(Statement *stmnt) {
 // RETURN
 // payload {Expression *ret_value}
 
-// TODO: the return statement should also include the FunctionDeclarations which is part of
-//   that is how I want to do it: 
-//     I want a method 
-//       void stmnt_set_funtion_declaration_to_return(Statement *s, FunctionDeclaration *f) 
-//     that receive a statement and:
-//       - if the statementnis a return, set the attribute func_decl to f;
-//       - if is a block statement calls stmnt_set_funtion_declaration_to_return(s, f) to all 
-//         the statements inside;
-
 struct ReturnPayload_s;
 typedef struct ReturnPayload_s ReturnPayload;
 
-Statement *stmnt_create_return(Expression *);
+Statement *stmnt_create_return(Expression *, FileInfo);
 void stmnt_print_return_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_return(Statement *);
 
@@ -308,11 +301,11 @@ STMNT_GETTER(return, Expression, ret_value, ReturnPayload, RETURN_STMNT)
 STMNT_GETTER(return, FunctionDeclaration, func_decl, ReturnPayload, RETURN_STMNT)
 
 
-Statement *stmnt_create_return(Expression *ret_value) {
+Statement *stmnt_create_return(Expression *ret_value, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(ReturnPayload);
   payload->ret_value = ret_value;
   payload->func_decl = NULL;
-  return stmnt_create(payload, RETURN_STMNT);
+  return stmnt_create(payload, RETURN_STMNT, file_info);
 }
 
 void stmnt_print_return_ident(Statement *stmnt, FILE *file, size_t ident) {
@@ -337,7 +330,7 @@ void stmnt_dealloc_return(Statement *stmnt) {
 struct BlockPayload_s;
 typedef struct BlockPayload_s BlockPayload;
 
-Statement *stmnt_create_block(StatementList *);
+Statement *stmnt_create_block(StatementList *, FileInfo);
 void stmnt_print_block_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_block(Statement *);
 
@@ -347,10 +340,10 @@ struct BlockPayload_s {
 
 STMNT_GETTER(block, StatementList, body, BlockPayload, BLOCK_STMNT)
 
-Statement *stmnt_create_block(StatementList *body) {
+Statement *stmnt_create_block(StatementList *body, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(BlockPayload);
   payload->body = body;
-  return stmnt_create(payload, BLOCK_STMNT);
+  return stmnt_create(payload, BLOCK_STMNT, file_info);
 }
 
 void stmnt_print_block_ident(Statement *stmnt, FILE *file, size_t ident) {
@@ -382,7 +375,7 @@ void stmnt_dealloc_block(Statement *stmnt) {
 struct FunctionCallPayload_s;
 typedef struct FunctionCallPayload_s FunctionCallPayload;
 
-Statement *stmnt_create_funccall(FunctionCall *);
+Statement *stmnt_create_funccall(FunctionCall *, FileInfo);
 void stmnt_print_funccall_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_funccall(Statement *);
 
@@ -392,10 +385,10 @@ struct FunctionCallPayload_s {
 
 STMNT_GETTER(funccall, FunctionCall, funccall, FunctionCallPayload, FUNCCALL_STMNT)
 
-Statement *stmnt_create_funccall(FunctionCall *funccall) {
+Statement *stmnt_create_funccall(FunctionCall *funccall, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(FunctionCallPayload);
   payload->funccall = funccall;
-  return stmnt_create(payload, FUNCCALL_STMNT);
+  return stmnt_create(payload, FUNCCALL_STMNT, file_info);
 }
 
 void stmnt_print_funccall_ident(Statement *stmnt, FILE *file, size_t ident) {
