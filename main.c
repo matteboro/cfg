@@ -1,28 +1,34 @@
 #include "prsr/prsr.h"
 
+
+bool int_same_value(int *f1, int *f2) {
+  return (*f1) == (*f2);
+}
+
 int main () {
 
   int *val;
 
   intList *list = int_list_create_empty();
 
-  for(int i=0; i<0; ++i) {
+  for(int i=0; i<10; ++i) {
     val = malloc(sizeof(int));
     *val = i;
     int_list_append(list, val);
   }
 
-  fprintf(stdout, "list: [ ");
-  int_list_print(list, stdout); fprintf(stdout, " ]\n");
-  val = int_list_pop_last(list);
+  // val = malloc(sizeof(int));
+  // *val = 0;
+  // int_list_append(list, val);
 
-  if (val != NULL) {
-    fprintf(stdout, "new list:  [ ");
-    int_list_print(list, stdout); 
-    fprintf(stdout, " ], elem popped: %d\n", *val);
+  // FOR_EACH(intList, it1, list) {
+  //   FOR_EACH(intList, it2, it1->next) {
+  //     fprintf(stdout, "[ "); int_list_print(it2, stdout); fprintf(stdout, " ]\n");
+  //   }
+  // }
 
-    free(val);
-  }
+  fprintf(stdout, "predicate is %s\n", int_list_check_binary_predicate(list, int_same_value) ? "true" : "false");
+
   int_list_dealloc(list);
 
   return 0;

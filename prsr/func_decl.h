@@ -79,7 +79,8 @@ DEFAULT_LIST_CREATE(func_decl, FunctionDeclaration)
 DEFAULT_LIST_APPEND(func_decl, FunctionDeclaration)                    
 DEFAULT_LIST_DEALLOC(func_decl, FunctionDeclaration, func_decl_dealloc)     
 DEFAULT_LIST_SIZE(func_decl, FunctionDeclaration)                      
-DEFAULT_LIST_GET_AT(func_decl, FunctionDeclaration)                    
+DEFAULT_LIST_GET_AT(func_decl, FunctionDeclaration)
+DEFAULT_LIST_CHECK_BINARY_PRED(func_decl, FunctionDeclaration);                    
 
 void func_decl_list_print(FunctionDeclarationList *list, FILE *file) {
   if_null_print(list, file);                                    

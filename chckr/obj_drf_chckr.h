@@ -65,6 +65,7 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
   if (obj_drf_list_size(obj_derefs) == 1) {
     Type *var_type = var->nt_bind->type;
     Identifier *var_name = var->nt_bind->name;
+
     if (var_type->type != ARR_TYPE && first_elem->type == ARR_DEREF) {
       fprintf(stdout, "ERROR, did not pass object deref analysis. The object dereference ");
       obj_drf_print(first_elem, stdout);
@@ -76,7 +77,8 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
     }
     if (obj_drf_check_not_for_basic_type(var_type, obj_derefs, var_name))
       return NULL;
-    return type_copy(var->nt_bind->type);
+
+    return type_copy(var_type);
   }
 
   // (obj_drf_list_size(obj_derefs) > 1)
