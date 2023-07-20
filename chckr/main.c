@@ -10,8 +10,8 @@ int main() {
 
   prgrm_chckr_check(ast);
 
-  // prgrm_print(ast, stdout); fprintf(stdout, "\n");
-  file_info_print_highlighted(func_decl_list_get_at(ast->func_declarations, 2)->body->file_info, stdout);
+  prgrm_print(ast, stdout); fprintf(stdout, "\n");
+  // file_info_print_only(func_decl_list_get_at(ast->func_declarations, 2)->body->file_info, stdout);
   fprintf(stdout, "\n");
   prgrm_dealloc(ast);
 

@@ -8,7 +8,7 @@
   ASTCheckingAnalysisState *an_state
 
 #define FUNCCALL_CHCKR_ERROR_HEADER() \
-  fprintf(stdout, "ERROR: did not pass declaration function call analysis.\n\n  In function call: \n    "); \
+  fprintf(stdout, "ERROR: did not pass function call analysis.\n\n  In function call: \n    "); \
   funccall_print(funccall, stdout); fprintf(stdout, ",\n  ");
 
 
@@ -35,7 +35,9 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
   }
   if (!function_found) {
     FUNCCALL_CHCKR_ERROR_HEADER();
-    fprintf(stdout, "the function %s(...) is never declared\n", funccall->function_name->name);
+    fprintf(stdout, "the function %s(...) is never declared\n\n", funccall->function_name->name);
+    single_line_file_info_print_context(funccall->file_info, stdout); fprintf(stdout, "\n\n");
+
     return False;
   }
 
@@ -46,11 +48,13 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
   if (func_decl_params_size != funccall_params_size) {
     FUNCCALL_CHCKR_ERROR_HEADER();
     fprintf(stdout, 
-            "the function %s requires %lu parameters, but %lu where passed\n", 
+            "the function %s requires %lu parameters, but %lu where passed\n\n", 
             matched_function->name->name, 
             func_decl_params_size, 
             funccall_params_size
             );
+    single_line_file_info_print_context(funccall->file_info, stdout); fprintf(stdout, "\n\n");
+
     return False;
   }
 
@@ -64,11 +68,12 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
 
     if (init_expr_type == NULL) {
       FUNCCALL_CHCKR_ERROR_HEADER();
-      fprintf(stdout, "initialize expression : ");
+      fprintf(stdout, "initializing expression : ");
       expr_print_expression(init_expr, stdout);
       fprintf(stdout, ", for paramter n.%lu: ", counter);
       prmt_print(prmt_it->node, stdout);
       fprintf(stdout, ", does not yield a valid return type\n\n");
+      single_line_file_info_print_context(prmt_it->node->file_info, stdout); fprintf(stdout, "\n\n");
 
       return False;
     }
@@ -83,6 +88,7 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
       fprintf(stdout,", received -> ");
       type_print(init_expr_type, stdout);
       fprintf(stdout, "\n\n");
+      single_line_file_info_print_context(prmt_it->node->file_info, stdout); fprintf(stdout, "\n\n");
 
       type_dealloc(init_expr_type);
       return False;

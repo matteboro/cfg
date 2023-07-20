@@ -10,6 +10,10 @@
 #include "string.h"
 #include "assert.h"
 
+#define bool int
+#define False 0
+#define True 1
+
 void red(FILE *file) {
   fprintf(file, "\033[1;31m"); 
 } 
@@ -133,6 +137,30 @@ FileInfo file_info_merge(FileInfo f1, FileInfo f2) {
   return f_res;
 }
 
+bool point_inside_file_position(size_t line, size_t col, FilePosition file_pos) {
+  if (file_pos.start_line == file_pos.end_line) 
+  {
+    if (file_pos.start_line == line)
+      return col >= file_pos.start_col && col <= file_pos.end_col;
+  } 
+  else 
+  {
+    if (file_pos.start_line == line) 
+    {
+      return file_pos.start_col <= col;
+    } 
+    else if (file_pos.end_line == line) 
+    {
+      return col <= file_pos.end_col;
+    } 
+    else 
+    {
+      return file_pos.start_line < line && file_pos.end_line > line;
+    }
+  }
+  return False;
+}
+
 void file_info_print_highlighted(FileInfo file_info, FILE* out_file) {
   size_t curr_line = 0;
   size_t curr_col = 0;
@@ -143,16 +171,100 @@ void file_info_print_highlighted(FileInfo file_info, FILE* out_file) {
       ++curr_line;
       curr_col = 0;
     }
-    if (curr_line >= file_info.position.start_line) {
-      if (curr_col >= file_info.position.start_col) {
-        red(out_file);
-      } 
-    }
-    if (curr_line >= file_info.position.end_line) {
-      if (curr_col >= file_info.position.end_col) {
-        reset(out_file);
-      } 
-    }
+    if (point_inside_file_position(curr_line, curr_col, file_info.position))
+      red(out_file);
+    else 
+      reset(out_file);
+
     fprintf(out_file, "%c", file->data[i]);
   }
 }
+
+void file_info_print_only(FileInfo file_info, FILE* out_file) {
+  size_t curr_line = 0;
+  size_t curr_col = 0;
+  File *file = file_info.file;
+  for (size_t i = 0; i < file->length; ++i) {
+    ++curr_col;
+    if (file->data[i] == '\n') {
+      ++curr_line;
+      curr_col = 0;
+    }
+    if (point_inside_file_position(curr_line, curr_col, file_info.position))
+      fprintf(out_file, "%c", file->data[i]);
+  }
+}
+
+#define STD_CONTEXT 4
+
+long int abs_l(long int val) {
+  if (val < 0)
+    return -val;
+  return val;
+}
+
+void single_line_file_info_print_context(FileInfo file_info, FILE* out_file) {
+  if (file_info.position.start_line != file_info.position.end_line)
+    return;
+  long int line = (long int) file_info.position.start_line;
+  size_t curr_line = 0;
+  size_t curr_col = 0;
+  File *file = file_info.file;
+  bool line_numb_printed = False;
+  for (size_t i = 0; i < file->length; ++i) {
+    ++curr_col;
+    if (abs_l(line - (long int) curr_line) <= STD_CONTEXT) {
+      if (!line_numb_printed)  {
+        reset(out_file);
+        fprintf(out_file, "%lu -  ", curr_line+1);
+        line_numb_printed = True;
+      }
+      if (point_inside_file_position(curr_line, curr_col, file_info.position))
+        red(out_file);
+      else 
+        reset(out_file);
+      fprintf(out_file, "%c", file->data[i]);
+    }
+    if (file->data[i] == '\n') {
+      ++curr_line;
+      curr_col = 0;
+      line_numb_printed = False;
+    }
+  }
+}
+
+void single_line_file_info_print_context_custom(FileInfo file_info, FILE* out_file, int context) {
+  if (file_info.position.start_line != file_info.position.end_line)
+    return;
+  long int line = (long int) file_info.position.start_line;
+  size_t curr_line = 0;
+  size_t curr_col = 0;
+  File *file = file_info.file;
+  bool line_numb_printed = False;
+  for (size_t i = 0; i < file->length; ++i) {
+    ++curr_col;
+    if (abs_l(line - (long int) curr_line) <= context) {
+      if (!line_numb_printed)  {
+        reset(out_file);
+        fprintf(out_file, "%lu.5 -  ", curr_line+1);
+        line_numb_printed = True;
+      }
+      if (point_inside_file_position(curr_line, curr_col, file_info.position))
+        red(out_file);
+      else 
+        reset(out_file);
+      fprintf(out_file, "%c", file->data[i]);
+    }
+    if (file->data[i] == '\n') {
+      ++curr_line;
+      curr_col = 0;
+      line_numb_printed = False;
+    }
+  }
+}
+
+
+
+#undef bool 
+#undef False 
+#undef True

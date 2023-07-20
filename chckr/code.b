@@ -59,7 +59,7 @@ func int :: foo (int :: i1, int :: i2, int :: i3) {
 }
 
 int arr[10] :: args;
-main(0, args);
+main(0, "hello");
 int :: t;
 foo(t, t, t);
 int_to_string(t);
@@ -80,8 +80,13 @@ t8 = 10;
 f3.s2_arr[10].s1.att1[9] = 10;
 int arr[5] :: my_arr = [1, 2, 3, < int_to_string(< "hello, " | "world" >) >, 5];
 int :: v = string_to_int("10");
-int :: my_var = < "hello" >;
+int :: my_var = "hello";
 
 if (< int_to_string(t8) >) {
   int :: dodo;
+}
+
+while ("string") {
+  int :: some_var = 90;
+  string :: some_str = int_to_string(some_var);
 }

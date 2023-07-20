@@ -15,7 +15,7 @@
   ASTCheckingAnalysisState *an_state          \
 
 #define STMNT_CHCKR_ERROR_HEADER(stmnt_type_str) \
-  fprintf(stdout, "ERROR: did not pass " stmnt_type_str " analysis.\n\n  In statement: \n    "); \
+  fprintf(stdout, "ERROR: did not pass " stmnt_type_str " statement analysis.\n\n  In statement: \n    "); \
   stmnt_print(stmnt, stdout); fprintf(stdout, ",\n  ");
 
 bool stmnt_chckr_check(STMNT_CHCKR_PARAMS);
@@ -40,17 +40,25 @@ bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
 
   Type *expr_type = expr_chckr_get_returned_type(value, an_state);
   if (expr_type == NULL) {
-    type_dealloc(deref_type);
+    STMNT_CHCKR_ERROR_HEADER("assignment");
+    fprintf(stdout, "value expression ");
+    expr_print_expression(value, stdout);
+    fprintf(stdout, " does not yield a valid return type\n\n");
+    single_line_file_info_print_context(value->file_info, stdout); fprintf(stdout, "\n\n");
     return False;
   }
 
   if (!type_equal(deref_type, expr_type)) {
     STMNT_CHCKR_ERROR_HEADER("assignment");
-    fprintf(stdout, "uncompatible types: left -> ");
+    fprintf(stdout, "value expression: ");
+    expr_print_expression(value, stdout);
+    fprintf(stdout, " does not yield a correct return type: expected -> ");
     type_print(deref_type, stdout);
-    fprintf(stdout, " and right -> ");
+    fprintf(stdout,", received -> ");
     type_print(expr_type, stdout);
-    fprintf(stdout, "\n");
+    fprintf(stdout, "\n\n");
+    single_line_file_info_print_context(stmnt->file_info, stdout); fprintf(stdout, "\n\n");
+
     type_dealloc(deref_type);
     type_dealloc(expr_type);
     return False;
@@ -71,6 +79,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
   if (!type_chckr_type_exists(structs, type)) {
     STMNT_CHCKR_ERROR_HEADER("declaration");
     fprintf(stdout, "the type of %s does not exists\n", nt_bind->name->name);
+    single_line_file_info_print_context(nt_bind->file_info, stdout); fprintf(stdout, "\n\n");
     return False;
   }
 
@@ -78,6 +87,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
   if (!avlb_vars_name_available(av_vars, nt_bind->name)) {
     STMNT_CHCKR_ERROR_HEADER("declaration");
     fprintf(stdout, "the name %s is already taken\n", nt_bind->name->name);
+    single_line_file_info_print_context(nt_bind->name->file_info, stdout); fprintf(stdout, "\n\n");
     return False;
   }
 
@@ -97,6 +107,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
         fprintf(stdout, "to few initializing values");
       }
       fprintf(stdout, " (you gave %lu, array needs %lu)\n\n", init_values_size, array_size);
+      single_line_file_info_print_context(stmnt->file_info, stdout); fprintf(stdout, "\n\n");
       return False;
     }
     Type *ultimate_type = type_extract_ultimate_type(type);
@@ -108,6 +119,8 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
         fprintf(stdout, "initializing expression number %lu: ", counter);
         expr_print_expression(expr_it->node, stdout);
         fprintf(stdout, " does not yield a valid return type\n\n");
+        single_line_file_info_print_context(expr_it->node->file_info, stdout); fprintf(stdout, "\n\n");
+
         return False; 
       }
       if (!type_equal(init_value_type, ultimate_type)) {
@@ -119,6 +132,8 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
         fprintf(stdout,", received -> ");
         type_print(init_value_type, stdout);
         fprintf(stdout, "\n\n");
+        single_line_file_info_print_context(expr_it->node->file_info, stdout); fprintf(stdout, "\n\n");
+
         type_dealloc(init_value_type);
         return False;
       }
@@ -141,6 +156,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
       fprintf(stdout, "initializing expression: ");
       expr_print_expression(init_expr, stdout);
       fprintf(stdout, " does not yield a valid return type\n\n");
+      single_line_file_info_print_context(init_expr->file_info, stdout); fprintf(stdout, "\n\n");
 
       return False; 
     }
@@ -153,6 +169,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
       fprintf(stdout,", received -> ");
       type_print(init_value_type, stdout);
       fprintf(stdout, "\n\n");
+       single_line_file_info_print_context(init_expr->file_info, stdout); fprintf(stdout, "\n\n");
 
       type_dealloc(init_value_type);
       return False;
@@ -169,7 +186,9 @@ ret_true:
 bool stmnt_chckr_check_funccall(STMNT_CHCKR_PARAMS) {
   FunctionCall *funccall = stmnt_funccall_get_funccall(stmnt);
   if(!funccall_chckr_check(funccall, an_state)) {
-    STMNT_CHCKR_ERROR_HEADER("funccall");
+    STMNT_CHCKR_ERROR_HEADER("function call"); fprintf(stdout, "\n");
+    single_line_file_info_print_context(stmnt->file_info, stdout); fprintf(stdout, "\n\n");
+
     return False;
   }
   return True;
@@ -185,6 +204,7 @@ bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {
     fprintf(stdout, "returning expression: ");
     expr_print_expression(ret_val, stdout);
     fprintf(stdout, " does not yield a valid return type\n\n");
+    single_line_file_info_print_context(ret_val->file_info, stdout); fprintf(stdout, "\n\n");
 
     return False;
   }
@@ -197,6 +217,7 @@ bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {
     fprintf(stdout,", received -> ");
     type_print(ret_val_type, stdout);
     fprintf(stdout, "\n\n");
+    single_line_file_info_print_context(ret_val->file_info, stdout); fprintf(stdout, "\n\n");
 
     type_dealloc(ret_val_type);
     return False;
@@ -233,6 +254,7 @@ bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
     fprintf(stdout, "condition expression: ");
     expr_print_expression(condition, stdout);
     fprintf(stdout, " does not yield a valid return type\n\n");
+    single_line_file_info_print_context(condition->file_info, stdout); fprintf(stdout, "\n\n");
     return False;
   }
 
@@ -246,6 +268,7 @@ bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
     fprintf(stdout,", received -> ");
     type_print(condition_type, stdout);
     fprintf(stdout, "\n\n");
+    single_line_file_info_print_context(condition->file_info, stdout); fprintf(stdout, "\n\n");
     type_dealloc(condition_type);
     type_dealloc(expected_type);
     return False;
@@ -274,6 +297,7 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS) {
     fprintf(stdout, "condition expression: ");
     expr_print_expression(condition, stdout);
     fprintf(stdout, " does not yield a valid return type\n\n");
+    single_line_file_info_print_context(condition->file_info, stdout); fprintf(stdout, "\n\n");
     return False;
   }
   Type *expected_type = type_create_generic_int_type();
@@ -286,6 +310,7 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS) {
     fprintf(stdout,", received -> ");
     type_print(condition_type, stdout);
     fprintf(stdout, "\n\n");
+    single_line_file_info_print_context(condition->file_info, stdout); fprintf(stdout, "\n\n");
     type_dealloc(condition_type);
     type_dealloc(expected_type);
     return False;
