@@ -5,6 +5,10 @@
 #include "type_chckr.h"
 #include "chckr_env.h"
 
+#define STRCT_DECL_CHCKR_ERROR_HEADER() \
+  fprintf(stdout, "ERROR: did not pass struct declaration analysis.\n  ");
+
+
 int strct_decl_chckr_count_identifier_in_attributes(Identifier *id, AttributeList *attrbs) {
   int counter = 0;
   FOR_EACH(AttributeList, attrb_it, attrbs) {
@@ -14,11 +18,24 @@ int strct_decl_chckr_count_identifier_in_attributes(Identifier *id, AttributeLis
   return counter;
 }
 
+bool attrb_same_name(Attribute *attrb1, Attribute *attrb2) {
+  return idf_equal_identifiers(attrb1->nt_bind->name, attrb2->nt_bind->name);
+}
+
+
 bool strct_decl_chckr_check_double_attributes(StructDeclarationList *structs) {
   FOR_EACH(StructDeclarationList, strct_it, structs) {
     AttributeList *attrbs = strct_it->node->attributes;
     FOR_EACH(AttributeList, attrb_it, attrbs) {
       if (strct_decl_chckr_count_identifier_in_attributes(attrb_it->node->nt_bind->name, attrbs) > 1) {
+        STRCT_DECL_CHCKR_ERROR_HEADER();
+        fprintf(
+          stdout, 
+          "in struct %s attribute with name %s is declared more then one time\n\n", 
+          strct_it->node->name->name, 
+          attrb_it->node->nt_bind->name->name);
+        single_line_file_info_print_context(attrb_it->node->file_info, stdout); fprintf(stdout, "\n\n");
+
         return False;
       }
     }
@@ -32,6 +49,16 @@ bool strct_decl_check_attribute_type_existence(StructDeclarationList *structs) {
     FOR_EACH(AttributeList, attrb_it, attrbs) {
       Type *type = attrb_it->node->nt_bind->type;
       if (!type_chckr_type_exists(structs, type)) {
+        STRCT_DECL_CHCKR_ERROR_HEADER();
+        fprintf(
+          stdout, 
+          "in struct %s attribute with name %s is of unknown type: ", 
+          strct_it->node->name->name, 
+          attrb_it->node->nt_bind->name->name); 
+          type_print(type, stdout);
+          fprintf(stdout, "\n\n");
+        single_line_file_info_print_context(attrb_it->node->file_info, stdout); fprintf(stdout, "\n\n");
+
         return False;
       }
     }
@@ -43,12 +70,10 @@ bool strct_decl_chckr_check(StructDeclarationList *structs) {
 
   
   if(!strct_decl_chckr_check_double_attributes(structs)) {
-    fprintf(stdout, "ERROR, did not pass struct declaration analysis. There are attributes with same names within a struct.\n");
     return False;
   }
 
   if(!strct_decl_check_attribute_type_existence(structs)) {
-    fprintf(stdout, "ERROR, did not pass struct declaration analysis. One of the attribute has non existent type.\n");
     return False;
   }
 

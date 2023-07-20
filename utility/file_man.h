@@ -22,6 +22,10 @@ void reset(FILE *file) {
   fprintf(file, "\033[0m");
 } 
 
+void green(FILE *file) {
+  fprintf(file, "\033[0;32m"); 
+} 
+
 typedef struct {
   char *name;
   const char *data;

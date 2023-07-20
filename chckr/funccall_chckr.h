@@ -54,7 +54,7 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
             funccall_params_size
             );
     single_line_file_info_print_context(funccall->file_info, stdout); fprintf(stdout, "\n\n");
-
+    
     return False;
   }
 
@@ -95,6 +95,5 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
     }
     type_dealloc(init_expr_type);
   }
-
   return True;
 }

@@ -19,6 +19,7 @@ typedef enum {
 typedef struct {
   ObjectDerefType type;
   Identifier *name;
+  Type *real_type;
   void *data;
   FileInfo file_info;
 } ObjectDeref;
@@ -31,6 +32,10 @@ typedef struct {
   Expression *index;
 } ArrayTypeObjectDerefData; 
 
+void obj_drf_set_real_type(ObjectDeref *obj_drf, Type *type) {
+  obj_drf->real_type = type;
+}
+
 // CREATE
 
 ObjectDeref *obj_drf_create(ObjectDerefType type, Identifier* name, void *data, FileInfo file_info) {
@@ -39,6 +44,7 @@ ObjectDeref *obj_drf_create(ObjectDerefType type, Identifier* name, void *data, 
   obj_drf->type = type;
   obj_drf->data = data;
   obj_drf->file_info = file_info;
+  obj_drf->real_type = NULL;
   return obj_drf;
 }
 
@@ -72,6 +78,7 @@ void obj_drf_print_array_type_deref(ObjectDeref *obj_drf, FILE *file) {
 
 void obj_drf_print(ObjectDeref *obj_drf, FILE *file) {
   if_null_print(obj_drf, file);
+  type_print_verbose(obj_drf->real_type, file);
   if (obj_drf->type == ARR_DEREF)
     obj_drf_print_array_type_deref(obj_drf, file);
   else if (obj_drf->type == STRUCT_BASIC_DEREF)
@@ -104,6 +111,9 @@ void obj_drf_dealloc(ObjectDeref *obj_drf) {
   else
     OBJ_DRF_ERROR();
   idf_dealloc_identifier(obj_drf->name);
+  if (obj_drf->real_type)
+    type_dealloc(obj_drf->real_type);
+
   free(obj_drf);
 }
 

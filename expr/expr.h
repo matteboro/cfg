@@ -121,6 +121,7 @@ Expression *expr_create_expression(ExpressionType type, void *enclosed_expressio
   expression->type = type;
   expression->enclosed_expression = (EnclosedExpression *) enclosed_expression;
   expression->file_info = file_info;
+  expression->real_type = NULL;
   return expression;
 }
 
@@ -245,6 +246,8 @@ void expr_dealloc_expression(Expression *expression) {
   default:
     EXPR_ERROR();
   }
+  if (expression->real_type != NULL)
+    type_dealloc(expression->real_type);
   free(expression);
 }
 
@@ -282,11 +285,14 @@ void expr_print_operand_expression(OperandExpression *expression, FILE *file) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
     return;
-  oprnd_print(expression->operand, file);
+  fprintf(file, "("); 
+  oprnd_print(expression->operand, file); 
+  fprintf(file, ")");
 }
 
 void expr_print_expression(Expression *expression, FILE *file) {
   EXPR_DEBUG_PRINT()
+  type_print_verbose(expression->real_type, file);
   if (expression == NULL) 
     return;
   switch (expression->type) {

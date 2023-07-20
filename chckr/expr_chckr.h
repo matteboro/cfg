@@ -60,7 +60,9 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
     TypeType output = io.output;
     if (left_type->type == exp_input.left && right_type->type == exp_input.right) {
       type_dealloc(left_type); type_dealloc(right_type);
-      return type_create_basic_type(output);
+      Type *output_type = type_create_basic_type(output);
+      expr_set_real_type(expr, type_copy(output_type));
+      return output_type;
     }
     type_dealloc(left_type); type_dealloc(right_type);
   } 
@@ -74,12 +76,16 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
     TypeType output = io.output;
     if (type->type == exp_input.type) {
       type_dealloc(type);
-      return type_create_basic_type(output);
+      Type *output_type = type_create_basic_type(output);
+      expr_set_real_type(expr, type_copy(output_type));
+      return output_type;
     }
     type_dealloc(type);
   } 
   else if (expr->type == OPERAND_EXP_TYPE){
-    return oprnd_chckr_get_type(expr_operand_expression_get_operand(expr), an_state);
+    Type *oprnd_type = oprnd_chckr_get_type(expr_operand_expression_get_operand(expr), an_state);
+    expr_set_real_type(expr, type_copy(oprnd_type));
+    return oprnd_type;
   }
   return NULL;
 }

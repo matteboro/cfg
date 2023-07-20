@@ -544,6 +544,28 @@ most of the checking inside the statements are done.
       return ret_type
     }
 
+IDEA: 
+  during the checking of an object dereference list I could enrich the quantity of information of each 
+  dereference, I indeed could add the type of the dereferenced object, since I am checking for its existence 
+  and correctness.
+
+CFG:
+  We have to start to think about how to implement the CFG, in order first to be able to interpret 
+  it in a concrete manner, and secondly in an abstract way. 
+
+  object --> void *
+  int    --> int *
+  string --> char *
+  struct --> object *
+  arr    --> object *
+
+  What is an Object: 
+    The Object is a thing that contains some value, it could be:
+      - a basic object: such as a int or a string;
+      - a struct object: a collection of Object;
+      - an array object: a list of Objects, of the same kind; 
+    Each object has an ID (a unique reference), that could be seen as a name.
+
 ============================================================================================
 
 TODO list:

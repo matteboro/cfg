@@ -19,7 +19,12 @@ typedef struct {
   ExpressionType type;
   EnclosedExpression *enclosed_expression;
   FileInfo file_info;
+  Type *real_type;
 } Expression;
+
+void expr_set_real_type(Expression *expression, Type *real_type) {
+  expression->real_type = real_type;
+}
 
 void expr_dealloc_expression(Expression *expression);
 void expr_print_expression(Expression *expression, FILE *file);

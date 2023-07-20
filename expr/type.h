@@ -25,6 +25,8 @@ obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {             \
   return data->obj_name;                                                  \
 } 
 
+#define TYPE_VERBOSE_PRINT_SWITCH 1
+
 
 typedef enum {
   INT_TYPE,
@@ -106,6 +108,8 @@ Type *type_create_array_type(int size, Type *type, FileInfo file_info) {
 
 // PRINT
 
+#define TYPE_COLOR green
+
 void type_print(Type *type, FILE *file);
 
 void type_print_int_type(FILE *file) { 
@@ -124,6 +128,7 @@ void type_print_struct_type(Type *type, FILE *file) {
 void type_print_array_type(Type *type, FILE *file) {
   casted_data(ArrayTypeData, type);
   type_print(data->type, file);
+  TYPE_COLOR(file);
   fprintf(file, "[%d]", data->size);
 }
 
@@ -132,6 +137,7 @@ void type_print(Type *type, FILE *file) {
     fprintf(file, "NULL");
     return;
   }
+  TYPE_COLOR(file);
   switch (type->type) {
     case INT_TYPE: type_print_int_type(file); break;
     case STRING_TYPE: type_print_string_type(file); break;
@@ -139,6 +145,18 @@ void type_print(Type *type, FILE *file) {
     case ARR_TYPE: type_print_array_type(type, file); break;
     default: TYPE_ERROR();
   }
+  reset(file);
+}
+
+void type_print_verbose(Type *type, FILE* file) {              
+#if TYPE_VERBOSE_PRINT_SWITCH                  
+  fprintf(file, "[");                          
+  if (type != NULL)           
+    type_print(type, file);   
+  else                                         
+    fprintf(file, "?");                        
+  fprintf(file, "]");                          
+#endif
 }
 
 // DEALLOC
@@ -238,7 +256,6 @@ Type *type_create_basic_type(TypeType t_type) {
   }
   return NULL;
 }
-
 
 bool type_equal(Type *type1, Type *type2) {
   if (type1 == NULL || type2 == NULL)

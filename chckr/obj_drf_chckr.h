@@ -16,7 +16,7 @@ StructDeclaration *obj_drf_chckr_get_struct_decl_from_identifier(StructDeclarati
 
 bool obj_drf_chckr_check_for_array_correspondence(Type *type, ObjectDeref *deref) {
   // TODO: could have better error: object <obj> in <obj_deref_list> should etc...
-  // TODO: here we could also check for the correctness of index (i.e. it is between boundaries)
+  // TODO: here we could also check for the correctness of index (i.e. it is between boundaries, is integer)
   // TODO: should also check in case of multidimensional arrays (when they will be implemented)
   if ((deref->type != ARR_DEREF && type->type == ARR_TYPE) ||
       (deref->type == ARR_DEREF && type->type != ARR_TYPE)) {
@@ -61,11 +61,13 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
     return NULL;
   }
 
-  // TODO: should check index expression is of type int
-  if (obj_drf_list_size(obj_derefs) == 1) {
-    Type *var_type = var->nt_bind->type;
-    Identifier *var_name = var->nt_bind->name;
+  Type *var_type = var->nt_bind->type;
+  Identifier *var_name = var->nt_bind->name;
+  obj_drf_set_real_type(first_elem, type_copy(var_type));
 
+  // TODO: should check index expression is of type int
+
+  if (obj_drf_list_size(obj_derefs) == 1) {
     if (var_type->type != ARR_TYPE && first_elem->type == ARR_DEREF) {
       fprintf(stdout, "ERROR, did not pass object deref analysis. The object dereference ");
       obj_drf_print(first_elem, stdout);
@@ -85,18 +87,19 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
   if (!obj_drf_chckr_check_for_array_correspondence(var->nt_bind->type, first_elem))
     return NULL;
 
-  if (obj_drf_check_for_basic_type(var->nt_bind->type, obj_derefs, var->nt_bind->name))
+  if (obj_drf_check_for_basic_type(var_type, obj_derefs, var_name))
     return NULL;
 
   StructDeclaration *prev_struct = 
     obj_drf_chckr_get_struct_decl_from_identifier(
       structs, 
       type_struct_get_name(
-        type_extract_ultimate_type(var->nt_bind->type)));
+        type_extract_ultimate_type(var_type)));
 
   Type *elem_type = NULL;
   FOR_EACH(ObjectDerefList, obj_drf_it, obj_derefs->next) {
     elem_type = strct_decl_get_type_of_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
+    obj_drf_set_real_type(obj_drf_it->node, type_copy(elem_type));
 
     if (elem_type == NULL) {
       fprintf(stdout, "ERROR, did not pass object deref analysis. Object dereference %s of ", obj_drf_it->node->name->name);
