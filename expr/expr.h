@@ -173,13 +173,13 @@ Expression *expr_create_operand_expression_from_operand_type_and_data(
     my_data = malloc(sizeof(int));
     int *int_data = (int *)my_data;
     *int_data = expr_string_to_int(data);
-    Operand *operand = oprnd_create_integer(my_data, file_info);
+    Operand *operand = oprnd_create_integer((int *)my_data, file_info);
     return expr_create_operand_expression(operand);
   } 
   else if (type == STRING_OPERAND) {
     my_data = malloc(strlen(data)+1);
     strcpy((char *) my_data, data);
-    Operand *operand = oprnd_create_string(my_data, file_info);
+    Operand *operand = oprnd_create_string((char *)my_data, file_info);
     return expr_create_operand_expression(operand);
   } 
   else {
@@ -308,6 +308,14 @@ void expr_print_expression(Expression *expression, FILE *file) {
   default:
     EXPR_ERROR();
   }
+}
+
+// UTILITY
+
+bool expr_is_operand(Expression *expr) {
+  if (expr)
+    return expr->type == OPERAND_EXP_TYPE;
+  return False;
 }
 
 #endif // end EXPR_HEADER

@@ -273,3 +273,21 @@ bool type_equal(Type *type1, Type *type2) {
   }
   return False;
 }
+
+bool type_is_integer(Type *type) {
+  if (type == NULL)
+    return False;
+  return type->type == INT_TYPE;
+}
+
+bool type_is_string(Type *type) {
+  if (type == NULL)
+    return False;
+  return type->type == STRING_TYPE;
+}
+
+bool type_is_of_type(Type *type, TypeType tt) {
+  if (type)
+    return type->type == tt;
+  return False;
+}

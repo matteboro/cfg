@@ -23,10 +23,22 @@ typedef enum {
   COUNT_OPRND,
 } OperandType;
 
+void oprnd_print_operand_type(OperandType o_t, FILE *file) {
+  switch(o_t) {
+    case INTEGER_OPERAND: fprintf(file, "INTEGER_OPERAND"); break;
+    case STRING_OPERAND: fprintf(file, "STRING_OPERAND"); break;
+    case FUNCCALL_OPERAND: fprintf(file, "FUNCCALL_OPERAND"); break;
+    case OBJ_DEREF_OPERAND: fprintf(file, "OBJ_DEREF_OPERAND"); break;
+    default: fprintf(file, "UNKNOWN_OPERAND"); break;
+  }
+}
+
+// TODO: could add real-type
 typedef struct {
   OperandType type;
   void *data;
   FileInfo file_info;
+  Type *real_type;
 } Operand;
 
 Operand *oprnd_create(OperandType type, void *data, FileInfo file_info) {
@@ -34,7 +46,16 @@ Operand *oprnd_create(OperandType type, void *data, FileInfo file_info) {
   operand->type = type;
   operand->data = data;
   operand->file_info= file_info;
+  operand->real_type = NULL;
   return operand;
+}
+
+void oprnd_set_real_type(Operand *oprnd, Type *type) {
+  oprnd->real_type = type;
+}
+
+Type * oprnd_get_real_type(Operand *oprnd) {
+  return oprnd->real_type;
 }
 
 // OBJECT DEREF OPERAND
@@ -178,10 +199,30 @@ void oprnd_dealloc(Operand *oprnd) {
   if (oprnd == NULL)
     return;
   ((OPRND_DEALLOC_SIGN)oprnd_funcs_map[oprnd->type][OPRND_DEALLOC_FUNC])(oprnd);
+  if(oprnd->real_type)
+    type_dealloc(oprnd->real_type);
   free(oprnd);
 }
 
 void oprnd_print(Operand *oprnd, FILE *file) {
   assert(COUNT_OPRND == OPRND_SIZE_OF_FUNCS_MAP);
   ((OPRND_PRINT_SIGN)oprnd_funcs_map[oprnd->type][OPRND_PRINT_FUNC])(oprnd, file);
+}
+
+// UTILITY
+
+bool oprnd_is_integer(Operand * oprnd) {
+  if (oprnd)
+    return oprnd->type == INTEGER_OPERAND;
+  return False;
+}
+
+bool oprnd_is_string(Operand * oprnd) {
+  if (oprnd)
+    return oprnd->type == STRING_OPERAND;
+  return False;
+}
+
+bool oprnd_is_literal(Operand *oprnd) {
+  return oprnd_is_integer(oprnd) || oprnd_is_string(oprnd);
 }

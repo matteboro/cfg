@@ -64,6 +64,8 @@ bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
     return False;
   }
 
+  stmnt_assignment_set_value(stmnt, expr_chckr_simplify(value));
+
   type_dealloc(deref_type);
   type_dealloc(expr_type);
   return True;

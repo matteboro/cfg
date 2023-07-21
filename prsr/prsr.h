@@ -23,40 +23,88 @@
 #define prsr_next_token() lookhaed = lxr_next_token(lexer_ptr);
 #endif
 #define PRSR_ERROR()                                            \
-  fprintf(stdout, "error inside function: %s\n", __FUNCTION__); \
+  fprintf(stdout, "ERROR inside function: %s\n\n", __FUNCTION__); \
   fprintf(stdout, "token: "); \
   lxr_print_token_type(lookhaed.type); \
   fprintf(stdout, " at position: %d\n", lookhaed.position); \
   exit(1);
 
+#define PRSR_CALL_STACK() caller_stack_add(__FUNCTION__)
+
 Statement *prsr_parse_assignment(Token start_deref);
 Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor(), *prsr_parse_equation(), *prsr_parse_str_expression();
 
 static Token lookhaed;
+static Token prev_lookhaed;
 Lexer *lexer_ptr;
+#define CALLER_STACK_SIZE 10
 
-Token prsr_match(TokenType token_type)
+static char *caller_stack[CALLER_STACK_SIZE]; 
+static size_t caller_stack_pos = 0;
+
+void caller_stack_add(const char *func_name) {
+
+  char *func_name_copy = (char *) malloc(sizeof(char)*strlen(func_name)+1);
+  strcpy(func_name_copy, func_name);
+
+  if (caller_stack_pos >= CALLER_STACK_SIZE) 
+    free(caller_stack[CALLER_STACK_SIZE-1]);
+
+  for (size_t i=CALLER_STACK_SIZE-1; i > 0; --i) {
+    caller_stack[i] = caller_stack[i-1];
+  }
+
+  caller_stack[0] = func_name_copy;
+
+  if (caller_stack_pos < CALLER_STACK_SIZE) 
+    ++caller_stack_pos;
+}
+
+void caller_stack_print(FILE *file) {
+  fprintf(file, "  prsr_match calling stack:\n");
+  for (size_t i = 0; i < caller_stack_pos; ++i) {
+    fprintf(file, "    - %lu - %s\n", i, caller_stack[i]);
+  }
+}
+
+void caller_stack_dealloc() {
+  for (size_t i=0; i<caller_stack_pos; ++i)
+    free(caller_stack[i]);
+}
+
+Token __prsr_match(TokenType token_type, const char *caller)
 {
   PRSR_MATCH_DEBUG_PRINT();
   if (lookhaed.type == token_type) {
     Token result = lookhaed;
+    prev_lookhaed = lookhaed;
     prsr_next_token();
     return result;
   }
-  fprintf(stdout, "expected: ");
+  fprintf(stdout, "ERROR inside function: %s called from function: %s\n\n", __FUNCTION__, caller);
+  caller_stack_print(stdout);
+  fprintf(stdout, "\n");
+  fprintf(stdout, "  just parsed: ");
+  lxr_print_token_type(prev_lookhaed.type); 
+  fprintf(stdout, "\n  expected: ");
   lxr_print_token_type(token_type); 
-  fprintf(stdout, "\ngot: ");
+  fprintf(stdout, "\n  got: ");
   lxr_print_token_type(lookhaed.type); 
-  fprintf(stdout, " at position: %d\n", lookhaed.position);
-  PRSR_ERROR();
+  fprintf(stdout, " at position: %d\n\n", lookhaed.position);
+  // FileInfo file_info = lxr_get_current_file_info(lexer_ptr);
+  single_line_file_info_print_context(lookhaed.file_info, stdout); fprintf(stdout, "\n\n");
+  exit(1);
   return lxr_create_null_token();
 }
+
+#define prsr_match(token_type)  __prsr_match(token_type, __FUNCTION__)
 
 //// PARSE EXPRESSION
 
 FunctionCall *prsr_parse_funccall(Token func_name)
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   prsr_match(OPEN_PAREN_TOKEN);
   ExpressionList *params_values = expr_list_create_empty();
   if (lookhaed.type != CLOSE_PAREN_TOKEN)
@@ -78,6 +126,7 @@ FunctionCall *prsr_parse_funccall(Token func_name)
 
 ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   bool first = True;
   ObjectDerefList *obj_derefs = obj_drf_list_create_empty();
   while (True) {
@@ -117,6 +166,7 @@ ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
 Expression *prsr_parse_factor()
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   switch (lookhaed.type)
   {
   case IDENTIFIER_TOKEN:
@@ -173,6 +223,7 @@ Expression *prsr_parse_factor()
 
 Expression *prsr_parse_str_expression() {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   Expression *root = NULL;
   if (lookhaed.type == LESS_TOKEN) {
     Token left_bound = prsr_match(LESS_TOKEN);
@@ -194,6 +245,7 @@ Expression *prsr_parse_str_expression() {
 Expression *prsr_parse_term()
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   Expression *root = prsr_parse_str_expression();
   while (lookhaed.type == ASTERISK_TOKEN || lookhaed.type == SLASH_TOKEN)
   {
@@ -208,6 +260,7 @@ Expression *prsr_parse_term()
 Expression *prsr_parse_expression()
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   Expression *root = prsr_parse_term();
   while (lookhaed.type == PLUS_TOKEN || lookhaed.type == MINUS_TOKEN)
   {
@@ -239,6 +292,7 @@ OperationType prsr_token_type_to_operation_type(TokenType type)
 Expression *prsr_parse_equation()
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   Expression *left = prsr_parse_expression();
   Token op = lookhaed;
   if (lookhaed.type == EQUAL_EQUAL_TOKEN || lookhaed.type == GREATER_EQUAL_TOKEN ||
@@ -255,6 +309,7 @@ Expression *prsr_parse_equation()
 //// END PARSE EXPRESSION
 
 ExpressionList *prsr_parse_arr_initializations_values() {
+  PRSR_CALL_STACK();
   ExpressionList *init_values = expr_list_create_empty();
   if (lookhaed.type != CLOSE_SQUARE_TOKEN)
   {
@@ -271,7 +326,7 @@ ExpressionList *prsr_parse_arr_initializations_values() {
 }
 
 Type *prsr_parse_type(Token start_type) {
-
+  PRSR_CALL_STACK();
   Type *type = NULL;
   if (start_type.type == INT_TYPE_TOKEN)
     type = type_create_int_type(start_type.file_info);
@@ -303,9 +358,10 @@ Type *prsr_parse_type(Token start_type) {
 Statement *prsr_parse_assignment(Token start_deref)
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
   prsr_match(EQUAL_TOKEN);
-  Expression *expression = prsr_parse_expression();
+  Expression *expression = prsr_parse_equation();
   AssignableElement *assgnbl = assgnbl_create(derefs);
   return stmnt_create_assignment(
     assgnbl, 
@@ -314,6 +370,7 @@ Statement *prsr_parse_assignment(Token start_deref)
 }
 
 Statement *prsr_parse_declaration(Token start_type) {
+  PRSR_CALL_STACK();
   Type *type = prsr_parse_type(start_type);
   prsr_match(DOUBLE_COLON_TOKEN);
 
@@ -338,6 +395,7 @@ Statement *prsr_parse_declaration(Token start_type) {
 }
 
 Statement *prsr_dispatch_id_started_statement() {
+  PRSR_CALL_STACK();
   Statement *statement = NULL;
 
   Token maybe_type_or_id = lookhaed;
@@ -365,6 +423,7 @@ Statement *prsr_parse_statements();
 Statement *prsr_parse_statement() 
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   if (lookhaed.type == OPEN_CURLY_TOKEN) {
     return prsr_parse_statements();
   } else if (lookhaed.type == IF_TOKEN) {
@@ -383,6 +442,7 @@ Statement *prsr_parse_statement()
 Statement *prsr_parse_statements() 
 {
   PRSR_DEBUG_PRINT();
+  PRSR_CALL_STACK();
   StatementList *stmnt_list = stmnt_list_create_empty();
   Token open_curly_token = prsr_match(OPEN_CURLY_TOKEN);
   while (lookhaed.type != CLOSE_CURLY_TOKEN) {
@@ -395,6 +455,7 @@ Statement *prsr_parse_statements()
 
 Statement *prsr_parse_return_statement() 
 {
+  PRSR_CALL_STACK();
   Token return_token = prsr_match(RETURN_TOKEN);
   Expression *ret_value = prsr_parse_expression();
   Token semicolon_token = prsr_match(SEMICOLON_TOKEN);
@@ -403,6 +464,7 @@ Statement *prsr_parse_return_statement()
 
 Statement *prsr_parse_if_statement(bool first) 
 {
+  PRSR_CALL_STACK();
   Token keyword_token;
   if (first)
     keyword_token = prsr_match(IF_TOKEN);
@@ -440,6 +502,7 @@ Statement *prsr_parse_if_statement(bool first)
 
 Statement *prsr_parse_while_statement() 
 {
+  PRSR_CALL_STACK();
   Token while_token = prsr_match(WHILE_TOKEN);
   Expression *condition = prsr_parse_expression();
   Statement *body = prsr_parse_statements();
@@ -450,6 +513,7 @@ Statement *prsr_parse_while_statement()
 
 ParameterList *prsr_parse_func_declaration_params() 
 {
+  PRSR_CALL_STACK();
   ParameterList *params = prmt_list_create_empty();
   while (True) {
     // TODO: factorize, this is kind of the same code as in declaration
@@ -477,6 +541,7 @@ ParameterList *prsr_parse_func_declaration_params()
 
 FunctionDeclaration *prsr_parse_func_declaration() 
 {
+  PRSR_CALL_STACK();
   PRSR_DEBUG_PRINT();
   Token func_token = prsr_match(FUNC_TOKEN);
   Type *return_type = prsr_parse_type(prsr_match(lookhaed.type));
@@ -500,6 +565,7 @@ FunctionDeclaration *prsr_parse_func_declaration()
 }
 
 StructDeclaration *prsr_parse_struct_declaration() {
+  PRSR_CALL_STACK();
   Token data_token = prsr_match(DATA_TOKEN);
   Token name = prsr_match(IDENTIFIER_TOKEN);
   AttributeList *attributes = attrb_list_create_empty();  
@@ -530,6 +596,7 @@ StructDeclaration *prsr_parse_struct_declaration() {
 
 ASTProgram *prsr_parse_program()
 {
+  PRSR_CALL_STACK();
   FunctionDeclarationList *functions = func_decl_list_create_empty();
   StructDeclarationList *struct_declarations = strct_decl_list_create_empty();
   StatementList *global_stmnts = stmnt_list_create_empty();
@@ -552,6 +619,8 @@ ASTProgram *prsr_parse(File *file)
   prsr_next_token();
 
   ASTProgram *ast = prsr_parse_program();
+
+  caller_stack_dealloc();
 
   if (lookhaed.type == END_TOKEN)
     return ast;

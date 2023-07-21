@@ -91,8 +91,8 @@ struct AssignmentPayload_s {
   Expression *value;
 };
 
-STMNT_GETTER(assignment, AssignableElement, assgnbl, AssignmentPayload, ASSIGNMENT_STMNT)
-STMNT_GETTER(assignment, Expression, value, AssignmentPayload, ASSIGNMENT_STMNT)
+STMNT_SET_GET(assignment, AssignableElement, assgnbl, AssignmentPayload, ASSIGNMENT_STMNT)
+STMNT_SET_GET(assignment, Expression, value, AssignmentPayload, ASSIGNMENT_STMNT)
 
 Statement *stmnt_create_assignment(AssignableElement *assgnbl, Expression *value, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(AssignmentPayload);

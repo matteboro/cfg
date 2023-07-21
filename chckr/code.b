@@ -93,3 +93,15 @@ while (my_var < 10) {
   string :: some_str = int_to_string(some_var);
   my_var = my_var + 1;
 }
+
+t = 10 * 10 + 10;
+t = 10 + 10;
+t = 10 - 10;
+t = 10 / 10;
+t = 10 < 10;
+t = 10 > 10;
+t = 10 == 10;
+t = -10;
+t = 2 * < "hello" > <= < "hello" | "world" >;
+string :: s;
+s = "hello" | ", world!";

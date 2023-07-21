@@ -152,6 +152,7 @@ typedef struct {
   FileInfo file_info;
 } Token;
 
+
 void token_print_data(Token token) {
   for (int i=0; i<token.data_length; i++)
     fprintf(stdout, "%c", token.data[token.position+i]);
@@ -203,6 +204,20 @@ typedef struct {
   size_t curr_col, curr_line;
   File *file;
 } Lexer;
+
+FileInfo lxr_get_current_file_info (Lexer *lexer) {
+  FileInfo file_info = {
+    .file = lexer->file,
+    .position = {
+      .data_length = 0,
+      .end_col = lexer->curr_col,
+      .start_col = lexer->curr_col,
+      .end_line = lexer->curr_line,
+      .start_line = lexer->curr_line,
+    }
+  };
+  return file_info;
+}
 
 #define lxr_current_char(lexer) lexer->data[lexer->current]
 #define lxr_increment_current(lexer) {++lexer->current; ++lexer->curr_col;}
