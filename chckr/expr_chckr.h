@@ -4,7 +4,13 @@
 #include "oprnd_chckr.h"
 #include "chckr_env.h"
 
+#define EXPR_CHCKR_ERROR_HEADER(expr_type, expr) \
+  fprintf(stdout, "ERROR: did not pass " expr_type "expression analysis.\n\n  In expression: \n    "); \
+  expr_print_expression(expr, stdout); fprintf(stdout, ",\n  ");
+
+
 Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *an_state);
+Expression *expr_chckr_simplify(Expression *expr);
 
 typedef struct {
   TypeType left;
@@ -45,7 +51,42 @@ UnaryOpExpectedIO unary_ops_expected_io[] = {
   [STR_LEN_UNARY_OPERATION] = {{STRING_TYPE}, INT_TYPE},
 };
 
+bool expr_chckr_check_array_create_expression(Expression *expr, ASTCheckingAnalysisState *an_state) {
+  Expression *size_expr = expr_create_expression_get_size(expr);
+  Type *size_expr_type = expr_chckr_get_returned_type(size_expr, an_state);
+
+  if (size_expr_type == NULL) {
+    EXPR_CHCKR_ERROR_HEADER("create", expr);
+    fprintf(stdout, "the expression controlling the size: ");
+    expr_print_expression(size_expr, stdout);
+    fprintf(stdout, " does not yield a valid return type\n\n");
+    single_line_file_info_print_context(size_expr->file_info, stdout);
+    fprintf(stdout, "\n\n");
+    return False;
+  }
+
+  if (!type_is_integer(size_expr_type)) {
+    EXPR_CHCKR_ERROR_HEADER("create", expr);
+    fprintf(stdout, "the expression controlling the size: ");
+    expr_print_expression(size_expr, stdout);
+    fprintf(stdout, " is not of integer type as expected but: ");
+    type_print(size_expr_type, stdout); fprintf(stdout, "\n\n"); 
+    single_line_file_info_print_context(size_expr->file_info, stdout);
+    fprintf(stdout, "\n\n");
+    type_dealloc(size_expr_type);
+    return False;
+  }
+
+  size_expr = expr_chckr_simplify(size_expr);
+  expr_create_expression_set_size(expr, size_expr);
+
+  type_dealloc(size_expr_type);
+  return True;
+}
+
 Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *an_state) {
+  assert(expr != NULL);
+  assert(an_state != NULL);
   if (expr->type == BINARY_EXPRESSION_EXP_TYPE) {
     Expression *left = expr_binary_expression_get_left(expr);
     Expression *right = expr_binary_expression_get_right(expr);
@@ -88,6 +129,18 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
     oprnd_set_real_type(oprnd, type_copy(oprnd_type));
     expr_set_real_type(expr, type_copy(oprnd_type));
     return oprnd_type;
+  } 
+  else if (expr->type == CREATE_EXP_TYPE) {
+    // I check in the case of allocating an array that the expression is valid
+    if (!expr_create_expression_is_single_element(expr)) {
+      if(!expr_chckr_check_array_create_expression(expr, an_state))
+        return NULL;
+    }
+    // I contruct the Type to be returned
+    Type *ptr_type = expr_create_expression_get_type(expr);
+    ptr_type = type_create_pointer_type(type_copy(ptr_type), file_info_create_null());
+    expr_set_real_type(expr, type_copy(ptr_type));
+    return ptr_type;
   }
   return NULL;
 }
@@ -104,11 +157,7 @@ Expression *expr_chckr_simplify(Expression *expr) {
     left = expr_chckr_simplify(left);
     right = expr_chckr_simplify(right);
     expr_binary_expression_set_left(expr, left);
-    expr_binary_expression_set_right(expr, right);
-
-    // fprintf(stdout, "left is operand: %s\n", expr_is_operand(left) ? "yes" : "no");
-    // fprintf(stdout, "right is operand: %s\n", expr_is_operand(right) ? "yes" : "no");
-    
+    expr_binary_expression_set_right(expr, right);    
     // simplify this expression
     // NOTE: could use better interface: is basic, is simplifyable type ...
     if (expr_is_operand(left) && expr_is_operand(right)) {
@@ -119,11 +168,6 @@ Expression *expr_chckr_simplify(Expression *expr) {
       OperationType op = expr_binary_expression_get_operation(expr);
       BinaryOpExpectedIO opIO = binary_ops_expected_io[op];
       BinaryOpExpectedInput input = opIO.input;
-      // this check is actually performed before, we do it again without printing any error
-      // fprintf(stdout, "left: ");  type_print(left_type, stdout);  fprintf(stdout, "\n");
-      // fprintf(stdout, "right: "); type_print(right_type, stdout); fprintf(stdout, "\n");
-      // fprintf(stdout, "left: ");  oprnd_print_operand_type(left_oprnd->type, stdout);  fprintf(stdout, "\n");
-      // fprintf(stdout, "right: "); oprnd_print_operand_type(right_oprnd->type, stdout); fprintf(stdout, "\n");
       if (type_is_of_type(left_type, input.left) && 
           type_is_of_type(right_type, input.right) &&
           oprnd_is_literal(left_oprnd) && 

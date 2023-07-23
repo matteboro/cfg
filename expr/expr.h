@@ -122,12 +122,14 @@ typedef struct {
   Expression *size;
 } CreateExpression;
 
+EXPR_SET_GET(create, Type, type, CreateExpression, CREATE_EXP_TYPE)
+EXPR_SET_GET(create, Expression, size, CreateExpression, CREATE_EXP_TYPE)
+
 Expression *expr_create_create_expression(Type *type, Expression *size, FileInfo file_info);
 void expr_print_create_expression(CreateExpression *data, FILE* file);
 void expr_dealloc_create_expression(CreateExpression *data);
 
 Expression *expr_create_create_expression(Type *type, Expression *size, FileInfo file_info) {
-  assert(size > 0);
   assert(!type_is_array(type));
   typed_data(CreateExpression);
   assert(data != NULL);
@@ -153,6 +155,12 @@ void expr_dealloc_create_expression(CreateExpression *data) {
   if (data->size != NULL)
     expr_dealloc_expression(data->size);
   free(data);
+}
+
+bool expr_create_expression_is_single_element(Expression *expr) {
+  assert(expr->type == CREATE_EXP_TYPE);
+  Expression *size = expr_create_expression_get_size(expr);
+  return size == NULL;
 }
 
 // CREATE

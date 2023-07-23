@@ -3,7 +3,6 @@
 
 #include "idf.h"
 
-
 #define TYPE_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
 #define typed_data(type) type *data = (type *) malloc(sizeof(type))
 #define casted_data(type, elem) type *data = (type *) elem->data
@@ -26,9 +25,9 @@ obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {              \
   return data->obj_name;                                                  \
 } 
 
-#define TYPE_VERBOSE_PRINT_SWITCH 0
-#define TYPE_PRINT_SIZE_SWITCH 0
-#define TYPE_PRINT_STRUCT_DECL_SWITCH 0
+#define TYPE_VERBOSE_PRINT_SWITCH     1
+#define TYPE_PRINT_SIZE_SWITCH        1
+#define TYPE_PRINT_STRUCT_DECL_SWITCH 1
 
 // FORWARD DECLARATION
 
@@ -41,7 +40,6 @@ typedef unsigned long ByteSize;
 #define NullByteSize 0
 
 // TYPE IMPLEMENTATION
-// TODO : I should put the struct declaration inside struct type data
 
 typedef enum {
   INT_TYPE,
@@ -91,6 +89,8 @@ TYPE_GETTER(struct, StructDeclaration, struct_decl, StructTypeData, STRUCT_TYPE)
 
 TYPE_GETTER(array, Type, type, ArrayTypeData, ARR_TYPE)
 TYPE_NON_PTR_GETTER(array, int, size, ArrayTypeData, ARR_TYPE)
+
+TYPE_GETTER(pointer, Type, type, PointerTypeData, PTR_TYPE)
 
 // CREATE
 
@@ -143,7 +143,7 @@ Type *type_create_pointer_type(Type *type, FileInfo file_info) {
 
 // PRINT
 
-#define TYPE_COLOR green
+#define TYPE_COLOR(file) green(file)
 
 void type_print(Type *type, FILE *file);
 
@@ -158,6 +158,7 @@ void type_print_string_type(FILE *file) {
 void type_print_pointer_type(Type *type, FILE *file) {
   casted_data(PointerTypeData, type);
   type_print(data->type, file);
+  TYPE_COLOR(file);
   fprintf(file, " ptr");
 }
 
@@ -199,7 +200,7 @@ void type_print(Type *type, FILE *file) {
   fprintf(file, ":");
   red(file);
   type->size != NullByteSize ? fprintf(file, "%lu", type->size) : fprintf(file, "?");
-  green(file);
+  TYPE_COLOR(file);
 #endif
   reset(file);
 }
@@ -300,14 +301,71 @@ Type *type_copy(Type *type) {
 
 // UTILITY
 
-// NOTE: this function is needed when the type is an array or ptr, 
-// it returns the type of the values in the array (por tr).
-// it also works for multidemnsional array if in the future 
-// will be added
-Type *type_extract_ultimate_type(Type *type) {
+bool type_is_of_type(Type *type, TypeType tt) {
+  if (type)
+    return type->type == tt;
+  return False;
+}
+
+
+bool type_size_is_known(Type *type) {
+  if (type == NULL) 
+    return False;
+  return type->size != NullByteSize;
+}
+
+void type_set_ultimate_type_size(Type *type, ByteSize size) {
+  if (type == NULL || size == NullByteSize)
+    return;
+
   if (type->type == ARR_TYPE) {
-    ArrayTypeData *data = (ArrayTypeData *)type->data;
-    return type_extract_ultimate_type(data->type); 
+    casted_data(ArrayTypeData, type);
+    type_set_ultimate_type_size(data->type, size);
+    int array_size = data->size;
+    type->size = data->type->size * array_size;
+  } 
+  else if (type->type == STRUCT_TYPE) {
+    type->size = size;
+  }
+  return;
+}
+
+void type_struct_set_struct_decl(Type *type, StructDeclaration *struct_decl) {
+  assert(type->type == STRUCT_TYPE);
+  casted_data(StructTypeData, type);
+  data->struct_decl = struct_decl;
+  return;
+}
+
+bool type_is_struct(Type *type) {
+  return type_is_of_type(type, STRUCT_TYPE);
+}
+
+bool type_is_array(Type *type) {
+  return type_is_of_type(type, ARR_TYPE);
+}
+
+bool type_is_pointer(Type *type) {
+  return type_is_of_type(type, PTR_TYPE);
+}
+
+bool type_is_integer(Type *type) {
+  return type_is_of_type(type, INT_TYPE);
+}
+
+bool type_is_string(Type *type) {
+  return type_is_of_type(type, STRING_TYPE);
+}
+
+// NOTE: this function is needed when the type is an array or ptr, 
+//       it returns the type of the values in the array (por tr).
+//       Does not work for pointer to pointer or multi-dimensional
+//       arrays
+Type *type_extract_ultimate_type(Type *type) {
+  if (type_is_array(type)) {
+    return type_array_get_type(type); 
+  } else if (type_is_pointer(type)) {
+    return type_pointer_get_type(type);
   }
   return type;
 }
@@ -341,63 +399,10 @@ bool type_equal(Type *type1, Type *type2) {
     else if (type1->type == ARR_TYPE) {
       if (type_array_get_size(type1) == type_array_get_size(type2))
         return type_equal(type_array_get_type(type1), type_array_get_type(type2));
+    } 
+    else if (type1->type == PTR_TYPE) {
+      return type_equal(type_pointer_get_type(type1), type_pointer_get_type(type2));
     }
   }
   return False;
-}
-
-bool type_is_integer(Type *type) {
-  if (type == NULL)
-    return False;
-  return type->type == INT_TYPE;
-}
-
-bool type_is_string(Type *type) {
-  if (type == NULL)
-    return False;
-  return type->type == STRING_TYPE;
-}
-
-bool type_is_of_type(Type *type, TypeType tt) {
-  if (type)
-    return type->type == tt;
-  return False;
-}
-
-bool type_size_is_known(Type *type) {
-  if (type == NULL) 
-    return False;
-  return type->size != NullByteSize;
-}
-
-void type_set_ultimate_type_size(Type *type, ByteSize size) {
-  if (type == NULL || size == NullByteSize)
-    return;
-
-  if (type->type == ARR_TYPE) {
-    casted_data(ArrayTypeData, type);
-    type_set_ultimate_type_size(data->type, size);
-    int array_size = data->size;
-    type->size = data->type->size * array_size;
-  } 
-  else if (type->type == STRUCT_TYPE) {
-    // casted_data(StructTypeData, type);
-    type->size = size;
-  }
-  return;
-}
-
-void type_struct_set_struct_decl(Type *type, StructDeclaration *struct_decl) {
-  assert(type->type == STRUCT_TYPE);
-  casted_data(StructTypeData, type);
-  data->struct_decl = struct_decl;
-  return;
-}
-
-bool type_is_struct(Type *type) {
-  return type_is_of_type(type, STRUCT_TYPE);
-}
-
-bool type_is_array(Type *type) {
-  return type_is_of_type(type, ARR_TYPE);
 }

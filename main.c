@@ -587,6 +587,12 @@ Pointers:
   Now I can parse ptr declaration and create expression. Next goal is to implement the the new type of dereference
   introduced with pointers, the single element pointer dereference.
 
+  Pointers can be now handles by the parsing phase fo the compiler. Now we have to work on the checking phase.
+  Where: 
+    - ultimate type should consider pointers;
+    - object deref should consider pointers deref (single element ot array)
+    
+
 CFG:
   We have to start to think about how to implement the CFG, in order first to be able to interpret 
   it in a concrete manner, and secondly in an abstract way. 

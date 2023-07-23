@@ -113,6 +113,8 @@ s = "hello" | ", world!";
 string arr[5] :: s_arr;
 s_arr[0] = "hello";
 
-int ptr :: p = create int[t];
+int ptr :: p = create int[10 * 10];
 
-f3.s2.[p].t[20] = 10;
+# int ptr :: p = create int[t];
+
+# f3.s2.[p].t[20] = 10;
