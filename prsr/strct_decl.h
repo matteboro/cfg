@@ -7,17 +7,25 @@
 #define print_spaces(n, file) {for (size_t spaces_counter=0; spaces_counter<n; ++spaces_counter) fprintf(file, " ");}
 
 
-typedef struct {
+struct StructDeclaration;
+typedef struct StructDeclaration StructDeclaration;
+
+struct StructDeclaration {
   Identifier *name;
   AttributeList *attributes;
   FileInfo file_info;
   ByteSize size;
-} StructDeclaration;
+};
 
 ByteSize strct_decl_get_size(StructDeclaration *decl) {
-  if (decl)
-    return decl->size;
-  return NullByteSize;
+  assert(decl != NULL);
+  return decl->size;
+}
+
+void strct_decl_set_size(StructDeclaration *decl, ByteSize size) {
+  assert(decl != NULL);
+  decl->size = size;
+  return;
 }
 
 StructDeclaration *strct_decl_create(Identifier *name, AttributeList *attributes, FileInfo file_info);
@@ -100,28 +108,31 @@ Type *strct_decl_get_type_of_attribute_from_identifier(StructDeclaration *strct,
 }
 
 bool strct_decl_size_is_known(StructDeclaration *strct) {
-  if (strct == NULL)
-    return False;
+  assert(strct != NULL);
   return strct->size != NullByteSize;
 }
 
 
-// TODO: after I have the struct declaration inside struct type I can put this function after 
-//       I checked every type in the statements
+// TODO: after I checked the types of all the attributes of all structs
+//        I can calculate the sizes of every struct
 
 ByteSize strct_decl_calculate_size(StructDeclaration *strct, StructDeclarationList *structs) {
   if (strct_decl_size_is_known(strct))
     return strct_decl_get_size(strct);
-  
   ByteSize size = 0;
-
   FOR_EACH(AttributeList, attrb_it, strct->attributes) {
     if (attrb_size_is_known(attrb_it->node)) {
       size += attrb_get_size(attrb_it->node);
       continue;
     }
-    Type *type = attrb_get_type(attrb_it->node);
-    Type *ult_type = type_extract_ultimate_type(type);
-    // TO FINISH
+    Type *attrb_type = attrb_get_type(attrb_it->node);
+    Type *attrb_ult_type = type_extract_ultimate_type(attrb_type);
+    assert(type_is_struct(attrb_ult_type));
+    StructDeclaration *struct_of_type = type_struct_get_struct_decl(attrb_ult_type);
+    assert(struct_of_type != NULL);
+    ByteSize struct_size = strct_decl_calculate_size(struct_of_type, structs);
+    type_set_ultimate_type_size(attrb_type, struct_size);
+    size += type_get_size(attrb_type);
   }
+  return size;
 }

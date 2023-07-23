@@ -49,6 +49,7 @@ bool strct_decl_check_attribute_type_existence(StructDeclarationList *structs) {
     FOR_EACH(AttributeList, attrb_it, attrbs) {
       Type *type = attrb_it->node->nt_bind->type;
       if (!type_chckr_type_exists(structs, type)) {
+
         STRCT_DECL_CHCKR_ERROR_HEADER();
         fprintf(
           stdout, 
@@ -85,13 +86,13 @@ bool strct_decl_chckr_check(StructDeclarationList *structs) {
   // strct_graph_dump_dot(struct_graph, stdout);
   strct_graph_dealloc(struct_graph);
 
-  // now I can assume som eproperties of the struct declarations and I can calculate the ByteSize of each
-
-  // FOR_EACH(StructDeclarationList, strct_it, structs) {
-  //   if (strct_decl_size_is_known(strct_it->node))
-  //     continue;
-  //   ByteSize size = strct_decl_calculate_size(strct_it, structs);
-  // }
+  // now I can assume some properties of the struct declarations and I can calculate the ByteSize of each
+  FOR_EACH(StructDeclarationList, strct_it, structs) {
+    if (strct_decl_size_is_known(strct_it->node))
+      continue;
+    ByteSize size = strct_decl_calculate_size(strct_it->node, structs);
+    strct_decl_set_size(strct_it->node, size);
+  }
 
   return result;
 }

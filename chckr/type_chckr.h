@@ -25,6 +25,7 @@ bool type_chckr_type_exists(StructDeclarationList *structs, Type *type) {
       if (strct_decl_size_is_known(strct_it->node)) {
         type_set_ultimate_type_size(type, strct_decl_get_size(strct_it->node));
       }
+      type_struct_set_struct_decl(ult_type, strct_it->node);
       return True;
     }
   }

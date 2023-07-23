@@ -3,6 +3,7 @@
 
 #include "idf.h"
 
+
 #define TYPE_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
 #define typed_data(type) type *data = (type *) malloc(sizeof(type))
 #define casted_data(type, elem) type *data = (type *) elem->data
@@ -27,10 +28,19 @@ obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {              \
 
 #define TYPE_VERBOSE_PRINT_SWITCH 1
 #define TYPE_PRINT_SIZE_SWITCH 1
+#define TYPE_PRINT_STRUCT_DECL_SWITCH 1
+
+// FORWARD DECLARATION
+
+struct StructDeclaration;
+typedef struct StructDeclaration StructDeclaration;
+
+// BYTE SIZE
 
 typedef unsigned long ByteSize;
 #define NullByteSize 0
 
+// TYPE IMPLEMENTATION
 // TODO : I should put the struct declaration inside struct type data
 
 typedef enum {
@@ -54,6 +64,7 @@ typedef struct {
 
 typedef struct {
   Identifier *name;
+  StructDeclaration *struct_decl;
 } StructTypeData;
 
 typedef struct {
@@ -71,6 +82,8 @@ ByteSize type_get_size(Type *type) {
 }
 
 TYPE_GETTER(struct, Identifier, name, StructTypeData, STRUCT_TYPE)
+TYPE_GETTER(struct, StructDeclaration, struct_decl, StructTypeData, STRUCT_TYPE)
+
 
 TYPE_GETTER(array, Type, type, ArrayTypeData, ARR_TYPE)
 TYPE_NON_PTR_GETTER(array, int, size, ArrayTypeData, ARR_TYPE)
@@ -107,6 +120,7 @@ Type *type_create_generic_string_type() {
 Type *type_create_struct_type(Identifier *name) {
   typed_data(StructTypeData);
   data->name = name;
+  data->struct_decl = NULL;
   return type_create(STRUCT_TYPE, data, name->file_info, NullByteSize);
 }
 
@@ -134,6 +148,13 @@ void type_print_string_type(FILE *file) {
 void type_print_struct_type(Type *type, FILE *file) {
   casted_data(StructTypeData, type);
   idf_print_identifier(data->name, file);
+#if TYPE_PRINT_STRUCT_DECL_SWITCH
+  purple(file);
+  fprintf(file, "(");
+  data->struct_decl != NULL ? fprintf(file, "!") : fprintf(file, "?");
+  fprintf(file, ")");
+  reset(file);
+#endif
 }
 
 void type_print_array_type(Type *type, FILE *file) {
@@ -215,6 +236,7 @@ void *type_copy_struct_type(Type *type) {
   casted_data(StructTypeData, type);
   StructTypeData *data_copy = (StructTypeData *) malloc(sizeof(StructTypeData));
   data_copy->name = idf_copy_identifier(data->name);
+  data_copy->struct_decl = data->struct_decl;
   return data_copy;
 }
 
@@ -331,6 +353,16 @@ void type_set_ultimate_type_size(Type *type, ByteSize size) {
     // casted_data(StructTypeData, type);
     type->size = size;
   }
-
   return;
+}
+
+void type_struct_set_struct_decl(Type *type, StructDeclaration *struct_decl) {
+  assert(type->type == STRUCT_TYPE);
+  casted_data(StructTypeData, type);
+  data->struct_decl = struct_decl;
+  return;
+}
+
+bool type_is_struct(Type *type) {
+  return type_is_of_type(type, STRUCT_TYPE);
 }
