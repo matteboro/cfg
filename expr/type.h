@@ -19,14 +19,19 @@ obj_type *type_## prefix ## _get_ ## obj_name  (Type* type) {             \
 } 
 
 #define TYPE_NON_PTR_GETTER(prefix, obj_type, obj_name, payload_type, type_type)  \
-obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {             \
+obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {              \
   assert(type->type == type_type);                                        \
   casted_data(payload_type, type);                                        \
   return data->obj_name;                                                  \
 } 
 
 #define TYPE_VERBOSE_PRINT_SWITCH 1
+#define TYPE_PRINT_SIZE_SWITCH 1
 
+typedef unsigned long ByteSize;
+#define NullByteSize 0
+
+// TODO : I should put the struct declaration inside struct type data
 
 typedef enum {
   INT_TYPE,
@@ -39,6 +44,7 @@ typedef struct {
   TypeType type;
   void *data;
   FileInfo file_info;
+  ByteSize size;
 } Type;
 
 typedef struct {
@@ -58,6 +64,12 @@ typedef struct {
 
 } IntTypeData;
 
+ByteSize type_get_size(Type *type) {
+  if (type)
+    return type->size;
+  return NullByteSize;
+}
+
 TYPE_GETTER(struct, Identifier, name, StructTypeData, STRUCT_TYPE)
 
 TYPE_GETTER(array, Type, type, ArrayTypeData, ARR_TYPE)
@@ -65,45 +77,44 @@ TYPE_NON_PTR_GETTER(array, int, size, ArrayTypeData, ARR_TYPE)
 
 // CREATE
 
-Type *type_create(TypeType type_type, void *data, FileInfo file_info) {
+Type *type_create(TypeType type_type, void *data, FileInfo file_info, ByteSize size) {
   Type *type = (Type *) malloc(sizeof(Type));
   type->type = type_type;
   type->data = data;
   type->file_info = file_info;
+  type->size = size;
   return type;
-}
-
-Type *type_create_generic_int_type() {
-  typed_data(IntTypeData);
-  return type_create(INT_TYPE, data, file_info_create_null());
-}
-
-Type *type_create_generic_string_type() {
-  typed_data(StringTypeData);
-  return type_create(STRING_TYPE, data, file_info_create_null());
 }
 
 Type *type_create_int_type(FileInfo file_info) {
   typed_data(IntTypeData);
-  return type_create(INT_TYPE, data, file_info);
+  return type_create(INT_TYPE, data, file_info, 8);
 }
 
 Type *type_create_string_type(FileInfo file_info) {
   typed_data(StringTypeData);
-  return type_create(STRING_TYPE, data, file_info);
+  return type_create(STRING_TYPE, data, file_info, 8);
+}
+
+Type *type_create_generic_int_type() {
+  return type_create_int_type(file_info_create_null());
+}
+
+Type *type_create_generic_string_type() {
+  return type_create_string_type(file_info_create_null());
 }
 
 Type *type_create_struct_type(Identifier *name) {
   typed_data(StructTypeData);
   data->name = name;
-  return type_create(STRUCT_TYPE, data, name->file_info);
+  return type_create(STRUCT_TYPE, data, name->file_info, NullByteSize);
 }
 
 Type *type_create_array_type(int size, Type *type, FileInfo file_info) {
   typed_data(ArrayTypeData);
   data->size = size;
   data->type = type;
-  return type_create(ARR_TYPE, data, file_info);
+  return type_create(ARR_TYPE, data, file_info, type->size * size);
 }
 
 // PRINT
@@ -139,12 +150,19 @@ void type_print(Type *type, FILE *file) {
   }
   TYPE_COLOR(file);
   switch (type->type) {
-    case INT_TYPE: type_print_int_type(file); break;
+    case INT_TYPE:    type_print_int_type(file); break;
     case STRING_TYPE: type_print_string_type(file); break;
     case STRUCT_TYPE: type_print_struct_type(type, file); break;
-    case ARR_TYPE: type_print_array_type(type, file); break;
+    case ARR_TYPE:    type_print_array_type(type, file); break;
     default: TYPE_ERROR();
   }
+#if TYPE_PRINT_SIZE_SWITCH
+  reset(file);
+  fprintf(file, ":");
+  red(file);
+  type->size != NullByteSize ? fprintf(file, "%lu", type->size) : fprintf(file, "?");
+  green(file);
+#endif
   reset(file);
 }
 
@@ -223,6 +241,7 @@ Type *type_copy(Type *type) {
   }
   type_copy->data = data;
   type_copy->file_info = type->file_info;
+  type_copy->size = type->size;
   return type_copy;
 }
 
@@ -290,4 +309,28 @@ bool type_is_of_type(Type *type, TypeType tt) {
   if (type)
     return type->type == tt;
   return False;
+}
+
+bool type_size_is_known(Type *type) {
+  if (type == NULL) 
+    return False;
+  return type->size != NullByteSize;
+}
+
+void type_set_ultimate_type_size(Type *type, ByteSize size) {
+  if (type == NULL || size == NullByteSize)
+    return;
+
+  if (type->type == ARR_TYPE) {
+    casted_data(ArrayTypeData, type);
+    type_set_ultimate_type_size(data->type, size);
+    int array_size = data->size;
+    type->size = data->type->size * array_size;
+  } 
+  else if (type->type == STRUCT_TYPE) {
+    // casted_data(StructTypeData, type);
+    type->size = size;
+  }
+
+  return;
 }

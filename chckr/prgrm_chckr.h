@@ -6,6 +6,8 @@
 #include "func_decl_chckr.h"
 #include "chckr_env.h"
 
+extern size_t num_simplifications;
+
 bool prgrm_chckr_check(ASTProgram *program) {
 
   ASTCheckingAnalysisState *an_state = chckr_anlysis_state_create(program->struct_declarations, program->func_declarations);
@@ -26,8 +28,12 @@ bool prgrm_chckr_check(ASTProgram *program) {
 
   fprintf(stdout, "global statements analysis passed\n");
 
+  fprintf(stdout, "total expression simplifications: %lu: \n", num_simplifications);
+  
   chckr_analysis_state_dealloc(an_state);
   return True;
+
+  
 
 ret_false:
   chckr_analysis_state_dealloc(an_state);

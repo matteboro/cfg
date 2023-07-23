@@ -82,9 +82,16 @@ bool strct_decl_chckr_check(StructDeclarationList *structs) {
   if(!strct_graph_analyzer(struct_graph)) {
     result = False;
   }
-
   // strct_graph_dump_dot(struct_graph, stdout);
-
   strct_graph_dealloc(struct_graph);
+
+  // now I can assume som eproperties of the struct declarations and I can calculate the ByteSize of each
+
+  // FOR_EACH(StructDeclarationList, strct_it, structs) {
+  //   if (strct_decl_size_is_known(strct_it->node))
+  //     continue;
+  //   ByteSize size = strct_decl_calculate_size(strct_it, structs);
+  // }
+
   return result;
 }

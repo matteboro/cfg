@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../prsr/stmnt.h"
-#include "../prsr/func_decl.h"
-#include "../prsr/strct_decl.h"
 #include "funccall_chckr.h"
 #include "avlb_vars.h"
 #include "type_chckr.h"
@@ -27,7 +25,6 @@ bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS);
 bool stmnt_chckr_check_block(STMNT_CHCKR_PARAMS);
 bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS);
 bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS);
-
 
 bool stmnt_chckr_check_assignment(STMNT_CHCKR_PARAMS) {
   AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
@@ -139,6 +136,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
         type_dealloc(init_value_type);
         return False;
       }
+
       type_dealloc(init_value_type);
       ++counter;
     }
@@ -178,6 +176,11 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
     }
     type_dealloc(init_value_type);
     goto ret_true;
+  }
+
+  // TODO: could become a expr_list function
+  FOR_EACH(ExpressionList, expr_it, init_values) {
+    expr_it->node = expr_chckr_simplify(expr_it->node);
   }
 
 ret_true:
@@ -224,6 +227,8 @@ bool stmnt_chckr_check_return(STMNT_CHCKR_PARAMS) {
     type_dealloc(ret_val_type);
     return False;
   }
+
+  stmnt_return_set_ret_value(stmnt, expr_chckr_simplify(ret_val));
 
   type_dealloc(ret_val_type);
   return True;
@@ -276,6 +281,10 @@ bool stmnt_chckr_check_if_else(STMNT_CHCKR_PARAMS) {
     return False;
   }
 
+  stmnt_if_else_set_condition(stmnt, expr_chckr_simplify(condition));
+
+  // TODO: possible simplification: if condition is always true (false) remove else body (if body)
+
   type_dealloc(condition_type);
   type_dealloc(expected_type);
 
@@ -317,6 +326,10 @@ bool stmnt_chckr_check_while(STMNT_CHCKR_PARAMS) {
     type_dealloc(expected_type);
     return False;
   }
+
+  stmnt_while_set_condition(stmnt, expr_chckr_simplify(condition));
+
+  // TODO: possible simplification: if condition is always false remove statement
 
   type_dealloc(condition_type);
   type_dealloc(expected_type);

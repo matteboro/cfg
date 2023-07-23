@@ -92,6 +92,10 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
   return NULL;
 }
 
+static size_t num_simplifications = 0;
+
+// TODO: multipliy divide by 1, add subtract 0 could be simplified, multiply by 0
+// TODO: divide by 0 --> instant error
 Expression *expr_chckr_simplify(Expression *expr) {
   if (expr->type == BINARY_EXPRESSION_EXP_TYPE) {
     // recursively simplify sub-expression
@@ -148,6 +152,7 @@ Expression *expr_chckr_simplify(Expression *expr) {
           oprnd_set_real_type(new_operand, type_copy(expr->real_type));
           expr_set_real_type(new_expression, type_copy(expr->real_type));
           expr_dealloc_expression(expr);
+          ++num_simplifications;
           return new_expression;
         } 
         else if (op == STR_CONCAT_OPERATION) {
@@ -169,6 +174,7 @@ Expression *expr_chckr_simplify(Expression *expr) {
           oprnd_set_real_type(new_operand, type_copy(expr->real_type));
           expr_set_real_type(new_expression, type_copy(expr->real_type));
           expr_dealloc_expression(expr);
+          ++num_simplifications;
           return new_expression;
         }
       }
@@ -184,8 +190,6 @@ Expression *expr_chckr_simplify(Expression *expr) {
       OperationType op = expr_unary_expression_get_operation(expr);
       UnaryOpExpectedIO opIO = unary_ops_expected_io[op];
       UnaryOpExpectedInput input = opIO.input;
-      fprintf(stdout, "type: ");  type_print(oprnd_type, stdout);  fprintf(stdout, "\n");
-      fprintf(stdout, "operand type: ");  oprnd_print_operand_type(oprnd->type, stdout);  fprintf(stdout, "\n");
       if (type_is_of_type(oprnd_type, input.type) && oprnd_is_literal(oprnd)) {
         if (op != STR_LEN_UNARY_OPERATION) {
           int *val = oprnd_integer_get_integer(oprnd);
@@ -200,6 +204,7 @@ Expression *expr_chckr_simplify(Expression *expr) {
           oprnd_set_real_type(new_operand, type_copy(expr->real_type));
           expr_set_real_type(new_expression, type_copy(expr->real_type));
           expr_dealloc_expression(expr);
+          ++num_simplifications;
           return new_expression;          
         } 
         else if (op == STR_LEN_UNARY_OPERATION) {
@@ -211,6 +216,7 @@ Expression *expr_chckr_simplify(Expression *expr) {
           oprnd_set_real_type(new_operand, type_copy(expr->real_type));
           expr_set_real_type(new_expression, type_copy(expr->real_type));
           expr_dealloc_expression(expr);
+          ++num_simplifications;
           return new_expression; 
         }
       }

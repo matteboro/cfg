@@ -14,7 +14,7 @@
 
 // FORWARD DECLARATIONS
 Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *an_state);
-
+Expression *expr_chckr_simplify(Expression *expr);
 
 bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS);
 
@@ -61,6 +61,7 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
   if (funccall_params_size == 0)
     return True;
 
+  // check types of params are correct
   FOR_EACH_ENUM(ParameterList, prmt_it, matched_function->params, counter) {
     Type *param_type = prmt_it->node->nt_bind->type;
     Expression *init_expr = expr_list_get_at(params_values, counter);
@@ -95,5 +96,10 @@ bool funccall_chckr_check(FUNCCALL_CHCKR_PARAMS) {
     }
     type_dealloc(init_expr_type);
   }
+
+  FOR_EACH(ExpressionList, expr_it, params_values) {
+    expr_it->node = expr_chckr_simplify(expr_it->node);
+  }
+
   return True;
 }

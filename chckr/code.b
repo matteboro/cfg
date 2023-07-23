@@ -105,3 +105,5 @@ t = -10;
 t = 2 * < "hello" > <= < "hello" | "world" >;
 string :: s;
 s = "hello" | ", world!";
+
+struct1 arr[5] :: s_arr;

@@ -147,8 +147,8 @@ FileInfo prefix##_list_merged_file_info(type_name##List *list) {                
 }    
 
 #define DEFAULT_LIST_CHECK_BINARY_PRED(prefix, type_name)                                                \
-typedef bool (* type_name##BinaryPrediate)(type_name *, type_name *);                                    \
-bool prefix##_list_check_binary_predicate(type_name##List *list, type_name##BinaryPrediate predicate) {  \
+typedef bool (* type_name##BinaryPredicate)(type_name *, type_name *);                                   \
+bool prefix##_list_check_binary_predicate(type_name##List *list, type_name##BinaryPredicate predicate) { \
   FOR_EACH(type_name##List, it1, list) {                                                                 \
     FOR_EACH(type_name##List, it2, it1->next) {                                                          \
       if (predicate(it1->node, it2->node))                                                               \
@@ -156,6 +156,16 @@ bool prefix##_list_check_binary_predicate(type_name##List *list, type_name##Bina
     }                                                                                                    \
   }                                                                                                      \
   return False;                                                                                          \
+} 
+
+#define DEFAULT_LIST_CHECK_FOR_ALL_UNARY_PRED(prefix, type_name)                                               \
+typedef bool (* type_name##UnaryPredicate)(type_name *);                                                       \
+bool prefix##_list_check_for_all_unary_predicate(type_name##List *list, type_name##UnaryPredicate predicate) { \
+  FOR_EACH(type_name##List, it, list) {                                                                        \
+    if (!predicate(it->node))                                                                                  \
+      return False;                                                                                            \
+  }                                                                                                            \
+  return True;                                                                                                 \
 } 
 
 #define LIST(prefix, type_name, dealloc_func, print_func) \
@@ -171,7 +181,8 @@ DEFAULT_LIST_POP_LAST(prefix, type_name)                  \
 DEFAULT_LIST_IS_EMPTY(prefix, type_name)                  \
 DEFAULT_LIST_GET_FIRST(prefix, type_name)                 \
 DEFAULT_LIST_GET_LAST(prefix, type_name)                  \
-DEFAULT_LIST_CHECK_BINARY_PRED(prefix, type_name)  
+DEFAULT_LIST_CHECK_BINARY_PRED(prefix, type_name)         \
+DEFAULT_LIST_CHECK_FOR_ALL_UNARY_PRED(prefix, type_name)
 
 void print_int(int *val, FILE *file) {
   fprintf(file, "%d", *val);

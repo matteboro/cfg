@@ -181,9 +181,9 @@ struct IfElsePayload_s {
   Statement *else_body;
 };
 
-STMNT_GETTER(if_else, Expression, condition, IfElsePayload, IF_ELSE_STMNT)
-STMNT_GETTER(if_else, Statement, if_body, IfElsePayload, IF_ELSE_STMNT)
-STMNT_GETTER(if_else, Statement, else_body, IfElsePayload, IF_ELSE_STMNT)
+STMNT_SET_GET(if_else, Expression, condition, IfElsePayload, IF_ELSE_STMNT)
+STMNT_SET_GET(if_else, Statement, if_body, IfElsePayload, IF_ELSE_STMNT)
+STMNT_SET_GET(if_else, Statement, else_body, IfElsePayload, IF_ELSE_STMNT)
 
 Statement *stmnt_create_if_else(Expression *condition, Statement *if_body, Statement *else_body, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(IfElsePayload);
@@ -247,8 +247,8 @@ struct WhilePayload_s {
   Statement *body;
 };
 
-STMNT_GETTER(while, Expression, condition, WhilePayload, WHILE_STMNT)
-STMNT_GETTER(while, Statement, body, WhilePayload, WHILE_STMNT)
+STMNT_SET_GET(while, Expression, condition, WhilePayload, WHILE_STMNT)
+STMNT_SET_GET(while, Statement, body, WhilePayload, WHILE_STMNT)
 
 Statement *stmnt_create_while(Expression *condition, Statement *body, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(WhilePayload);
@@ -294,12 +294,8 @@ struct ReturnPayload_s {
   FunctionDeclaration *func_decl;
 };
 
-STMNT_SETTER(return, Expression, ret_value, ReturnPayload, RETURN_STMNT)
-STMNT_SETTER(return, FunctionDeclaration, func_decl, ReturnPayload, RETURN_STMNT)
-
-STMNT_GETTER(return, Expression, ret_value, ReturnPayload, RETURN_STMNT)
-STMNT_GETTER(return, FunctionDeclaration, func_decl, ReturnPayload, RETURN_STMNT)
-
+STMNT_SET_GET(return, Expression, ret_value, ReturnPayload, RETURN_STMNT)
+STMNT_SET_GET(return, FunctionDeclaration, func_decl, ReturnPayload, RETURN_STMNT)
 
 Statement *stmnt_create_return(Expression *ret_value, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(ReturnPayload);
@@ -338,7 +334,8 @@ struct BlockPayload_s {
   StatementList *body;
 };
 
-STMNT_GETTER(block, StatementList, body, BlockPayload, BLOCK_STMNT)
+
+STMNT_SET_GET(block, StatementList, body, BlockPayload, BLOCK_STMNT)
 
 Statement *stmnt_create_block(StatementList *body, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(BlockPayload);
