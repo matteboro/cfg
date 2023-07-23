@@ -36,6 +36,12 @@ void obj_drf_set_real_type(ObjectDeref *obj_drf, Type *type) {
   obj_drf->real_type = type;
 }
 
+Expression *obj_drf_array_get_index(ObjectDeref *obj_drf) {
+  assert(obj_drf->type == ARR_DEREF);
+  casted_data(ArrayTypeObjectDerefData, obj_drf);
+  return data->index;
+}
+
 // CREATE
 
 ObjectDeref *obj_drf_create(ObjectDerefType type, Identifier* name, void *data, FileInfo file_info) {

@@ -26,6 +26,10 @@ func int :: print_int(int :: i) {
   return 0;
 }
 
+func string :: print_int2(string :: s) {
+  return "hello";
+}
+
 func int :: main(int :: n_args, int arr[10] :: args) {
   int :: i = 0;
   while (i < n_args) {
@@ -106,4 +110,5 @@ t = 2 * < "hello" > <= < "hello" | "world" >;
 string :: s;
 s = "hello" | ", world!";
 
-struct1 arr[5] :: s_arr;
+string arr[5] :: s_arr;
+s_arr[0] = "hello";

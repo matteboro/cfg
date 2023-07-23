@@ -6,7 +6,6 @@
 
 #define print_spaces(n, file) {for (size_t spaces_counter=0; spaces_counter<n; ++spaces_counter) fprintf(file, " ");}
 
-
 struct StructDeclaration;
 typedef struct StructDeclaration StructDeclaration;
 
@@ -112,10 +111,8 @@ bool strct_decl_size_is_known(StructDeclaration *strct) {
   return strct->size != NullByteSize;
 }
 
-
-// TODO: after I checked the types of all the attributes of all structs
-//        I can calculate the sizes of every struct
-
+// this function can be used only if every attribute of a struct type have the appropriate
+// struct declaration paired with
 ByteSize strct_decl_calculate_size(StructDeclaration *strct, StructDeclarationList *structs) {
   if (strct_decl_size_is_known(strct))
     return strct_decl_get_size(strct);

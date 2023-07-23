@@ -14,10 +14,37 @@ StructDeclaration *obj_drf_chckr_get_struct_decl_from_identifier(StructDeclarati
   return NULL;
 }
 
+bool obj_drf_chckr_check_array_dereference(ObjectDeref *obj_drf, ASTCheckingAnalysisState *an_state) {
+  if (obj_drf->type != ARR_DEREF)
+    return True;
+
+  Expression *index = obj_drf_array_get_index(obj_drf);
+  Type *index_type = expr_chckr_get_returned_type(index, an_state);
+
+  if (index_type == NULL) {
+    fprintf(stdout, "ERROR: did not pass object deref analysis.\n   Type of index expression is not valid\n\n");
+    single_line_file_info_print_context(index->file_info, stdout); fprintf(stdout, "\n\n");
+    return False;
+  }
+
+  if (!type_is_integer(index_type)) {
+    fprintf(stdout, "ERROR: did not pass object deref analysis.\n   Type of index expression is not integer as expected but: ");
+    type_print(index_type, stdout);
+    fprintf(stdout, "\n\n");
+    single_line_file_info_print_context(index->file_info, stdout); fprintf(stdout, "\n\n");
+    type_dealloc(index_type);
+    return False;
+  }
+
+  // TODO: in case expression is integer check if it is less than the array size
+  // NOTE: I have the object deref type at disposition
+
+  type_dealloc(index_type);
+  return True;
+}
+
 bool obj_drf_chckr_check_for_array_correspondence(Type *type, ObjectDeref *deref) {
-  // TODO: could have better error: object <obj> in <obj_deref_list> should etc...
-  // TODO: here we could also check for the correctness of index (i.e. it is between boundaries, is integer)
-  // TODO: should also check in case of multidimensional arrays (when they will be implemented)
+  // TODO: better error
   if ((deref->type != ARR_DEREF && type->type == ARR_TYPE) ||
       (deref->type == ARR_DEREF && type->type != ARR_TYPE)) {
     fprintf(stdout, "ERROR, did not pass object deref analysis. The object dereference ");
@@ -53,22 +80,36 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
   StructDeclarationList* structs = chckr_analysis_state_get_structs(an_state); 
 
   assert(obj_drf_list_size(obj_derefs) > 0);
+
+  // the first element of the object dereference should be an available variable
   ObjectDeref *first_elem = obj_drf_list_get_at(obj_derefs, 0);
   Var* var = avlb_vars_get_var_from_identifier(av_vars, first_elem->name);
 
   if (var == NULL) {
-    fprintf(stdout, "ERROR, did not pass object deref analysis. Var with name %s does not exist\n", first_elem->name->name);
+    fprintf(stdout, "ERROR: did not pass object deref analysis.\n  in object dereference: "); 
+    obj_drf_list_print(obj_derefs, stdout);
+    fprintf(stdout, " var with name: "); 
+    obj_drf_print(first_elem, stdout);
+    fprintf(stdout, " does not exist\n\n");
+    single_line_file_info_print_context(first_elem->file_info, stdout); fprintf(stdout, "\n\n");
     return NULL;
   }
 
+  // check in case is array dereference
+  if (!obj_drf_chckr_check_array_dereference(first_elem, an_state))
+    return NULL;
+
+  // if is an available var, extract type and name
   Type *var_type = var->nt_bind->type;
   Identifier *var_name = var->nt_bind->name;
+
+  // set first element type
   obj_drf_set_real_type(first_elem, type_copy(var_type));
 
-  // TODO: should check index expression is of type int
-
+  // if is the last element
   if (obj_drf_list_size(obj_derefs) == 1) {
     if (var_type->type != ARR_TYPE && first_elem->type == ARR_DEREF) {
+      // TODO: better error
       fprintf(stdout, "ERROR, did not pass object deref analysis. The object dereference ");
       obj_drf_print(first_elem, stdout);
       fprintf(stdout, " should not be referenced as an array\n");
@@ -98,15 +139,25 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
 
   Type *elem_type = NULL;
   FOR_EACH(ObjectDerefList, obj_drf_it, obj_derefs->next) {
-    elem_type = strct_decl_get_type_of_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
-    obj_drf_set_real_type(obj_drf_it->node, type_copy(elem_type));
 
+    // get the attribute type having the name of the attribute
+    elem_type = strct_decl_get_type_of_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
+
+    // if attribute does not exist in the struct
     if (elem_type == NULL) {
+      // TODO: better error
       fprintf(stdout, "ERROR, did not pass object deref analysis. Object dereference %s of ", obj_drf_it->node->name->name);
       obj_drf_list_print(obj_derefs, stdout);
       fprintf(stdout, " is not an attribute in the struct %s\n", prev_struct->name->name);
       return NULL;
     }
+
+    // set the object deref type with the attribute type
+    obj_drf_set_real_type(obj_drf_it->node, type_copy(elem_type));
+
+    // check in case is array dereference
+    if (!obj_drf_chckr_check_array_dereference(obj_drf_it->node, an_state))
+      return NULL;
 
     if (obj_drf_it->next == NULL) { // on last element
       if (obj_drf_check_not_for_basic_type(elem_type, obj_derefs, obj_drf_it->node->name))
@@ -116,6 +167,7 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
         elem_type = type_extract_ultimate_type(elem_type);
       } 
       else if ((obj_drf_it->node->type == ARR_DEREF && elem_type->type != ARR_TYPE)) {
+        // TODO: better error
         fprintf(stdout, "ERROR, did not pass object deref analysis. The object dereference ");
         obj_drf_print(obj_drf_it->node, stdout);
         fprintf(stdout, " should not be referenced as an array\n");
