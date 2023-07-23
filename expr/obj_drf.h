@@ -14,6 +14,7 @@
 typedef enum {
   ARR_DEREF,
   STRUCT_BASIC_DEREF,
+  SINGLE_ELEMENT_PTR_DRF,
 } ObjectDerefType;
 
 typedef struct {
@@ -27,6 +28,11 @@ typedef struct {
 typedef struct { 
  
 } StructOrBasicTypeObjectDerefData; 
+
+typedef struct { 
+ 
+} SingleElementPointerTypeObjectDerefData; 
+
 
 typedef struct { 
   Expression *index;
@@ -65,11 +71,23 @@ ObjectDeref *obj_drf_create_struct_or_basic_type_deref(Identifier *name) {
   return obj_drf_create(STRUCT_BASIC_DEREF, name, data, name->file_info);
 }
 
+ObjectDeref *obj_drf_create_single_element_pointer_deref(Identifier *name, FileInfo file_info) {
+  typed_data(SingleElementPointerTypeObjectDerefData);
+  return obj_drf_create(SINGLE_ELEMENT_PTR_DRF, name, data, file_info);
+}
+
 // PRINT
 
 void obj_drf_print_struct_or_basic_type_deref(ObjectDeref *obj_drf, FILE *file) {
   if_null_print(obj_drf, file);
   idf_print_identifier(obj_drf->name, file);
+}
+
+void obj_drf_print_single_element_pointer_deref(ObjectDeref *obj_drf, FILE *file) {
+  if_null_print(obj_drf, file);
+  fprintf(file, "[");
+  idf_print_identifier(obj_drf->name, file);
+  fprintf(file, "]");
 }
 
 void obj_drf_print_array_type_deref(ObjectDeref *obj_drf, FILE *file) {
@@ -89,6 +107,8 @@ void obj_drf_print(ObjectDeref *obj_drf, FILE *file) {
     obj_drf_print_array_type_deref(obj_drf, file);
   else if (obj_drf->type == STRUCT_BASIC_DEREF)
     obj_drf_print_struct_or_basic_type_deref(obj_drf, file);
+  else if (obj_drf->type == SINGLE_ELEMENT_PTR_DRF)
+    obj_drf_print_single_element_pointer_deref(obj_drf, file);
   else
     OBJ_DRF_ERROR();
 }
@@ -107,6 +127,12 @@ OBJ_DRF_DEALLOC(
   {}
 )
 
+OBJ_DRF_DEALLOC(
+  single_element_pointer,
+  SingleElementPointerTypeObjectDerefData,
+  {}
+)
+
 void obj_drf_dealloc(ObjectDeref *obj_drf) {
   if (obj_drf == NULL)
     return;
@@ -114,8 +140,11 @@ void obj_drf_dealloc(ObjectDeref *obj_drf) {
     obj_drf_dealloc_array_type_deref(obj_drf);
   else if (obj_drf->type == STRUCT_BASIC_DEREF)
     obj_drf_dealloc_struct_or_basic_type_deref(obj_drf);
+  else if (obj_drf->type == SINGLE_ELEMENT_PTR_DRF)
+    obj_drf_dealloc_single_element_pointer_type_deref(obj_drf);
   else
     OBJ_DRF_ERROR();
+
   idf_dealloc_identifier(obj_drf->name);
   if (obj_drf->real_type)
     type_dealloc(obj_drf->real_type);

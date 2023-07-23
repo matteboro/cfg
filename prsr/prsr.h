@@ -32,7 +32,12 @@
 #define PRSR_CALL_STACK() caller_stack_add(__FUNCTION__)
 
 Statement *prsr_parse_assignment(Token start_deref);
-Expression *prsr_parse_expression(), *prsr_parse_term(), *prsr_parse_factor(), *prsr_parse_equation(), *prsr_parse_str_expression();
+Expression *prsr_parse_expression(); 
+Expression *prsr_parse_term(); 
+Expression *prsr_parse_factor(); 
+Expression *prsr_parse_equation(); 
+Expression *prsr_parse_str_expression();
+Type *prsr_parse_non_array_type();
 
 static Token lookhaed;
 static Token prev_lookhaed;
@@ -130,31 +135,53 @@ ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
   bool first = True;
   ObjectDerefList *obj_derefs = obj_drf_list_create_empty();
   while (True) {
-    Token id_token;
+    Token first_token;
     if (first) {
       first = False;
-      id_token = start_deref;
+      first_token = start_deref;
     } 
-    else
-      id_token = prsr_match(IDENTIFIER_TOKEN);
+    else {
+      first_token = prsr_match(lookhaed.type);
+    } 
 
-    FileInfo file_info = id_token.file_info;
-    if (lookhaed.type == OPEN_SQUARE_TOKEN) {
-      prsr_match(OPEN_SQUARE_TOKEN);
-      Expression *index_expr = prsr_parse_equation();
-      obj_drf_list_append(
-        obj_derefs, 
-        obj_drf_create_array_type_deref(
-          idf_create_identifier_from_token(id_token), 
-          index_expr, 
-          file_info_merge(file_info, lookhaed.file_info)));
-      prsr_match(CLOSE_SQUARE_TOKEN);
-    } else {
-      obj_drf_list_append(
-        obj_derefs, 
-        obj_drf_create_struct_or_basic_type_deref(
-          idf_create_identifier_from_token(id_token)));
+    ObjectDeref *new_obj_deref = NULL;
+    // parse normal deref, array deref
+    if (first_token.type == IDENTIFIER_TOKEN) {
+      // parse array deref
+      if (lookhaed.type == OPEN_SQUARE_TOKEN) {
+        FileInfo file_info = first_token.file_info;
+        prsr_match(OPEN_SQUARE_TOKEN);
+        Expression *index_expr = prsr_parse_equation();
+        Token close_square_token = prsr_match(CLOSE_SQUARE_TOKEN);
+
+        new_obj_deref = 
+          obj_drf_create_array_type_deref(
+            idf_create_identifier_from_token(first_token), 
+            index_expr, 
+            file_info_merge(file_info, close_square_token.file_info));
+        
+      } 
+      // parse normal deref
+      else {
+        new_obj_deref = obj_drf_create_struct_or_basic_type_deref(idf_create_identifier_from_token(first_token));
+      }
+    } 
+    // parse single element pointer deref
+    else if (first_token.type == OPEN_SQUARE_TOKEN) {
+      Token id_token = prsr_match(IDENTIFIER_TOKEN);
+      Token close_square_token = prsr_match(CLOSE_SQUARE_TOKEN);
+
+      new_obj_deref = 
+        obj_drf_create_single_element_pointer_deref(
+          idf_create_identifier_from_token(id_token),
+          file_info_merge(first_token.file_info, close_square_token.file_info));
+    } 
+    else {
+      PRSR_ERROR();
     }
+
+    obj_drf_list_append(obj_derefs, new_obj_deref);
+
     if (lookhaed.type == POINT_TOKEN)
       prsr_match(POINT_TOKEN);
     else
@@ -306,6 +333,31 @@ Expression *prsr_parse_equation()
   }
 }
 
+Expression *prsr_parse_create_expression() {
+  PRSR_CALL_STACK();
+  Token create_token = prsr_match(CREATE_TOKEN);
+  Type *type = prsr_parse_non_array_type();
+  if (lookhaed.type != OPEN_SQUARE_TOKEN) {
+    return 
+      expr_create_create_expression(type, NULL, file_info_merge(create_token.file_info, type->file_info));
+  }
+  prsr_match(OPEN_SQUARE_TOKEN);
+  Expression *size_expression = prsr_parse_equation();
+  Token close_square_token = prsr_match(CLOSE_SQUARE_TOKEN);
+  return 
+    expr_create_create_expression(
+      type, 
+      size_expression, 
+      file_info_merge(create_token.file_info, close_square_token.file_info));
+}
+
+Expression *prsr_parse_general_expression() {
+  PRSR_CALL_STACK();
+  if (lookhaed.type == CREATE_TOKEN)
+    return prsr_parse_create_expression();
+  return prsr_parse_equation();
+}
+
 //// END PARSE EXPRESSION
 
 ExpressionList *prsr_parse_arr_initializations_values() {
@@ -315,7 +367,7 @@ ExpressionList *prsr_parse_arr_initializations_values() {
   {
     while(True) 
     {
-      Expression *expr = prsr_parse_expression();
+      Expression *expr = prsr_parse_general_expression();
       expr_list_append(init_values, expr);
       if (lookhaed.type != COMMA_TOKEN)
         break;
@@ -335,20 +387,38 @@ Type *prsr_parse_type(Token start_type) {
   else
     type = type_create_struct_type(idf_create_identifier_from_token(start_type));
 
-  FileInfo file_info = type->file_info;
-  // for the moment we do not support multi dimensional array
+  // NOTE: for the moment we do not support multi dimensional array
+  // NOTE: for the moment we do no support array of pointers
   if (lookhaed.type == ARR_TOKEN) {
-    file_info = file_info_merge(file_info, lookhaed.file_info);
     prsr_match(ARR_TOKEN);
-    file_info = file_info_merge(file_info, lookhaed.file_info);
     prsr_match(OPEN_SQUARE_TOKEN);
     int size = lxr_get_integer_value_of_integer_token(lookhaed);
-    file_info = file_info_merge(file_info, lookhaed.file_info);
     prsr_match(INTEGER_TOKEN);
-    file_info = file_info_merge(file_info, lookhaed.file_info);
-    prsr_match(CLOSE_SQUARE_TOKEN);
-    type = type_create_array_type(size, type, file_info);
+    Token close_square_token = prsr_match(CLOSE_SQUARE_TOKEN);
+    type = type_create_array_type(
+      size, 
+      type, 
+      file_info_merge(type->file_info, close_square_token.file_info));
+  } else if (lookhaed.type == PTR_TOKEN) {
+    Token ptr_token = prsr_match(PTR_TOKEN);
+    type = type_create_pointer_type(type, file_info_merge(type->file_info, ptr_token.file_info));
   }
+  return type;
+}
+
+Type *prsr_parse_non_array_type() {
+  PRSR_CALL_STACK();
+
+  Token start_type = prsr_match(lookhaed.type);
+  Type *type = NULL;
+
+  if (start_type.type == INT_TYPE_TOKEN)
+    type = type_create_int_type(start_type.file_info);
+  else if (start_type.type == STRING_TYPE_TOKEN)
+    type = type_create_string_type(start_type.file_info);
+  else if (start_type.type == IDENTIFIER_TOKEN)
+    type = type_create_struct_type(idf_create_identifier_from_token(start_type));
+  // NOTE: we do not support ptr to ptr for the moment
 
   return type;
 }
@@ -361,7 +431,7 @@ Statement *prsr_parse_assignment(Token start_deref)
   PRSR_CALL_STACK();
   ObjectDerefList *derefs = prsr_parse_deref_list(start_deref);
   prsr_match(EQUAL_TOKEN);
-  Expression *expression = prsr_parse_equation();
+  Expression *expression = prsr_parse_general_expression();
   AssignableElement *assgnbl = assgnbl_create(derefs);
   return stmnt_create_assignment(
     assgnbl, 
@@ -380,13 +450,14 @@ Statement *prsr_parse_declaration(Token start_type) {
   ExpressionList *init_expr = NULL;
   if (lookhaed.type == EQUAL_TOKEN) {
     prsr_match(EQUAL_TOKEN);
-    if (lookhaed.type == OPEN_SQUARE_TOKEN){
+    if (lookhaed.type == OPEN_SQUARE_TOKEN) {
       prsr_match(OPEN_SQUARE_TOKEN);
       init_expr = prsr_parse_arr_initializations_values();
       prsr_match(CLOSE_SQUARE_TOKEN);
-    } else {
+    } 
+    else {
       init_expr = expr_list_create_empty();
-      expr_list_append(init_expr, prsr_parse_expression());
+      expr_list_append(init_expr, prsr_parse_general_expression());
     }
     // TODO: add struct initialization using { val1, val2, ... val2 }
   }

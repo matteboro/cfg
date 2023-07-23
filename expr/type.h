@@ -26,9 +26,9 @@ obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {              \
   return data->obj_name;                                                  \
 } 
 
-#define TYPE_VERBOSE_PRINT_SWITCH 1
-#define TYPE_PRINT_SIZE_SWITCH 1
-#define TYPE_PRINT_STRUCT_DECL_SWITCH 1
+#define TYPE_VERBOSE_PRINT_SWITCH 0
+#define TYPE_PRINT_SIZE_SWITCH 0
+#define TYPE_PRINT_STRUCT_DECL_SWITCH 0
 
 // FORWARD DECLARATION
 
@@ -48,6 +48,7 @@ typedef enum {
   STRING_TYPE,
   ARR_TYPE,
   STRUCT_TYPE,
+  PTR_TYPE,
 } TypeType;
 
 typedef struct {
@@ -61,6 +62,10 @@ typedef struct {
   int size;
   Type *type;
 } ArrayTypeData;
+
+typedef struct {
+  Type *type;
+} PointerTypeData;
 
 typedef struct {
   Identifier *name;
@@ -83,7 +88,6 @@ ByteSize type_get_size(Type *type) {
 
 TYPE_GETTER(struct, Identifier, name, StructTypeData, STRUCT_TYPE)
 TYPE_GETTER(struct, StructDeclaration, struct_decl, StructTypeData, STRUCT_TYPE)
-
 
 TYPE_GETTER(array, Type, type, ArrayTypeData, ARR_TYPE)
 TYPE_NON_PTR_GETTER(array, int, size, ArrayTypeData, ARR_TYPE)
@@ -131,6 +135,12 @@ Type *type_create_array_type(int size, Type *type, FileInfo file_info) {
   return type_create(ARR_TYPE, data, file_info, type->size * size);
 }
 
+Type *type_create_pointer_type(Type *type, FileInfo file_info) {
+  typed_data(PointerTypeData);
+  data->type = type;
+  return type_create(PTR_TYPE, data, file_info, 8);
+}
+
 // PRINT
 
 #define TYPE_COLOR green
@@ -143,6 +153,12 @@ void type_print_int_type(FILE *file) {
 
 void type_print_string_type(FILE *file) {
   fprintf(file, "string");
+}
+
+void type_print_pointer_type(Type *type, FILE *file) {
+  casted_data(PointerTypeData, type);
+  type_print(data->type, file);
+  fprintf(file, " ptr");
 }
 
 void type_print_struct_type(Type *type, FILE *file) {
@@ -175,6 +191,7 @@ void type_print(Type *type, FILE *file) {
     case STRING_TYPE: type_print_string_type(file); break;
     case STRUCT_TYPE: type_print_struct_type(type, file); break;
     case ARR_TYPE:    type_print_array_type(type, file); break;
+    case PTR_TYPE:    type_print_pointer_type(type, file); break;
     default: TYPE_ERROR();
   }
 #if TYPE_PRINT_SIZE_SWITCH
@@ -195,6 +212,9 @@ void type_print_verbose(Type *type, FILE* file) {
   else                                         
     fprintf(file, "?");                        
   fprintf(file, "]");                          
+#else
+  (void) type;
+  (void) file;
 #endif
 }
 
@@ -204,15 +224,18 @@ void type_dealloc(Type *type);
 TYPE_DEALLOC(int, IntTypeData, {})
 TYPE_DEALLOC(string, StringTypeData, {})
 TYPE_DEALLOC(struct, StructTypeData, {idf_dealloc_identifier(data->name);})
-TYPE_DEALLOC(array, ArrayTypeData, {type_dealloc(data->type);});
+TYPE_DEALLOC(array, ArrayTypeData, {type_dealloc(data->type);})
+TYPE_DEALLOC(pointer, PointerTypeData, {type_dealloc(data->type);})
+
 void type_dealloc(Type *type) {
   if (type == NULL)
     return;
   switch (type->type) {
-    case INT_TYPE: type_dealloc_int_type(type); break;
+    case INT_TYPE:    type_dealloc_int_type(type); break;
     case STRING_TYPE: type_dealloc_string_type(type); break;
     case STRUCT_TYPE: type_dealloc_struct_type(type); break;
-    case ARR_TYPE: type_dealloc_array_type(type); break;
+    case ARR_TYPE:    type_dealloc_array_type(type); break;
+    case PTR_TYPE:    type_dealloc_pointer_type(type); break;
     default: TYPE_ERROR();
   }
   free(type);
@@ -248,6 +271,13 @@ void *type_copy_array_type(Type *type) {
   return data_copy;
 }
 
+void *type_copy_pointer_type(Type *type) {
+  casted_data(PointerTypeData, type);
+  PointerTypeData *data_copy = (PointerTypeData *) malloc(sizeof(PointerTypeData));
+  data_copy->type = type_copy(data->type);
+  return data_copy;
+}
+
 Type *type_copy(Type *type) {
   if (type == NULL)
     return NULL;
@@ -259,6 +289,7 @@ Type *type_copy(Type *type) {
     case STRING_TYPE:   data = type_copy_string_type(type);  break;
     case STRUCT_TYPE:   data = type_copy_struct_type(type);  break;
     case ARR_TYPE:      data = type_copy_array_type(type);   break;
+    case PTR_TYPE:      data = type_copy_pointer_type(type);   break;
     default: TYPE_ERROR();
   }
   type_copy->data = data;
@@ -269,8 +300,8 @@ Type *type_copy(Type *type) {
 
 // UTILITY
 
-// NOTE: this function is needed when the type is an array, 
-// it returns the type of the values in the array.
+// NOTE: this function is needed when the type is an array or ptr, 
+// it returns the type of the values in the array (por tr).
 // it also works for multidemnsional array if in the future 
 // will be added
 Type *type_extract_ultimate_type(Type *type) {
@@ -365,4 +396,8 @@ void type_struct_set_struct_decl(Type *type, StructDeclaration *struct_decl) {
 
 bool type_is_struct(Type *type) {
   return type_is_of_type(type, STRUCT_TYPE);
+}
+
+bool type_is_array(Type *type) {
+  return type_is_of_type(type, ARR_TYPE);
 }

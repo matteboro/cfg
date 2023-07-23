@@ -11,6 +11,7 @@ typedef enum {
   BINARY_EXPRESSION_EXP_TYPE,
   UNARY_EXPRESSION_EXP_TYPE,
   OPERAND_EXP_TYPE,
+  CREATE_EXP_TYPE,
 } ExpressionType;
 
 typedef void EnclosedExpression;
@@ -28,6 +29,7 @@ void expr_set_real_type(Expression *expression, Type *real_type) {
 
 void expr_dealloc_expression(Expression *expression);
 void expr_print_expression(Expression *expression, FILE *file);
+Expression *expr_create_expression(ExpressionType type, void *enclosed_expression, FileInfo file_info);
 
 LIST(expr, Expression, expr_dealloc_expression, expr_print_expression)
 DEFAULT_LIST_MERGED_FILE_INFO(expr, Expression)

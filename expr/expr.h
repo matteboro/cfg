@@ -114,6 +114,47 @@ EXPR_NON_PTR_GETTER(binary, OperationType, operation, BinaryExpression, BINARY_E
 EXPR_SET_GET(unary, Expression, operand, UnaryExpression, UNARY_EXPRESSION_EXP_TYPE)
 EXPR_NON_PTR_GETTER(unary, OperationType, operation, UnaryExpression, UNARY_EXPRESSION_EXP_TYPE)
 
+
+// CREATE EXPRESSION
+
+typedef struct {
+  Type *type;
+  Expression *size;
+} CreateExpression;
+
+Expression *expr_create_create_expression(Type *type, Expression *size, FileInfo file_info);
+void expr_print_create_expression(CreateExpression *data, FILE* file);
+void expr_dealloc_create_expression(CreateExpression *data);
+
+Expression *expr_create_create_expression(Type *type, Expression *size, FileInfo file_info) {
+  assert(size > 0);
+  assert(!type_is_array(type));
+  typed_data(CreateExpression);
+  assert(data != NULL);
+  data->type = type;
+  data->size = size;
+  return expr_create_expression(CREATE_EXP_TYPE, data, file_info);
+}
+
+void expr_print_create_expression(CreateExpression *data, FILE* file) {
+  assert(data != NULL);
+  fprintf(file, "create ");
+  type_print(data->type, file);
+  if (data->size != NULL) {
+    fprintf(file, "[");
+    expr_print_expression(data->size, file);
+    fprintf(file, "]");
+  }
+}
+
+void expr_dealloc_create_expression(CreateExpression *data) {
+  assert(data != NULL);
+  type_dealloc(data->type);
+  if (data->size != NULL)
+    expr_dealloc_expression(data->size);
+  free(data);
+}
+
 // CREATE
 
 Expression *expr_create_expression(ExpressionType type, void *enclosed_expression, FileInfo file_info) {
@@ -234,14 +275,17 @@ void expr_dealloc_expression(Expression *expression) {
   if (expression == NULL) 
     return;
   switch (expression->type) {
-  case OPERAND_EXP_TYPE:
+  case OPERAND_EXP_TYPE: {
     expr_dealloc_operand_expression((OperandExpression *) (expression->enclosed_expression));
-  break;
+  } break;
   case BINARY_EXPRESSION_EXP_TYPE: {
     expr_dealloc_binary_expression((BinaryExpression *) (expression->enclosed_expression));
   } break;
   case UNARY_EXPRESSION_EXP_TYPE: {
     expr_dealloc_unary_expression((UnaryExpression *) (expression->enclosed_expression));
+  } break;
+  case CREATE_EXP_TYPE: {
+    expr_dealloc_create_expression((CreateExpression *) (expression->enclosed_expression));
   } break;
   default:
     EXPR_ERROR();
@@ -297,14 +341,13 @@ void expr_print_expression(Expression *expression, FILE *file) {
     return;
   switch (expression->type) {
   case OPERAND_EXP_TYPE:
-    expr_print_operand_expression((OperandExpression *) expression->enclosed_expression, file);
-  break;
+    expr_print_operand_expression((OperandExpression *) expression->enclosed_expression, file); break;
   case BINARY_EXPRESSION_EXP_TYPE:
-    expr_print_binary_expression((BinaryExpression *) expression->enclosed_expression, file);
-  break;
+    expr_print_binary_expression((BinaryExpression *) expression->enclosed_expression, file); break;
   case UNARY_EXPRESSION_EXP_TYPE:
-    expr_print_unary_expression((UnaryExpression *) expression->enclosed_expression, file);
-  break;
+    expr_print_unary_expression((UnaryExpression *) expression->enclosed_expression, file); break;
+  case CREATE_EXP_TYPE: 
+    expr_print_create_expression((CreateExpression *) (expression->enclosed_expression), file); break;
   default:
     EXPR_ERROR();
   }

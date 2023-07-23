@@ -55,6 +55,8 @@ typedef enum {
   STRING_TYPE_TOKEN,
   DATA_TOKEN,
   RETURN_TOKEN,
+  PTR_TOKEN,
+  CREATE_TOKEN,
 
   COMMENT_TOKEN,
   END_TOKEN,
@@ -102,6 +104,8 @@ static const char * const token_to_name[] = {
   [DOUBLE_COLON_TOKEN] = "DOUBLE_COLON",
   [DATA_TOKEN] = "DATA",
   [RETURN_TOKEN] = "RETURN",
+  [PTR_TOKEN] = "  PTR",
+  [CREATE_TOKEN] = "  CREATE",
   [COMMENT_TOKEN] = "COMMENT",
   [END_TOKEN] = "END_TOKEN",
   [NULL_TOKEN] = "NULL_TOKEN"
@@ -138,6 +142,8 @@ static const char * const keyword_token_to_string[] = {
   [STRING_TYPE_TOKEN] = "string",
   [DATA_TOKEN] = "data",
   [RETURN_TOKEN] = "return",
+  [PTR_TOKEN] = "ptr",
+  [CREATE_TOKEN] = "create",
 };
 
 #define token_to_char_size sizeof(token_to_char)

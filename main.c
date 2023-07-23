@@ -549,6 +549,44 @@ IDEA:
   dereference, I indeed could add the type of the dereferenced object, since I am checking for its existence 
   and correctness.
 
+Pointers:
+
+  Before I start implementing the CFG and the interpreter I want to implement pointers; the syntax I want to
+  use is the following:
+    - declaration:
+        int ptr :: p;
+    - declaration with initialization of array:
+        int ptr :: p = create int[n];
+    - declaration with initialization of single element:
+        int ptr :: p = create int;
+    - assignment:
+        p = create int[n+1];
+    - single element assignment
+        p = create int;
+    - array deref:
+        p[index] = ...;
+    - single element deref: 
+        [p] = ...;
+  
+  When a pointer is declared and not initialize its value is Null. When a pointer is assigned, if its value is
+  not Null, the previous value is automtically deallocated (i.e. there is no statement to dealloc the memory
+  regione pointed to by a pointer).
+  Can create become an expression?
+    It would make the implementation of pointers easier and also more elegant. First idea is to create a special type
+    of expression, the CreateExpression. The data contained in a create expression is: the type of the data 
+    created (has to match the ultimate type of the variable being assigned), the size of the array creation (1 
+    in case of single element).
+
+  How to parse a create expression?
+    parse_general_expression():
+      if (CREATE_TOKEN)
+        parse_create_expression()
+      else
+        parse_expression()
+  
+  Now I can parse ptr declaration and create expression. Next goal is to implement the the new type of dereference
+  introduced with pointers, the single element pointer dereference.
+
 CFG:
   We have to start to think about how to implement the CFG, in order first to be able to interpret 
   it in a concrete manner, and secondly in an abstract way. 
