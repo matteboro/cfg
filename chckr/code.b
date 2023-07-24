@@ -1,8 +1,8 @@
 data struct1 {
   int arr[10]:: att1,
-  string :: att2
+  string :: att2,
+  int ptr :: p
 }
-# yo
 
 data struct2 {
   struct1 :: s1,
@@ -114,7 +114,30 @@ string arr[5] :: s_arr;
 s_arr[0] = "hello";
 
 int ptr :: p = create int[10 * 10];
+p = create int;
 
-# int ptr :: p = create int[t];
+struct1 :: s_1;
+s_1.p = create int; 
+s_1.[p] = 10;
+struct3 :: s_3;
 
-# f3.s2.[p].t[20] = 10;
+# type of index expression is not integer
+s_1.p["hello"] = 10;
+
+# type of index expression is not valid
+s_1.p[10 * "hello"] = 10;
+
+# should pr should not be array deref
+# s_3.s2_arr.val = 10;
+
+# should not be a array deref
+# s_1.att2[10] = "hello";
+
+# should not be single element deref
+# s_1.[att1] = "hello";
+
+# does no tlink to attribute
+# s_1.f = 10;
+
+# var not exists
+# s_2 = 10;

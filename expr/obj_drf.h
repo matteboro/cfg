@@ -48,6 +48,12 @@ Expression *obj_drf_array_get_index(ObjectDeref *obj_drf) {
   return data->index;
 }
 
+void obj_drf_array_set_index(ObjectDeref *obj_drf, Expression *index) {
+  assert(obj_drf->type == ARR_DEREF);
+  casted_data(ArrayTypeObjectDerefData, obj_drf);
+  data->index = index;
+}
+
 // CREATE
 
 ObjectDeref *obj_drf_create(ObjectDerefType type, Identifier* name, void *data, FileInfo file_info) {
@@ -177,4 +183,23 @@ void obj_drf_list_print(ObjectDerefList *list, FILE *file) {
     fprintf(file, "."); 
     obj_drf_list_print(list->next, file); 
   } 
+}
+
+// UTILITY
+
+bool obj_drf_is_of_type(ObjectDeref* obj_drf, ObjectDerefType ob_t) {
+  assert(obj_drf != NULL);
+  return obj_drf->type == ob_t;
+}
+
+bool obj_drf_is_array_deref(ObjectDeref* obj_drf) {
+  return obj_drf_is_of_type(obj_drf, ARR_DEREF);
+}
+
+bool obj_drf_is_name_deref(ObjectDeref* obj_drf) {
+  return obj_drf_is_of_type(obj_drf, STRUCT_BASIC_DEREF);
+}
+
+bool obj_drf_is_single_element_deref(ObjectDeref* obj_drf) {
+  return obj_drf_is_of_type(obj_drf, SINGLE_ELEMENT_PTR_DRF);
 }

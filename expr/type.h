@@ -25,9 +25,9 @@ obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {              \
   return data->obj_name;                                                  \
 } 
 
-#define TYPE_VERBOSE_PRINT_SWITCH     1
-#define TYPE_PRINT_SIZE_SWITCH        1
-#define TYPE_PRINT_STRUCT_DECL_SWITCH 1
+#define TYPE_VERBOSE_PRINT_SWITCH     0
+#define TYPE_PRINT_SIZE_SWITCH        0
+#define TYPE_PRINT_STRUCT_DECL_SWITCH 0
 
 // FORWARD DECLARATION
 
@@ -362,6 +362,7 @@ bool type_is_string(Type *type) {
 //       Does not work for pointer to pointer or multi-dimensional
 //       arrays
 Type *type_extract_ultimate_type(Type *type) {
+  assert(type != NULL);
   if (type_is_array(type)) {
     return type_array_get_type(type); 
   } else if (type_is_pointer(type)) {
@@ -372,8 +373,11 @@ Type *type_extract_ultimate_type(Type *type) {
 
 // TODO: have list of basic types and iterate through them
 bool type_is_basic(Type *type) {
+  assert(type != NULL);
+  if (type_is_pointer(type))
+    return True;
   type = type_extract_ultimate_type(type);
-  if (type->type == INT_TYPE || type->type == STRING_TYPE)
+  if (type_is_integer(type) || type_is_string(type))
     return True;
   return False;
 }

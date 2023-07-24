@@ -7,6 +7,8 @@
 #include "../lxr/lxr.h"
 #include "../utility/list.h"
 
+#define not !
+
 // IDENTIFIER
 
 typedef struct {

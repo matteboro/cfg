@@ -469,14 +469,17 @@ Statement *prsr_dispatch_id_started_statement() {
   PRSR_CALL_STACK();
   Statement *statement = NULL;
 
-  Token maybe_type_or_id = lookhaed;
-  prsr_match(lookhaed.type);
+  Token maybe_type_or_id = prsr_match(lookhaed.type);
 
-  if (lookhaed.type == EQUAL_TOKEN || 
+  if (maybe_type_or_id.type == OPEN_SQUARE_TOKEN) {
+    statement = prsr_parse_assignment(maybe_type_or_id);
+  }
+  else if (lookhaed.type == EQUAL_TOKEN || 
       lookhaed.type == OPEN_SQUARE_TOKEN ||
       lookhaed.type == POINT_TOKEN) {
     statement = prsr_parse_assignment(maybe_type_or_id);
-  } else if (lookhaed.type == OPEN_PAREN_TOKEN) {
+  } 
+  else if (lookhaed.type == OPEN_PAREN_TOKEN) {
     statement = stmnt_create_funccall(
       prsr_parse_funccall(maybe_type_or_id), 
       file_info_merge(maybe_type_or_id.file_info, lookhaed.file_info));
