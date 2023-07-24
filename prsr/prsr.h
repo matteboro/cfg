@@ -103,7 +103,8 @@ Token __prsr_match(TokenType token_type, const char *caller)
 }
 
 #define prsr_match(token_type)  __prsr_match(token_type, __FUNCTION__)
-
+#define prsr_match_any()  __prsr_match(lookhaed.type, __FUNCTION__)
+#define prsr_next_is(token_type) lookhaed.type == token_type 
 //// PARSE EXPRESSION
 
 FunctionCall *prsr_parse_funccall(Token func_name)
@@ -159,7 +160,6 @@ ObjectDerefList *prsr_parse_deref_list(Token start_deref) {
             idf_create_identifier_from_token(first_token), 
             index_expr, 
             file_info_merge(file_info, close_square_token.file_info));
-        
       } 
       // parse normal deref
       else {
@@ -389,7 +389,7 @@ Type *prsr_parse_type(Token start_type) {
 
   // NOTE: for the moment we do not support multi dimensional array
   // NOTE: for the moment we do no support array of pointers
-  if (lookhaed.type == ARR_TOKEN) {
+  if (prsr_next_is(ARR_TOKEN)) {
     prsr_match(ARR_TOKEN);
     prsr_match(OPEN_SQUARE_TOKEN);
     int size = lxr_get_integer_value_of_integer_token(lookhaed);
@@ -399,9 +399,15 @@ Type *prsr_parse_type(Token start_type) {
       size, 
       type, 
       file_info_merge(type->file_info, close_square_token.file_info));
-  } else if (lookhaed.type == PTR_TOKEN) {
+  } 
+  else if (prsr_next_is(PTR_TOKEN) || prsr_next_is(STRONG_TOKEN)) {
+    bool is_strong = False;
+    if (prsr_next_is(STRONG_TOKEN)) {
+      prsr_match(STRONG_TOKEN);
+      is_strong = True;
+    }
     Token ptr_token = prsr_match(PTR_TOKEN);
-    type = type_create_pointer_type(type, file_info_merge(type->file_info, ptr_token.file_info));
+    type = type_create_pointer_type(type, is_strong, file_info_merge(type->file_info, ptr_token.file_info));
   }
   return type;
 }
@@ -439,11 +445,20 @@ Statement *prsr_parse_assignment(Token start_deref)
     file_info_merge(assgnbl->file_info, lookhaed.file_info));
 }
 
-Statement *prsr_parse_declaration(Token start_type) {
+Statement *prsr_parse_declaration(Token start_token) {
   PRSR_CALL_STACK();
-  Type *type = prsr_parse_type(start_type);
-  prsr_match(DOUBLE_COLON_TOKEN);
 
+  bool is_global = False;
+  Token first_token = start_token;
+
+  if (start_token.type == GLOBAL_TOKEN) {
+    is_global = True;
+    start_token = prsr_match_any();
+  }
+
+  Type *type = prsr_parse_type(start_token);
+
+  prsr_match(DOUBLE_COLON_TOKEN);
   Token name_token = lookhaed;
   prsr_match(IDENTIFIER_TOKEN);
 
@@ -461,30 +476,33 @@ Statement *prsr_parse_declaration(Token start_type) {
     }
     // TODO: add struct initialization using { val1, val2, ... val2 }
   }
+
   NameTypeBinding *nt_bind = nt_bind_create(idf_create_identifier_from_token(name_token), type);
-  return stmnt_create_declaration(nt_bind, init_expr, file_info_merge(nt_bind->file_info, lookhaed.file_info));
+  FileInfo file_info = file_info_merge(first_token.file_info, lookhaed.file_info);
+  return stmnt_create_declaration(nt_bind, init_expr, is_global, file_info);
 }
 
 Statement *prsr_dispatch_id_started_statement() {
   PRSR_CALL_STACK();
   Statement *statement = NULL;
 
-  Token maybe_type_or_id = prsr_match(lookhaed.type);
+  Token start_token = prsr_match(lookhaed.type);
 
-  if (maybe_type_or_id.type == OPEN_SQUARE_TOKEN) {
-    statement = prsr_parse_assignment(maybe_type_or_id);
+  if (start_token.type == OPEN_SQUARE_TOKEN) {
+    statement = prsr_parse_assignment(start_token);
   }
   else if (lookhaed.type == EQUAL_TOKEN || 
-      lookhaed.type == OPEN_SQUARE_TOKEN ||
-      lookhaed.type == POINT_TOKEN) {
-    statement = prsr_parse_assignment(maybe_type_or_id);
+          lookhaed.type == OPEN_SQUARE_TOKEN ||
+          lookhaed.type == POINT_TOKEN) {
+    statement = prsr_parse_assignment(start_token);
   } 
   else if (lookhaed.type == OPEN_PAREN_TOKEN) {
     statement = stmnt_create_funccall(
-      prsr_parse_funccall(maybe_type_or_id), 
-      file_info_merge(maybe_type_or_id.file_info, lookhaed.file_info));
-  } else {
-    statement = prsr_parse_declaration(maybe_type_or_id);
+      prsr_parse_funccall(start_token), 
+      file_info_merge(start_token.file_info, lookhaed.file_info));
+  } 
+  else {
+    statement = prsr_parse_declaration(start_token);
   }
   return statement;
 }

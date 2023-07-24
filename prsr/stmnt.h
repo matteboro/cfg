@@ -122,22 +122,30 @@ void stmnt_dealloc_assignment(Statement *stmnt) {
 struct DeclarationPayload_s;
 typedef struct DeclarationPayload_s DeclarationPayload;
 
-Statement *stmnt_create_declaration(NameTypeBinding *, ExpressionList *, FileInfo);
+Statement *stmnt_create_declaration(NameTypeBinding *, ExpressionList *, bool, FileInfo);
 void stmnt_print_declaration_ident(Statement *, FILE *, size_t);
 void stmnt_dealloc_declaration(Statement *);
 
 struct DeclarationPayload_s {
   NameTypeBinding *nt_bind;
   ExpressionList *init_values;
+  bool is_global;
 };
 
-STMNT_GETTER(declaration, NameTypeBinding, nt_bind, DeclarationPayload, DECLARATION_STMNT)
-STMNT_GETTER(declaration, ExpressionList, init_values, DeclarationPayload, DECLARATION_STMNT)
+STMNT_SET_GET(declaration, NameTypeBinding, nt_bind, DeclarationPayload, DECLARATION_STMNT)
+STMNT_SET_GET(declaration, ExpressionList, init_values, DeclarationPayload, DECLARATION_STMNT)
 
-Statement *stmnt_create_declaration(NameTypeBinding *nt_bind, ExpressionList *init_values, FileInfo file_info) {
+bool stmnt_declaration_is_global(Statement *stmnt) {
+  assert(stmnt->type == DECLARATION_STMNT);
+  STMNT_CAST_PAYLOAD(DeclarationPayload, stmnt);
+  return payload->is_global;
+}
+
+Statement *stmnt_create_declaration(NameTypeBinding *nt_bind, ExpressionList *init_values, bool is_global, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(DeclarationPayload);
   payload->nt_bind = nt_bind;
   payload->init_values = init_values;
+  payload->is_global = is_global;
   return stmnt_create(payload, DECLARATION_STMNT, file_info);
 }
 
@@ -145,6 +153,12 @@ void stmnt_print_declaration_ident(Statement *stmnt, FILE *file, size_t ident) {
   STMNT_CAST_PAYLOAD(DeclarationPayload, stmnt);
 
   print_spaces(ident, file);
+
+  TYPE_COLOR(file);
+  if(payload->is_global) 
+    fprintf(file, "global ");
+  reset(file);
+
   nt_bind_print(payload->nt_bind, file);
   if (payload->init_values != NULL) {
     fprintf(file, " = ");

@@ -592,6 +592,12 @@ Pointers:
     - ultimate type should consider pointers;
     - object deref should consider pointers deref (single element ot array)
     
+Type Annotations:
+  
+  I want two annotations for the moment: 
+    - strong: for pointers, it means the pointer should never de deallocated;
+    - global: for any type, it means it should be visible anywhere in the program, vanbe used only in the global
+              space of th eprogram;
 
 CFG:
   We have to start to think about how to implement the CFG, in order first to be able to interpret 

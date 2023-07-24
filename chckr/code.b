@@ -113,19 +113,23 @@ s = "hello" | ", world!";
 string arr[5] :: s_arr;
 s_arr[0] = "hello";
 
-int ptr :: p = create int[10 * 10];
+int strong ptr :: p = create int[10 * 10];
 p = create int;
 
-struct1 :: s_1;
-s_1.p = create int; 
-s_1.[p] = 10;
-struct3 :: s_3;
+global int :: global_i = 10;
+
+
+
+# object deref errors tests
+
+# struct1 :: s_1;
+# struct3 :: s_3;
 
 # type of index expression is not integer
-s_1.p["hello"] = 10;
+# s_1.p["hello"] = 10;
 
 # type of index expression is not valid
-s_1.p[10 * "hello"] = 10;
+# s_1.p[10 * "hello"] = 10;
 
 # should pr should not be array deref
 # s_3.s2_arr.val = 10;

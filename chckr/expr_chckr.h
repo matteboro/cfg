@@ -138,7 +138,8 @@ Type *expr_chckr_get_returned_type(Expression *expr, ASTCheckingAnalysisState *a
     }
     // I contruct the Type to be returned
     Type *ptr_type = expr_create_expression_get_type(expr);
-    ptr_type = type_create_pointer_type(type_copy(ptr_type), file_info_create_null());
+    // TODO: think why we say False to is_strong here
+    ptr_type = type_create_pointer_type(type_copy(ptr_type), False, file_info_create_null());
     expr_set_real_type(expr, type_copy(ptr_type));
     return ptr_type;
   }

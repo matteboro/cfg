@@ -63,6 +63,7 @@ typedef struct {
 
 typedef struct {
   Type *type;
+  bool is_strong;
 } PointerTypeData;
 
 typedef struct {
@@ -135,9 +136,10 @@ Type *type_create_array_type(int size, Type *type, FileInfo file_info) {
   return type_create(ARR_TYPE, data, file_info, type->size * size);
 }
 
-Type *type_create_pointer_type(Type *type, FileInfo file_info) {
+Type *type_create_pointer_type(Type *type, bool is_strong, FileInfo file_info) {
   typed_data(PointerTypeData);
   data->type = type;
+  data->is_strong = is_strong;
   return type_create(PTR_TYPE, data, file_info, 8);
 }
 
@@ -159,6 +161,8 @@ void type_print_pointer_type(Type *type, FILE *file) {
   casted_data(PointerTypeData, type);
   type_print(data->type, file);
   TYPE_COLOR(file);
+  if (data->is_strong) 
+    fprintf(file, " strong");
   fprintf(file, " ptr");
 }
 
@@ -302,20 +306,18 @@ Type *type_copy(Type *type) {
 // UTILITY
 
 bool type_is_of_type(Type *type, TypeType tt) {
-  if (type)
-    return type->type == tt;
-  return False;
+  assert(type != NULL);
+  return type->type == tt;
 }
 
-
 bool type_size_is_known(Type *type) {
-  if (type == NULL) 
-    return False;
+  assert(type != NULL);
   return type->size != NullByteSize;
 }
 
 void type_set_ultimate_type_size(Type *type, ByteSize size) {
-  if (type == NULL || size == NullByteSize)
+  assert(type != NULL);
+  if (size == NullByteSize)
     return;
 
   if (type->type == ARR_TYPE) {
@@ -330,12 +332,6 @@ void type_set_ultimate_type_size(Type *type, ByteSize size) {
   return;
 }
 
-void type_struct_set_struct_decl(Type *type, StructDeclaration *struct_decl) {
-  assert(type->type == STRUCT_TYPE);
-  casted_data(StructTypeData, type);
-  data->struct_decl = struct_decl;
-  return;
-}
 
 bool type_is_struct(Type *type) {
   return type_is_of_type(type, STRUCT_TYPE);
@@ -356,6 +352,24 @@ bool type_is_integer(Type *type) {
 bool type_is_string(Type *type) {
   return type_is_of_type(type, STRING_TYPE);
 }
+
+bool type_pointer_is_strong(Type *type) {
+  assert(type_is_pointer(type));
+
+  casted_data(PointerTypeData, type);
+  return data->is_strong;
+}
+
+void type_struct_set_struct_decl(Type *type, StructDeclaration *struct_decl) {
+  assert(type != NULL);
+  assert(struct_decl != NULL);
+  assert(type_is_struct(type));
+
+  casted_data(StructTypeData, type);
+  data->struct_decl = struct_decl;
+  return;
+}
+
 
 // NOTE: this function is needed when the type is an array or ptr, 
 //       it returns the type of the values in the array (por tr).
@@ -392,8 +406,9 @@ Type *type_create_basic_type(TypeType t_type) {
 }
 
 bool type_equal(Type *type1, Type *type2) {
-  if (type1 == NULL || type2 == NULL)
-    return False;
+  assert(type1 != NULL);
+  assert(type2 != NULL);
+
   if (type1->type == type2->type) {
     if(type_is_basic(type1))
       return True;
