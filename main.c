@@ -687,15 +687,16 @@ CFG:
 
   CFGDataType:
 
-    Address uint64_t;
+    HeapMemoryAddress uint64_t;
     ByteSize uint64_t;
     MemTableIndex uint64_t;
     MemoryOffset uint64_t;
 
     MemoryPiece = {
-      Address address;
+      HeapMemoryAddress heap_address;
       ByteSize size;
     }
+    Address MemoryPiece *;
 
     VariableIndex uint64_t;
     Variable = {
@@ -722,6 +723,10 @@ CFG:
       void CreateVariable(Variable);
       void DestroyVariable(Variable);
     }
+
+Every object ever created will be in the MemoryTable. There are two way to create objects:
+first via declaration, second via create statement. A pointer is a valid MemoryTableIndex or
+None (the pointer that points to nothing). 
 
 ============================================================================================
 

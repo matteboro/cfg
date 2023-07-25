@@ -14,6 +14,7 @@ struct StructDeclaration {
   AttributeList *attributes;
   FileInfo file_info;
   ByteSize size;
+  Type *real_type;
 };
 
 ByteSize strct_decl_get_size(StructDeclaration *decl) {
@@ -59,6 +60,8 @@ StructDeclaration *strct_decl_create(Identifier *name, AttributeList *attributes
       size += attrb_get_size(attrb_it->node);
     }
   }
+  decl->real_type = type_create_struct_type(idf_copy_identifier(name));
+  type_struct_set_struct_decl(decl->real_type, decl);
   decl->size = size;
   return decl;
 }
@@ -68,6 +71,7 @@ void strct_decl_dealloc(StructDeclaration *decl) {
     return;
   idf_dealloc_identifier(decl->name);
   attrb_list_dealloc(decl->attributes);
+  type_dealloc(decl->real_type);
   free(decl);
 }
 
