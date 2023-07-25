@@ -22,7 +22,7 @@ Object *Object_Create(ObjectType type, ByteSize size, ObjectData *data, Type *re
   return obj;
 }
 
-// this function DO NOT TAKE possession of Type *real_type (you have to pass a copy)
+// this function DOES NOT TAKE possession of Type *real_type (you do not have to pass a copy)
 Object *Object_Create_From_Type(Type *real_type) {
   assert(real_type != NULL);
 

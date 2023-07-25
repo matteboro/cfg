@@ -18,6 +18,8 @@ MemTableIndex VMM_Get(VariableMemoryMapping map, Variable var);
 void VMM_Set(VariableMemoryMapping map, Variable var, MemTableIndex idx);
 void VMM_Clear(VariableMemoryMapping map, Variable var);
 
+bool VMM_Variable_Alive(VariableMemoryMapping map, Variable var);
+
 // IMPLEMENTATION
 
 VariableMemoryMapping VMM_Init(VariableIndex max_var_idx) {
@@ -51,10 +53,12 @@ MemTableIndex VMM_Get(VariableMemoryMapping map, Variable var) {
   return map.map[var.var_idx];
 }
 
+// this function does not check if the variable has already a value mapped to it,
+// the check should be done in the function that uses this
 void VMM_Set(VariableMemoryMapping map, Variable var, MemTableIndex idx) {
   VMM_ASSERT(map);
   assert(map.size > var.var_idx);
-  assert(idx != 0);
+  assert(idx != NullMemTableIndex);
 
   map.map[var.var_idx] = idx;
 }
@@ -63,5 +67,12 @@ void VMM_Clear(VariableMemoryMapping map, Variable var) {
   VMM_ASSERT(map);
   assert(map.size > var.var_idx);
 
-  map.map[var.var_idx] = 0;
+  map.map[var.var_idx] = NullMemTableIndex;
+}
+
+bool VMM_Variable_Alive(VariableMemoryMapping map, Variable var) {
+  VMM_ASSERT(map);
+  assert(map.size > var.var_idx);
+
+  return map.map[var.var_idx] != NullMemTableIndex;
 }

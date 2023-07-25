@@ -12,7 +12,7 @@ typedef struct {
 MemoryTable MT_Init();
 void MT_Close(MemoryTable);
 
-void MT_Insert(MemTableIndex, Object *);
-void MT_Remove(MemTableIndex);
+MemTableIndex MT_Insert(MemoryTable, Object *);
+void MT_Remove(MemoryTable, MemTableIndex);
 
 
