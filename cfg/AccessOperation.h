@@ -5,6 +5,7 @@
 // FORWARD DECLARATION
 typedef struct CFGOperand_i CFGOperand;
 void CFGOperand_Destroy(CFGOperand *cfg_op);
+void CFGOperand_Print(CFGOperand *cfg_op, FILE *file);
 
 // DEFINITION
 
@@ -57,4 +58,24 @@ void AccessOperation_Destroy(AccessOperation *access_op) {
   }
   free(access_op);
   return;
+}
+
+// PRINT
+
+void AccessOperation_Print(AccessOperation *access_op, FILE *file) {
+  assert(access_op != NULL);
+
+  fprintf(file, "access ");
+  if (access_op->is_pointer_access)
+    fprintf(file, "ptr ");
+
+  fprintf(file, "< ");
+
+  Variable_Print(access_op->var, file);
+  if (access_op->op_idx != NULL) {
+    fprintf(file, ", ");
+    CFGOperand_Print(access_op->op_idx, file);
+  }
+
+  fprintf(file, " >");
 }

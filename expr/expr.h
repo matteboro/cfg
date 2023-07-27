@@ -72,7 +72,9 @@ typedef enum {
   NOT_UNARY_OPERATION,
   STR_LEN_UNARY_OPERATION,
   STR_CONCAT_OPERATION,
+  // define above
   COUNT_OPERATION,
+  NULL_OPERATION,
 } OperationType;
 
 static const char *operation_to_char[] = {
@@ -326,7 +328,8 @@ void expr_print_unary_expression(UnaryExpression *expression, FILE *file) {
     fprintf(file, "< ");
     expr_print_expression(expression->operand, file);
     fprintf(file, " >");
-  } else {
+  } 
+  else {
     fprintf(file, "(");
     fprintf(file, "%s ", operation_to_char[expression->operation]);
     expr_print_expression(expression->operand, file);
@@ -364,10 +367,20 @@ void expr_print_expression(Expression *expression, FILE *file) {
 
 // UTILITY
 
+bool expr_is_of_type(Expression *expr, ExpressionType type) {
+  assert(expr != NULL);
+  return expr->type == type;
+}
+
 bool expr_is_operand(Expression *expr) {
-  if (expr)
-    return expr->type == OPERAND_EXP_TYPE;
-  return False;
+  return expr_is_of_type(expr, OPERAND_EXP_TYPE);
+}
+
+bool expr_is_binary_expression(Expression *expr) {
+  return expr_is_of_type(expr, BINARY_EXPRESSION_EXP_TYPE);
+}
+bool expr_is_unary_expression(Expression *expr) {
+  return expr_is_of_type(expr, UNARY_EXPRESSION_EXP_TYPE);
 }
 
 #endif // end EXPR_HEADER

@@ -38,10 +38,27 @@ Literal *Literal_Create_String() {
   return __Literal_Create(STRING_LITERAL, Object_String_Create());
 }
 
+Literal *Literal_Create_Integer_Init(Integer integer) {
+  return __Literal_Create(INTEGER_LITERAL, Object_Integer_Create_Init(integer));
+}
+
+Literal *Literal_Create_String_Init(String string) {
+  return __Literal_Create(STRING_LITERAL, Object_String_Create_Init(string));
+}
+
 // DESTROY
 
 void Literal_Destroy(Literal *literal) {
   assert(literal != NULL);
+  
   Object_Destroy(literal->obj);
   free(literal);
+}
+
+// PRINT
+
+void Literal_Print(Literal *literal, FILE *file) {
+  assert(literal != NULL);
+  
+  Object_Print(literal->obj, file);
 }

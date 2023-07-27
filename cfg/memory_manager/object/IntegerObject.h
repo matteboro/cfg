@@ -10,6 +10,7 @@ typedef struct {
 } IntegerObjectData;
 
 Object *Object_Integer_Create();
+Object *Object_Integer_Create_Init(Integer integer);
 void Object_Integer_Destroy(Object *obj);
 
 // IMPLEMENTATIONS
@@ -18,6 +19,12 @@ Object *Object_Integer_Create() {
   typed_data(IntegerObjectData);
   Integer i = Integer_Create(0);
   data->integer = i;
+  return Object_Create(INTEGER_OBJ, INTEGER_SIZE, data, type_create_generic_int_type());
+}
+
+Object *Object_Integer_Create_Init(Integer integer) {
+  typed_data(IntegerObjectData);
+  data->integer = integer;
   return Object_Create(INTEGER_OBJ, INTEGER_SIZE, data, type_create_generic_int_type());
 }
 

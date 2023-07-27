@@ -43,4 +43,6 @@ bool Object_Is_Struct(Object *obj);
 bool Object_Is_Array(Object *obj);
 bool Object_Is_Pointer(Object *obj);
 
+void Object_Print(Object *obj, FILE *file);
+
 // IMPLEMENTATION

@@ -80,3 +80,26 @@ void CFGOperand_Destroy(CFGOperand *cfg_op) {
   }
   free(cfg_op);
 }
+
+// PRINT
+
+void __CFGOperand_Print_Literal(CFGOperand *cfg_op, FILE* file) {
+  casted_data(LiteralCFGOpernadData, cfg_op);
+  Literal_Print(data->literal, file);
+}
+
+void __CFGOperand_Print_AccessOperation(CFGOperand *cfg_op, FILE* file) {
+  casted_data(AccessOperationCFGOperandData, cfg_op);
+  AccessOperation_Print(data->access_op, file);
+}
+
+void CFGOperand_Print(CFGOperand *cfg_op, FILE* file) {
+  assert(cfg_op != NULL);
+
+  if (cfg_op->type == LITERAL_CFG_OP) {
+    __CFGOperand_Print_Literal(cfg_op, file);
+  } 
+  else if (cfg_op->type == ACCESS_OP_CFG_OP) {
+    __CFGOperand_Print_AccessOperation(cfg_op, file);
+  }
+}

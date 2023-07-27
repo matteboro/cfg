@@ -141,6 +141,12 @@ bool stmnt_declaration_is_global(Statement *stmnt) {
   return payload->is_global;
 }
 
+bool stmnt_declaration_has_init_values(Statement *stmnt) {
+  assert(stmnt->type == DECLARATION_STMNT);
+  STMNT_CAST_PAYLOAD(DeclarationPayload, stmnt);
+  return payload->init_values != NULL;
+}
+
 Statement *stmnt_create_declaration(NameTypeBinding *nt_bind, ExpressionList *init_values, bool is_global, FileInfo file_info) {
   STMNT_ALLOC_PAYLOAD(DeclarationPayload);
   payload->nt_bind = nt_bind;

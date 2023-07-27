@@ -92,3 +92,27 @@ bool Object_Is_Pointer(Object *obj) {
   return Object_Is_Of_Type(obj, POINTER_OBJ);
 }
 
+// PRINT
+
+void Object_Print(Object *obj, FILE *file) {
+  assert(obj != NULL);
+  
+  if(obj->type ==  INTEGER_OBJ) {
+    fprintf(file, "INTEGER_OBJ");
+  }
+  else if(obj->type == STRING_OBJ) {
+    fprintf(file, "STRING_OBJ");
+  }
+  else if(obj->type == STRUCT_OBJ) {
+    fprintf(file, "STRUCT_OBJ");
+  }
+  else if(obj->type == POINTER_OBJ) {
+    fprintf(file, "POINTER_OBJ");
+  }
+  else if(obj->type == ARRAY_OBJ) {
+    fprintf(file, "ARRAY_OBJ");
+  }
+  else {
+    UNREACHABLE();
+  }
+}

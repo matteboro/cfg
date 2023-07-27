@@ -20,6 +20,7 @@ typedef enum {
   STRING_OPERAND,
   FUNCCALL_OPERAND,
   OBJ_DEREF_OPERAND,
+  // define above
   COUNT_OPRND,
 } OperandType;
 
@@ -211,16 +212,25 @@ void oprnd_print(Operand *oprnd, FILE *file) {
 
 // UTILITY
 
+bool oprnd_is_of_type(Operand *oprnd, OperandType type) {
+  assert(oprnd != NULL);
+  return oprnd->type == type;
+}
+
 bool oprnd_is_integer(Operand * oprnd) {
-  if (oprnd)
-    return oprnd->type == INTEGER_OPERAND;
-  return False;
+  return oprnd_is_of_type(oprnd, INTEGER_OPERAND);
 }
 
 bool oprnd_is_string(Operand * oprnd) {
-  if (oprnd)
-    return oprnd->type == STRING_OPERAND;
-  return False;
+  return oprnd_is_of_type(oprnd, STRING_OPERAND);
+}
+
+bool oprnd_is_object_deref(Operand * oprnd) {
+  return oprnd_is_of_type(oprnd, OBJ_DEREF_OPERAND);
+}
+
+bool oprnd_is_funccall(Operand * oprnd) {
+  return oprnd_is_of_type(oprnd, FUNCCALL_OPERAND);
 }
 
 bool oprnd_is_literal(Operand *oprnd) {

@@ -32,8 +32,10 @@ typedef struct {
 CFGStatement *CFGStatement_Create_Assignment(AccessOperation *left_access, CFGExpression *value_expression);
 CFGStatement *CFGStatement_Create_Declaration(Variable var);
 CFGStatement *CFGStatement_Create_Undeclaration(Variable var);
-
 void CFGStatement_Destroy(CFGStatement *cfg_stmnt);
+void CFGStatement_Print(CFGStatement *cfg_stmnt, FILE *file);
+
+LIST(CFGStatement, CFGStatement, CFGStatement_Destroy, CFGStatement_Print)
 
 // CREATE
 
@@ -87,7 +89,6 @@ void __CFGStatement_Destroy_Undeclaration(CFGStatement *cfg_stmnt) {
   free(data);
 }
 
-
 void CFGStatement_Destroy(CFGStatement *cfg_stmnt) {
   assert(cfg_stmnt != NULL);
 
@@ -107,3 +108,42 @@ void CFGStatement_Destroy(CFGStatement *cfg_stmnt) {
   free(cfg_stmnt);
 }
 
+// PRINT
+
+void __CFGStatement_Print_Assignment(CFGStatement *cfg_stmnt, FILE *file) {
+  casted_data(AssignmentCFGStatementData, cfg_stmnt);
+  AccessOperation_Print(data->left_access, file);
+  fprintf(file, " := ");
+  CFGExpression_Print(data->value_expression, file);
+}
+
+void __CFGStatement_Print_Declaration(CFGStatement *cfg_stmnt, FILE *file) {
+  casted_data(DeclarationCFGStatementData, cfg_stmnt);
+  fprintf(file, "decl ");
+  Variable_Print(data->var, file);
+}
+
+void __CFGStatement_Print_Undeclaration(CFGStatement *cfg_stmnt, FILE *file) {
+  casted_data(UndeclarationCFGStatementData, cfg_stmnt);
+  fprintf(file, "undecl ");
+  Variable_Print(data->var, file);
+}
+
+
+
+void CFGStatement_Print(CFGStatement *cfg_stmnt, FILE *file) {
+  assert(cfg_stmnt != NULL);
+
+  if (cfg_stmnt->type == ASSIGNMENT_CFG_STMNT) {
+    __CFGStatement_Print_Assignment(cfg_stmnt, file);
+  } 
+  else if (cfg_stmnt->type == DECLARATION_CFG_STMNT) {
+    __CFGStatement_Print_Declaration(cfg_stmnt, file);
+  }
+  else if (cfg_stmnt->type == UNDECLARATION_CFG_STMNT) {
+    __CFGStatement_Print_Undeclaration(cfg_stmnt, file);
+  } 
+  else {
+    UNREACHABLE();
+  }
+}

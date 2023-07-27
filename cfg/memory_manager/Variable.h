@@ -74,6 +74,8 @@ void GlobalVariablesTable_Destroy(GlobalVariablesTable* table);
 void GlobalVariablesTable_Add_Variable(GlobalVariablesTable* table, Variable *var);
 Variable GlobalVariablesTable_Get_Variable(GlobalVariablesTable* table, VariableIndex idx);
 
+Variable GlobalVariablesTable_GetFromName(GlobalVariablesTable *table, Identifier *name);
+
 void GlobalVariablesTable_Print(GlobalVariablesTable *table, FILE *file);
 
 // IMPLEMENTATION
@@ -122,3 +124,16 @@ void GlobalVariablesTable_Print(GlobalVariablesTable *table, FILE *file) {
   }
 }
 
+Variable GlobalVariablesTable_GetFromName(GlobalVariablesTable *table, Identifier *name) {
+  assert(table != NULL);
+  FOR_EACH(VariableList, var_it, table->variables) {
+    if (idf_equal_identifiers(var_it->node->name, name))
+      return *(var_it->node);
+  }
+  return GlobalVariablesTable_Get_Variable(table, NULL_VARIABLE_IDX);
+}
+
+
+bool Variable_IsNull(Variable var) {
+  return var.var_idx == NULL_VARIABLE_IDX;
+}
