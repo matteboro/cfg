@@ -1,7 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include "./memory_manager/MemoryManager.h"
+#include "CFGOperand.h"
+
 
 /*
 

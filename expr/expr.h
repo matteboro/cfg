@@ -72,6 +72,7 @@ typedef enum {
   NOT_UNARY_OPERATION,
   STR_LEN_UNARY_OPERATION,
   STR_CONCAT_OPERATION,
+  COUNT_OPERATION,
 } OperationType;
 
 static const char *operation_to_char[] = {

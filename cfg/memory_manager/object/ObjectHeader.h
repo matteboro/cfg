@@ -3,7 +3,6 @@
 #include "../Definitions.h"
 #include "../../../expr/type.h"
 
-
 #undef typed_data
 #undef casted_data
 #define typed_data(type) type* data = (type *) malloc(sizeof(type)) 

@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#define UNREACHABLE() assert(False && "UNREACHABLE\n")
+
 typedef uint64_t ByteSize;
 typedef uint64_t MemTableIndex;
 typedef uint64_t Offset;
