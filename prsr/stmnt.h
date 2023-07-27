@@ -464,3 +464,38 @@ void stmnt_print_ident(Statement *stmnt, FILE *file, size_t ident) {
 void stmnt_print(Statement *stmnt, FILE *file) {
   stmnt_print_ident(stmnt, file, 0);
 }
+
+// IS OF TYPE
+
+bool stmnt_is_of_type(Statement *stmnt, StatementType stmnt_t) {
+  assert(stmnt != NULL);
+  return stmnt->type == stmnt_t;
+}
+
+bool stmnt_is_assignment(Statement *stmnt) {
+  return stmnt_is_of_type(stmnt, ASSIGNMENT_STMNT);
+}
+
+bool stmnt_is_declaration(Statement *stmnt) {
+  return stmnt_is_of_type(stmnt, DECLARATION_STMNT);
+}
+
+bool stmnt_is_block(Statement *stmnt) {
+  return stmnt_is_of_type(stmnt, BLOCK_STMNT);
+}
+
+bool stmnt_is_if_else(Statement *stmnt) {
+  return stmnt_is_of_type(stmnt, IF_ELSE_STMNT);
+}
+
+bool stmnt_is_while(Statement *stmnt) {
+  return stmnt_is_of_type(stmnt, WHILE_STMNT);
+}
+
+bool stmnt_is_return(Statement *stmnt) {
+  return stmnt_is_of_type(stmnt, RETURN_STMNT);
+}
+
+bool stmnt_is_funccall(Statement *stmnt) {
+  return stmnt_is_of_type(stmnt, FUNCCALL_STMNT);
+}

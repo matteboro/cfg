@@ -1,8 +1,11 @@
 #pragma once
 
 #include <stdint.h>
-#include "CFGOperand.h"
+#include "CFGStatement.h"
 
+typedef struct  {
+
+} CFG;
 
 /*
 

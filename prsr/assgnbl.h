@@ -6,8 +6,6 @@
 // ASSIGNABLE ELEMENT
 
 #define ASSGNBL_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
-#define typed_data(type) type *data = (type *) malloc(sizeof(type))
-#define casted_data(type, elem) type *data = (type *) elem->data
 
 struct AssignableElement_s;
 typedef struct AssignableElement_s AssignableElement;

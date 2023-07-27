@@ -3,12 +3,11 @@
 #include "../utility/file_man.h"
 
 int main() {
-
   File *file = file_open("/home/matteo/github/cfg/chckr/code.b");
 
   ASTProgram *ast = prsr_parse(file);
 
-  prgrm_chckr_check(ast);
+  prgrm_chckr_check(ast, False);
 
   prgrm_print(ast, stdout); fprintf(stdout, "\n");
   // file_info_print_only(func_decl_list_get_at(ast->func_declarations, 2)->body->file_info, stdout);

@@ -3,8 +3,6 @@
 #include "idf.h"
 #include "expr_interface.h"
 
-#define typed_data(type) type *data = (type *) malloc(sizeof(type))
-#define casted_data(type, elem) type *data = (type *) elem->data
 #define OBJ_DRF_ERROR() { fprintf(stdout, "error inside function: %s\n", __FUNCTION__); exit(1); }
 #define if_null_print(ptr, file) if (ptr == NULL) { fprintf(file, "NULL"); return; }
 #define OBJ_DRF_DEALLOC(infix, data_type, dealloc_code) \

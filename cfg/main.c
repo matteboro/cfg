@@ -1,8 +1,21 @@
 #include "CFG.h"
+#include "CFGBuilder.h"
+#include "../prsr/prsr.h"
+#include "../chckr/prgrm_chckr.h"
 
-int main()
-{
-  fprintf(stdout, "Hello, World!\n");
+int main() {
+  File *file = file_open("/home/matteo/github/cfg/cfg/code.b");
+
+  ASTProgram *ast = prsr_parse(file);
+  prgrm_chckr_check(ast, False);
+
+  CFGBuilder_Build(ast);
+
+  // prgrm_print(ast, stdout); fprintf(stdout, "\n");
+  //fprintf(stdout, "\n");
+
+  prgrm_dealloc(ast);
+  file_dealloc(file);
   return 0;
 }
 
@@ -170,16 +183,15 @@ In synthesis we have four types of access:
 A thing to realize and to think about is that any of these types of acces could be on the left or right side
 of an assignment, cause they all return an Object pointer.
 
-
 Assignment or pass of pointer?
 
-When I have a statement like:
+  When I have a statement like:
 
-  access < Variable v1 > := access < Variable v2 >;
+    access < Variable v1 > := access < Variable v2 >;
 
-what do we mean by :=, do I copy the object on the right or I simply make them point to the same Object?
-I think the first option would be better, slower, but easier to maintain at the beginning. So we need a
-copy method for Object.
+  what do we mean by :=, do I copy the object on the right or I simply make them point to the same Object?
+  I think the first option would be better, slower, but easier to maintain at the beginning. So we need a
+  copy method for Object.
 
 // ACCESS OPERATION  //////////////////////////////////////////
 
