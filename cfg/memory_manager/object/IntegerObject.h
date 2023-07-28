@@ -12,6 +12,7 @@ typedef struct {
 Object *Object_Integer_Create();
 Object *Object_Integer_Create_Init(Integer integer);
 void Object_Integer_Destroy(Object *obj);
+void Object_Integer_Print(Object *obj, FILE *file);
 
 // IMPLEMENTATIONS
 
@@ -32,4 +33,11 @@ void Object_Integer_Destroy(Object *obj) {
   assert(Object_Is_Integer(obj));
   casted_data(IntegerObjectData, obj);
   free(data);
+}
+
+void Object_Integer_Print(Object *obj, FILE *file) {
+  assert(Object_Is_Integer(obj));
+
+  casted_data(IntegerObjectData, obj);
+  Integer_Print(data->integer, file);
 }

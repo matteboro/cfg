@@ -88,10 +88,15 @@ bool strct_decl_chckr_check(StructDeclarationList *structs) {
 
   // now I can assume some properties of the struct declarations and I can calculate the ByteSize of each
   FOR_EACH(StructDeclarationList, strct_it, structs) {
-    if (strct_decl_size_is_known(strct_it->node))
-      continue;
-    ByteSize size = strct_decl_calculate_size(strct_it->node, structs);
-    strct_decl_set_size(strct_it->node, size);
+    StructDeclaration *struct_decl = strct_it->node;
+
+    if (!strct_decl_size_is_known(struct_decl)) {
+      ByteSize size = strct_decl_calculate_size(struct_decl, structs);
+      strct_decl_set_size(struct_decl, size);
+    }
+
+    size_t total_num_attributes = strct_decl_total_number_of_attributes(struct_decl);
+    strct_decl_set_total_number_of_attributes(struct_decl, total_num_attributes);
   }
 
   return result;

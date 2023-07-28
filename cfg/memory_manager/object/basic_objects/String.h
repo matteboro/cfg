@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdio.h>
+
 // DEFINITIONS
 
 typedef struct {
@@ -18,5 +20,12 @@ String String_Create(char *cstring) {
 
 void String_Destroy(String string) {
   assert(string.string != NULL);
+  
   free(string.string);
+}
+
+void String_Print(String string, FILE *file) {
+  assert(string.string != NULL);
+  
+  fprintf(file, "\"%s\"", string.string);
 }

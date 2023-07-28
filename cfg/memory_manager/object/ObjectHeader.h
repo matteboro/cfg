@@ -45,4 +45,27 @@ bool Object_Is_Pointer(Object *obj);
 
 void Object_Print(Object *obj, FILE *file);
 
-// IMPLEMENTATION
+// OBJECT ARRAY
+
+typedef struct {
+  size_t size;
+  size_t curr;
+  Object **objects;
+} ObjectArray;
+
+ObjectArray *ObjectArray_Create(size_t size);
+void ObjectArray_Destroy(ObjectArray *array);
+
+void ObjectArray_Push(ObjectArray *array, Object *obj);
+void ObjectArray_PushArray(ObjectArray *dest, ObjectArray *pushed_array);
+
+Object *ObjectArray_GetAt(ObjectArray *array, size_t index);
+
+bool ObjectArray_Empty(ObjectArray *array);
+bool ObjectArray_Full(ObjectArray *array);
+
+size_t ObjectArray_AvailableSpace(ObjectArray *array);
+size_t ObjectArray_Capacity(ObjectArray *array);
+size_t ObjectArray_Size(ObjectArray *array);
+
+void ObjectArray_Print(ObjectArray *array, FILE* file);

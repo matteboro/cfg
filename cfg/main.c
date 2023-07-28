@@ -4,15 +4,29 @@
 #include "../chckr/prgrm_chckr.h"
 
 int main() {
-  File *file = file_open("/home/matteo/github/cfg/cfg/code.b");
+  File *file = file_open("/home/matteo/github/cfg/cfg/struct_decl_test.b");
 
   ASTProgram *ast = prsr_parse(file);
   prgrm_chckr_check(ast, False);
+  StructDeclarationList *structs = ast->struct_declarations;
 
-  CFGBuilder_Build(ast);
+  FOR_EACH(StructDeclarationList, struct_it, structs) {
+    StructDeclaration *struct_decl = struct_it->node;
+    strct_decl_print(struct_decl, stdout); fprintf(stdout, "\n\n");
+    
+    Object *obj = Object_Struct_Create(struct_decl);
+    Object_Print(obj, stdout);
+    Object_Destroy(obj);
+    fprintf(stdout, "\n");
+  }
 
-  // prgrm_print(ast, stdout); fprintf(stdout, "\n");
-  //fprintf(stdout, "\n");
+  // ASTProgram *ast = prsr_parse(file);
+  // prgrm_chckr_check(ast, False);
+
+  // CFGBuilder_Build(ast);
+
+  // // prgrm_print(ast, stdout); fprintf(stdout, "\n");
+  // //fprintf(stdout, "\n");
 
   prgrm_dealloc(ast);
   file_dealloc(file);

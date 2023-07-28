@@ -36,5 +36,18 @@ void Object_Pointer_Destroy(Object *obj) {
   assert(Object_Is_Pointer(obj));
 
   casted_data(PointerObjectData, obj);
+  type_dealloc(data->pointed_type);
   free(data);
+}
+
+void Object_Pointer_Print(Object *obj, FILE *file) {
+  assert(Object_Is_Pointer(obj));
+  
+  casted_data(PointerObjectData, obj);
+
+  if (data->index == NullMemTableIndex) {
+    fprintf(file, "Null");
+  } else {
+    fprintf(file, "%lu", data->index);
+  }
 }

@@ -720,7 +720,7 @@ ASTProgram *prsr_parse(File *file)
   return NULL;
 }
 
-Expression *prsr_parse_expression_from_string(File *file)
+Expression *prsr_parse_expression_from_file(File *file)
 {
   Lexer lexer = lxr_init(file);
   lexer_ptr = &lexer;
@@ -733,5 +733,20 @@ Expression *prsr_parse_expression_from_string(File *file)
     return expression;
 
   expr_dealloc_expression(expression);
+  return NULL;
+}
+
+StructDeclaration *prsr_parse_struct_declaration_from_file(File *file) {
+  Lexer lexer = lxr_init(file);
+  lexer_ptr = &lexer;
+
+  prsr_next_token();
+
+  StructDeclaration *struct_decl = prsr_parse_struct_declaration();
+
+  if (lookhaed.type == END_TOKEN)
+    return struct_decl;
+
+  strct_decl_dealloc(struct_decl);
   return NULL;
 }

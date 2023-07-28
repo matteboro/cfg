@@ -15,6 +15,7 @@ struct StructDeclaration {
   FileInfo file_info;
   ByteSize size;
   Type *real_type;
+  size_t total_number_attributes;
 };
 
 ByteSize strct_decl_get_size(StructDeclaration *decl) {
@@ -25,6 +26,17 @@ ByteSize strct_decl_get_size(StructDeclaration *decl) {
 void strct_decl_set_size(StructDeclaration *decl, ByteSize size) {
   assert(decl != NULL);
   decl->size = size;
+  return;
+}
+
+size_t strct_decl_get_total_number_of_attributes(StructDeclaration *decl) {
+  assert(decl != NULL);
+  return decl->total_number_attributes;
+}
+
+void strct_decl_set_total_number_of_attributes(StructDeclaration *decl, size_t total_number_attributes) {
+  assert(decl != NULL);
+  decl->total_number_attributes = total_number_attributes;
   return;
 }
 
@@ -63,6 +75,7 @@ StructDeclaration *strct_decl_create(Identifier *name, AttributeList *attributes
   decl->real_type = type_create_struct_type(idf_copy_identifier(name));
   type_struct_set_struct_decl(decl->real_type, decl);
   decl->size = size;
+  decl->total_number_attributes = 0;
   return decl;
 }
 
@@ -88,6 +101,7 @@ void strct_decl_print_ident(StructDeclaration *decl, FILE *file, size_t ident) {
   red(file);
   decl->size != NullByteSize ? fprintf(file, "%lu", decl->size) : fprintf(file, "?");
   reset(file);
+  fprintf(file, ":%lu", decl->total_number_attributes);
 #endif
   fprintf(file, " {\n");
   FOR_EACH(AttributeList, attrb_it, decl->attributes) {
@@ -117,6 +131,7 @@ bool strct_decl_size_is_known(StructDeclaration *strct) {
 
 // this function can be used only if every attribute of a struct type have the appropriate
 // struct declaration paired with
+// TODO: structs list is not really used?
 ByteSize strct_decl_calculate_size(StructDeclaration *strct, StructDeclarationList *structs) {
   if (strct_decl_size_is_known(strct))
     return strct_decl_get_size(strct);
@@ -136,4 +151,35 @@ ByteSize strct_decl_calculate_size(StructDeclaration *strct, StructDeclarationLi
     size += type_get_size(attrb_type);
   }
   return size;
+}
+
+// this function can be used only if every attribute of a struct type have the appropriate
+// struct declaration paired with
+size_t strct_decl_total_number_of_attributes(StructDeclaration *strct) {
+
+  size_t tot_attributes = 0;
+
+  FOR_EACH(AttributeList, attrb_it, strct->attributes) {
+
+    Type *attrb_type = attrb_it->node->nt_bind->type;
+    if (type_is_struct(attrb_type)) {
+      StructDeclaration *sub_struct = type_struct_get_struct_decl(attrb_type);
+      tot_attributes += strct_decl_total_number_of_attributes(sub_struct);
+    }
+    else if (type_is_array(attrb_type)) {
+      Type *array_type = type_array_get_type(attrb_type);
+      size_t array_type_size = 1;
+
+      if (type_is_struct(array_type)) {
+        StructDeclaration *sub_struct = type_struct_get_struct_decl(array_type);
+        array_type_size = strct_decl_total_number_of_attributes(sub_struct);
+      }
+      tot_attributes += type_array_get_size(attrb_type) * array_type_size;
+    }
+    else {
+      ++tot_attributes;
+    }
+  }
+
+  return tot_attributes;
 }
