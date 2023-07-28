@@ -25,9 +25,9 @@ obj_type type_## prefix ## _get_ ## obj_name  (Type* type) {              \
   return data->obj_name;                                                  \
 } 
 
-#define TYPE_VERBOSE_PRINT_SWITCH     1
-#define TYPE_PRINT_SIZE_SWITCH        1
-#define TYPE_PRINT_STRUCT_DECL_SWITCH 1
+#define TYPE_VERBOSE_PRINT_SWITCH     0
+#define TYPE_PRINT_SIZE_SWITCH        0
+#define TYPE_PRINT_STRUCT_DECL_SWITCH 0
 
 // FORWARD DECLARATION
 

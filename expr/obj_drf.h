@@ -9,6 +9,10 @@
   void obj_drf_dealloc_##infix##_type_deref(ObjectDeref *obj_drf) \
     { if (!obj_drf->data) return; data_type *data = (data_type *)obj_drf->data; dealloc_code; free(data); }
 
+#define OBJ_DRF_VERBOSE_PRINT_SWITCH 1
+
+typedef struct Attribute Attribute;
+
 typedef enum {
   ARR_DEREF,
   STRUCT_BASIC_DEREF,
@@ -21,16 +25,16 @@ typedef struct {
   Type *real_type;
   void *data;
   FileInfo file_info;
+  Attribute *attribute; // can be null
 } ObjectDeref;
 
 typedef struct { 
- 
+  
 } StructOrBasicTypeObjectDerefData; 
 
 typedef struct { 
  
 } SingleElementPointerTypeObjectDerefData; 
-
 
 typedef struct { 
   Expression *index;
@@ -38,6 +42,21 @@ typedef struct {
 
 void obj_drf_set_real_type(ObjectDeref *obj_drf, Type *type) {
   obj_drf->real_type = type;
+}
+
+Type* obj_drf_get_real_type(ObjectDeref *obj_drf) {
+  return obj_drf->real_type;
+}
+
+void obj_drf_set_attribute(ObjectDeref *obj_drf, Attribute *attrb) {
+  assert(obj_drf != NULL);
+  assert(attrb != NULL);
+  obj_drf->attribute = attrb;
+}
+
+Attribute *obj_drf_get_attribute(ObjectDeref *obj_drf) {
+  assert(obj_drf != NULL);
+  return obj_drf->attribute;
 }
 
 Expression *obj_drf_array_get_index(ObjectDeref *obj_drf) {
@@ -61,6 +80,7 @@ ObjectDeref *obj_drf_create(ObjectDerefType type, Identifier* name, void *data, 
   obj_drf->data = data;
   obj_drf->file_info = file_info;
   obj_drf->real_type = NULL;
+  obj_drf->attribute = NULL;
   return obj_drf;
 }
 
@@ -106,7 +126,11 @@ void obj_drf_print_array_type_deref(ObjectDeref *obj_drf, FILE *file) {
 
 void obj_drf_print(ObjectDeref *obj_drf, FILE *file) {
   if_null_print(obj_drf, file);
+
   type_print_verbose(obj_drf->real_type, file);
+#if OBJ_DRF_VERBOSE_PRINT_SWITCH
+  fprintf(file, "%s", obj_drf->attribute == NULL ? "" : "|!|:");
+#endif
   if (obj_drf->type == ARR_DEREF)
     obj_drf_print_array_type_deref(obj_drf, file);
   else if (obj_drf->type == STRUCT_BASIC_DEREF)

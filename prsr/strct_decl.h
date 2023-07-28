@@ -124,6 +124,15 @@ Type *strct_decl_get_type_of_attribute_from_identifier(StructDeclaration *strct,
   return NULL;
 }
 
+Attribute *strct_decl_get_attribute_from_identifier(StructDeclaration *strct, Identifier *name) {
+  FOR_EACH(AttributeList, attrb_it, strct->attributes) {
+    if (idf_equal_identifiers(attrb_it->node->nt_bind->name, name)) {
+      return attrb_it->node;
+    }
+  }
+  return NULL;
+}
+
 bool strct_decl_size_is_known(StructDeclaration *strct) {
   assert(strct != NULL);
   return strct->size != NullByteSize;
@@ -160,8 +169,9 @@ size_t strct_decl_total_number_of_attributes(StructDeclaration *strct) {
   size_t tot_attributes = 0;
 
   FOR_EACH(AttributeList, attrb_it, strct->attributes) {
-
-    Type *attrb_type = attrb_it->node->nt_bind->type;
+    Attribute *attrb = attrb_it->node; 
+    attrb_set_relative_position(attrb, tot_attributes);
+    Type *attrb_type = attrb->nt_bind->type;
     if (type_is_struct(attrb_type)) {
       StructDeclaration *sub_struct = type_struct_get_struct_decl(attrb_type);
       tot_attributes += strct_decl_total_number_of_attributes(sub_struct);

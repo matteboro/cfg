@@ -7,7 +7,6 @@
 #include "StructObject.h"
 #include "ComposedObject.h"
 
-
 // CREATE / DESTROY
 
 Object *Object_Create(ObjectType type, ByteSize size, ObjectData *data, Type *real_type) {
@@ -84,18 +83,15 @@ bool Object_Is_String(Object *obj) {
 }
 
 bool Object_Is_Struct(Object *obj) {
+  TODO();
   (void) obj;
-  // TODO
-  // return Object_Is_Of_Type(obj, STRUCT_OBJ);
-  TODO()
   return False;
 }
 
 bool Object_Is_Array(Object *obj) {
+  
+  TODO();
   (void) obj;
-  // TODO
-  // return Object_Is_Of_Type(obj, ARRAY_OBJ);
-  TODO()
   return False;
 }
 

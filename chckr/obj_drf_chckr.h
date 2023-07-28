@@ -191,11 +191,11 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
 
   FOR_EACH(ObjectDerefList, obj_drf_it, obj_derefs->next) {
 
-    // get the attribute type having the name of the attribute
-    elem_type = strct_decl_get_type_of_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
-
+    // get the attribute having the name of the attribute
+    Attribute *deref_attribute = strct_decl_get_attribute_from_identifier(prev_struct, obj_drf_it->node->name);
+    
     // if attribute does not exist in the struct
-    if (elem_type == NULL) {
+    if (deref_attribute == NULL) {
       OBJ_DRF_CHCKR_ERROR_HEADER(obj_derefs);
       fprintf(stdout, "object dereference: ");
       obj_drf_print(obj_drf_it->node, stdout);
@@ -207,8 +207,12 @@ Type *obj_drf_chckr_check(ObjectDerefList *obj_derefs, ASTCheckingAnalysisState 
       return NULL;
     }
 
+    // extracte the type of the attribute
+    elem_type = deref_attribute->nt_bind->type;
+
     // set the object deref type with the attribute type
     obj_drf_set_real_type(obj_drf_it->node, type_copy(elem_type));
+    obj_drf_set_attribute(obj_drf_it->node, deref_attribute);
 
     // check in case is array dereference
     if (not obj_drf_chckr_check_array_dereference(obj_drf_it->node, obj_derefs, an_state))

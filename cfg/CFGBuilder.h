@@ -7,6 +7,82 @@ CFG *CFGBuilder_Build(ASTProgram *program);
 
 // IMPLEMENTATION
 
+
+AccessOperation *ObjectDerefList_To_AccessOperation(ObjectDerefList *obj_derefs, GlobalVariablesTable *var_table) {
+  assert(obj_derefs != NULL);
+  assert(obj_drf_list_size(obj_derefs) != 0);
+  assert(var_table != NULL);
+
+  // fprintf(stdout, "started ObjectDerefList_To_AccessOperation\n");
+  
+  // get variable of first element in ObjectDerefList
+  ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, 0);
+  Identifier *name = obj_drf->name;
+  Variable deref_var = GlobalVariablesTable_GetFromName(var_table, name);
+  assert(!Variable_IsNull(deref_var));
+
+  if (obj_drf_list_size(obj_derefs) == 1) {
+    return AccessOperation_Create_Variable_Access(deref_var);
+  }
+
+  // fprintf(stdout, "obj derefs has more than 1 element\n");
+
+  ObjectDerefList *curr_deref = obj_derefs->next;
+  ObjectDeref *deref = curr_deref->node;
+  Type *curr_deref_type = obj_drf_get_real_type(deref);
+  size_t index = 0;
+  while (!type_is_pointer(curr_deref_type) && (curr_deref != NULL && curr_deref->node != NULL)) {
+    // fprintf(stdout, "starting while loop\n");
+    deref = curr_deref->node;
+    curr_deref_type = obj_drf_get_real_type(deref);
+
+    // fprintf(stdout, "  curr deref: "); obj_drf_print(deref, stdout); fprintf(stdout, "\n");
+    // fprintf(stdout, "  curr deref type: "); type_print(curr_deref_type, stdout); fprintf(stdout, "\n");
+
+    Attribute *curr_attribute = obj_drf_get_attribute(deref);
+    assert(attrb_relative_position_is_valid(curr_attribute));
+    size_t attribute_offset = (size_t) attrb_get_relative_position(curr_attribute);
+
+    // fprintf(stdout, "  curr attribute: "); attrb_print(curr_attribute, stdout); fprintf(stdout, "\n");
+    // fprintf(stdout, "  curr attribute offset: %lu\n", attribute_offset);
+
+    // if it is an array non pointer offset we have to calculate the offset
+    // contrinution of the index
+    if (type_is_array(curr_deref_type)) {
+      Expression *index_expr = obj_drf_array_get_index(deref);
+      
+      // for the moment we only process integer indexes
+      assert(expr_is_operand(index_expr));
+      Operand *index_operand = expr_operand_expression_get_operand(index_expr);
+      assert(oprnd_is_integer(index_operand));
+      size_t array_index = (size_t)(*oprnd_integer_get_integer(index_operand));
+
+      // if sub-type is a struct we have to multiply the index by the size
+      // of the struct 
+      size_t struct_mult_factor = 1;
+      Type *sub_type = type_array_get_type(curr_deref_type);
+      if (type_is_struct(sub_type)) {
+        StructDeclaration *struct_decl = type_struct_get_struct_decl(sub_type);
+        struct_mult_factor = strct_decl_total_number_of_attributes(struct_decl);
+      }
+
+      index += array_index * struct_mult_factor;
+    } 
+
+    index += attribute_offset;
+
+    curr_deref = curr_deref->next;
+    assert(!type_is_pointer(curr_deref_type));
+
+    // fprintf(stdout, "end while loop\n");
+  }
+  
+  // fprintf(stdout, "exited while loop\n");
+
+  CFGOperand *op_idx = CFGOperand_Create_Literal(Literal_Create_Integer_Init(Integer_Create(index)));
+  return AccessOperation_Create_Indexed_Variable_Access(deref_var, op_idx);
+}
+
 CFGOperand *Operand_To_CFGOperand(Operand *operand, GlobalVariablesTable *var_table) {
 
   CFGOperand *cfg_operand = NULL;
@@ -30,11 +106,7 @@ CFGOperand *Operand_To_CFGOperand(Operand *operand, GlobalVariablesTable *var_ta
     
     assert(obj_drf_list_size(obj_derefs) == 1);
 
-    ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, 0);
-    Identifier *name = obj_drf->name;
-    Variable deref_var = GlobalVariablesTable_GetFromName(var_table, name);
-    assert(!Variable_IsNull(deref_var));
-    AccessOperation *access_op = AccessOperation_Create_Variable_Access(deref_var);
+    AccessOperation *access_op = ObjectDerefList_To_AccessOperation(obj_derefs, var_table);
     cfg_operand = CFGOperand_Create_AccessOperation(access_op);
   }
   else if (oprnd_is_funccall(operand)) {
@@ -91,7 +163,12 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
   FunctionDeclarationList *functions = program->func_declarations;
   Statement *global_statements = program->global_statement;
 
-  assert(strct_decl_list_size(structs) == 0);
+  FOR_EACH(StructDeclarationList, struct_it, structs) {
+    strct_decl_print(struct_it->node, stdout);
+    fprintf(stdout, "\n\n");
+  }
+
+  // assert(strct_decl_list_size(structs) == 0);
   assert(func_decl_list_size(functions) == 0);
   assert(stmnt_is_block(global_statements));
 
@@ -110,14 +187,15 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
       AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
       ObjectDerefList *obj_derefs = assgnbl->obj_derefs;
 
-      assert(obj_drf_list_size(obj_derefs) == 1);
+      //  assert(obj_drf_list_size(obj_derefs) == 1);
 
-      ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, 0);
-      Identifier *name = obj_drf->name;
+      // ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, 0);
+      // Identifier *name = obj_drf->name;
 
-      Variable assigned_var = GlobalVariablesTable_GetFromName(var_table, name);
-      assert(!Variable_IsNull(assigned_var));
-      AccessOperation *access_op = AccessOperation_Create_Variable_Access(assigned_var);
+      // Variable assigned_var = GlobalVariablesTable_GetFromName(var_table, name);
+      // assert(!Variable_IsNull(assigned_var));
+
+      AccessOperation *access_op = ObjectDerefList_To_AccessOperation(obj_derefs, var_table);
 
       CFGExpression *cfg_value_expr = Expression_To_CFGExpression(stmnt_assignment_get_value(stmnt), var_table);
       assert(cfg_value_expr != NULL);
@@ -131,12 +209,13 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
       Identifier *name = nt_bind->name;
       Type *type = nt_bind->type;
 
-      assert(type_is_basic(type));
+      assert(type_is_basic(type) || type_is_struct(type));
 
       Variable *decl_var = Variable_Create_Pointer(
         curr_var_idx,
         idf_copy_identifier(name),
         type_copy(type));
+      ++curr_var_idx;
       
       GlobalVariablesTable_Add_Variable(var_table, decl_var);
 
