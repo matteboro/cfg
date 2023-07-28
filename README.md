@@ -1,1 +1,2 @@
-# simple cfg compiler and interpreter in C for a made up language
+# CFG
+simple cfg compiler and interpreter in C for a made up language
