@@ -2,7 +2,10 @@
 
 #include <stdint.h>
 
+#undef TODO
+#undef UNREACHABLE
 #define UNREACHABLE() assert(False && "UNREACHABLE\n")
+#define TODO() assert(False && "TODO\n");
 
 typedef uint64_t ByteSize;
 typedef uint64_t MemTableIndex;

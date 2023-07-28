@@ -1,21 +1,7 @@
 #pragma once
 
-#include "ObjectHeader.h"
 #include "../../../prsr/strct_decl.h"
-
-// DEFINITION
-
-typedef struct {
-  StructDeclaration *struct_decl;
-  size_t num_attributes;
-  ObjectArray *attribute_objects;
-} StructObjectData;
-
-
-Object *Object_Struct_Create(StructDeclaration *struct_decl);
-void Object_Struct_Destroy(Object *obj);
-
-// IMPLEMENTATION
+#include "ComposedObject.h"
 
 ObjectArray *StructDeclaration_To_ObjectArray(StructDeclaration *struct_decl) {
 
@@ -65,25 +51,11 @@ Object *Object_Struct_Create(StructDeclaration *struct_decl) {
   size_t num_attributes = strct_decl_get_total_number_of_attributes(struct_decl);  
   ObjectArray *objects = StructDeclaration_To_ObjectArray(struct_decl);
 
-  typed_data(StructObjectData);
-  data->attribute_objects = objects;
-  data->num_attributes = num_attributes;
-  data->struct_decl = struct_decl;
-
-  return Object_Create(STRUCT_OBJ, strct_decl_get_size(struct_decl), data, type_copy(struct_decl->real_type));
-}
-
-void Object_Struct_Destroy(Object *obj) {
-  assert(Object_Is_Struct(obj));
-  
-  casted_data(StructObjectData, obj);
-  ObjectArray_Destroy(data->attribute_objects);
-  free(data);
-}
-
-void Object_Struct_Print(Object *obj, FILE *file) {
-  assert(Object_Is_Struct(obj));
-  casted_data(StructObjectData, obj);
-
-  ObjectArray_Print(data->attribute_objects, file);
+  return 
+    Object_Composed_Create(
+      strct_decl_get_size(struct_decl), 
+      num_attributes,
+      objects, 
+      struct_decl, 
+      type_copy(struct_decl->real_type));
 }

@@ -5,6 +5,7 @@
 #include "PointerObject.h"
 #include "ArrayObject.h"
 #include "StructObject.h"
+#include "ComposedObject.h"
 
 
 // CREATE / DESTROY
@@ -55,11 +56,10 @@ void Object_Destroy(Object *obj) {
   assert(obj != NULL);
 
   switch(obj->type) {
-    case INTEGER_OBJ: Object_Integer_Destroy(obj); break;
-    case STRING_OBJ:  Object_String_Destroy(obj); break;
-    case STRUCT_OBJ:  Object_Struct_Destroy(obj); break;
-    case POINTER_OBJ: Object_Pointer_Destroy(obj); break;
-    case ARRAY_OBJ:   Object_Array_Destroy(obj); break;
+    case INTEGER_OBJ:  Object_Integer_Destroy(obj); break;
+    case STRING_OBJ:   Object_String_Destroy(obj); break;
+    case POINTER_OBJ:  Object_Pointer_Destroy(obj); break;
+    case COMPOSED_OBJ: Object_Composed_Destroy(obj); break;
     default:
       assert(False); break;
   }
@@ -84,15 +84,27 @@ bool Object_Is_String(Object *obj) {
 }
 
 bool Object_Is_Struct(Object *obj) {
-  return Object_Is_Of_Type(obj, STRUCT_OBJ);
+  (void) obj;
+  // TODO
+  // return Object_Is_Of_Type(obj, STRUCT_OBJ);
+  TODO()
+  return False;
 }
 
 bool Object_Is_Array(Object *obj) {
-  return Object_Is_Of_Type(obj, ARRAY_OBJ);
+  (void) obj;
+  // TODO
+  // return Object_Is_Of_Type(obj, ARRAY_OBJ);
+  TODO()
+  return False;
 }
 
 bool Object_Is_Pointer(Object *obj) {
   return Object_Is_Of_Type(obj, POINTER_OBJ);
+}
+
+bool Object_Is_Composed(Object *obj) {
+  return Object_Is_Of_Type(obj, COMPOSED_OBJ);
 }
 
 // PRINT
@@ -103,17 +115,14 @@ void Object_Print(Object *obj, FILE *file) {
   if(obj->type ==  INTEGER_OBJ) {
     Object_Integer_Print(obj, file);
   }
-  else if(obj->type == STRING_OBJ) {
+  else if (obj->type == STRING_OBJ) {
     Object_String_Print(obj, file);
   }
-  else if(obj->type == STRUCT_OBJ) {
-    Object_Struct_Print(obj, file);
-  }
-  else if(obj->type == POINTER_OBJ) {
+  else if (obj->type == POINTER_OBJ) {
     Object_Pointer_Print(obj, file);
   }
-  else if(obj->type == ARRAY_OBJ) {
-    fprintf(file, "ARRAY_OBJ");
+  else if (obj->type == COMPOSED_OBJ) {
+    Object_Composed_Print(obj, file);
   }
   else {
     UNREACHABLE();

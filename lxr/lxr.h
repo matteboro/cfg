@@ -7,7 +7,7 @@
 #include <assert.h>
 #include "../utility/file_man.h"
 
-#define TODO() fprintf(stdout, "TODO: %s is not implemented\n", __FUNCTION__); exit(1);
+// #define TODO() fprintf(stdout, "TODO: %s is not implemented\n", __FUNCTION__); exit(1);
 #define bool int
 #define True 1
 #define False 0

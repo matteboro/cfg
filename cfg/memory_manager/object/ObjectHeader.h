@@ -17,9 +17,9 @@
 typedef enum {
   INTEGER_OBJ,
   STRING_OBJ,
-  STRUCT_OBJ,
   POINTER_OBJ,
-  ARRAY_OBJ,
+  COMPOSED_OBJ,
+  // define above
   COUNT_OBJ,
 } ObjectType;
 
@@ -42,6 +42,7 @@ bool Object_Is_String(Object *obj);
 bool Object_Is_Struct(Object *obj);
 bool Object_Is_Array(Object *obj);
 bool Object_Is_Pointer(Object *obj);
+bool Object_Is_Composed(Object *obj);
 
 void Object_Print(Object *obj, FILE *file);
 
