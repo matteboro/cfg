@@ -2,6 +2,7 @@
 
 #include "../prsr/prgrm.h"
 #include "CFG.h"
+#include "BasicBlock.h"
 
 CFG *CFGBuilder_Build(ASTProgram *program);
 
@@ -14,7 +15,7 @@ AccessOperation *ObjectDerefList_To_AccessOperation(ObjectDerefList *obj_derefs,
   assert(var_table != NULL);
 
   // fprintf(stdout, "started ObjectDerefList_To_AccessOperation\n");
-  
+
   // get variable of first element in ObjectDerefList
   ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, 0);
   Identifier *name = obj_drf->name;
@@ -176,7 +177,7 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
   GlobalVariablesTable *var_table = GlobalVariablesTable_Create();
   VariableIndex curr_var_idx = 1;
 
-  CFGStatementList *cfg_statements = CFGStatement_list_create_empty();
+  CFGStatementList *cfg_statements = CFGStatementList_CreateEmpty();
 
   FOR_EACH(StatementList, stmnt_it, statements) {
     
@@ -187,21 +188,13 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
       AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
       ObjectDerefList *obj_derefs = assgnbl->obj_derefs;
 
-      //  assert(obj_drf_list_size(obj_derefs) == 1);
-
-      // ObjectDeref *obj_drf = obj_drf_list_get_at(obj_derefs, 0);
-      // Identifier *name = obj_drf->name;
-
-      // Variable assigned_var = GlobalVariablesTable_GetFromName(var_table, name);
-      // assert(!Variable_IsNull(assigned_var));
-
       AccessOperation *access_op = ObjectDerefList_To_AccessOperation(obj_derefs, var_table);
 
       CFGExpression *cfg_value_expr = Expression_To_CFGExpression(stmnt_assignment_get_value(stmnt), var_table);
       assert(cfg_value_expr != NULL);
       
       CFGStatement *cfg_stmnt = CFGStatement_Create_Assignment(access_op, cfg_value_expr);
-      CFGStatement_list_append(cfg_statements, cfg_stmnt);
+      CFGStatementList_Append(cfg_statements, cfg_stmnt);
 
     } 
     else if (stmnt_is_declaration(stmnt_it->node)) {
@@ -220,7 +213,7 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
       GlobalVariablesTable_Add_Variable(var_table, decl_var);
 
       CFGStatement *cfg_stmnt = CFGStatement_Create_Declaration(*decl_var);
-      CFGStatement_list_append(cfg_statements, cfg_stmnt);
+      CFGStatementList_Append(cfg_statements, cfg_stmnt);
 
       if (stmnt_declaration_has_init_values(stmnt)) {
         ExpressionList *init_values = stmnt_declaration_get_init_values(stmnt);
@@ -232,7 +225,8 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
 
         AccessOperation *access_op = AccessOperation_Create_Variable_Access(*decl_var);
         CFGStatement *cfg_init_assgnmt = CFGStatement_Create_Assignment(access_op, cfg_init_value_expr);
-        CFGStatement_list_append(cfg_statements, cfg_init_assgnmt);
+        CFGStatementList_Append(cfg_statements, cfg_init_assgnmt);
+        
       }
     }
 
@@ -241,12 +235,17 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
   }
 
   fprintf(stdout, "\n");
-  FOR_EACH(CFGStatementList, cfg_stmnt_it, cfg_statements) {
-    CFGStatement_Print(cfg_stmnt_it->node, stdout);
+  FOR_EACH_CFGSTMNT(cfgst_it, cfg_statements) {
+    CFGStatement_Print(cfgst_it->statement, stdout);
     fprintf(stdout, "\n");
   }
 
-  CFGStatement_list_dealloc(cfg_statements);
+  // FOR_EACH(CFGStatementList, cfg_stmnt_it, cfg_statements) {
+  //   CFGStatement_Print(cfg_stmnt_it->node, stdout);
+  //   fprintf(stdout, "\n");
+  // }
+
+  CFGStatementList_Destroy(cfg_statements);
 
   fprintf(stdout, "\n");
   GlobalVariablesTable_Print(var_table, stdout);

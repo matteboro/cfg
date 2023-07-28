@@ -133,7 +133,26 @@ Variable GlobalVariablesTable_GetFromName(GlobalVariablesTable *table, Identifie
   return GlobalVariablesTable_Get_Variable(table, NULL_VARIABLE_IDX);
 }
 
-
 bool Variable_IsNull(Variable var) {
   return var.var_idx == NULL_VARIABLE_IDX;
+}
+
+uint64_t next_tmp_var_index = 0;
+
+char *uint64_t_to_string(uint64_t value) {
+  char *c = (char *) malloc(sizeof(char)*100);
+  sprintf(c, "%lu", value);
+  return c;
+}
+
+Variable GlobalVariablesTable_AddNextTempVariable(GlobalVariablesTable *table, VariableIndex var_idx, Type *type) {
+  char name[100] = "tmp.";
+  char *idx_string = uint64_t_to_string(next_tmp_var_index);
+  strcat(name, idx_string);
+  Identifier *idf = idf_create_identifier(name, file_info_create_null());
+  Variable *var = Variable_Create_Pointer(var_idx, idf, type);
+  GlobalVariablesTable_Add_Variable(table, var);
+  ++next_tmp_var_index;
+  free(idx_string);
+  return *var;
 }

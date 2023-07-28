@@ -35,7 +35,7 @@ CFGStatement *CFGStatement_Create_Undeclaration(Variable var);
 void CFGStatement_Destroy(CFGStatement *cfg_stmnt);
 void CFGStatement_Print(CFGStatement *cfg_stmnt, FILE *file);
 
-LIST(CFGStatement, CFGStatement, CFGStatement_Destroy, CFGStatement_Print)
+// LIST(CFGStatement, CFGStatement, CFGStatement_Destroy, CFGStatement_Print)
 
 // CREATE
 
