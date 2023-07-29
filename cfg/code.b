@@ -1,13 +1,13 @@
-# data t {
-#   int :: b,
-#   string :: f,
-#   int arr[10]:: a
-# }
-# 
-# data s {
-#   t arr[10]:: a,
-#   string :: b
-# }
+data t {
+  int :: b,
+  string :: f,
+  int arr[10]:: a
+}
+
+data s {
+  t arr[10]:: a,
+  string :: b
+}
 
 # s :: v;
 # v.a[3].a[6] = 10;
@@ -19,5 +19,7 @@
 int :: a;
 int :: b;
 int :: c;
+s :: d;
+a = 2 - (d.a[7].a[2] + 10);
 a = 10;
-a = 10 + ((10 * b) + (a * c));
+a = ((10 * b) + a);

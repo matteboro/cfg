@@ -47,11 +47,11 @@ CFGStatementList *CFGStatementList_Create(CFGStatement *statement) {
 }
 
 void CFGStatementList_Destroy(CFGStatementList *list) {
-  // fprintf(stdout, "starting CFGStatementList destroy\n");
   if (list == NULL)
     return;
   if (CFGStatementList_Empty(list)) {
     free(list);
+    return;
   }
   CFGStatementList_Destroy(list->next);
   CFGStatement_Destroy(list->statement);
@@ -62,6 +62,7 @@ void __CFGStatementList_ShallowDestroy(CFGStatementList *list) {
   assert(list != NULL);
   if (CFGStatementList_Empty(list)) {
     free(list);
+    return;
   }
   __CFGStatementList_ShallowDestroy(list->next);
   free(list);
@@ -98,20 +99,18 @@ void CFGStatementList_Append(CFGStatementList *list, CFGStatement *statement) {
   last->next = CFGStatementList_Create(statement);
 }
 
-
+// after this function the two list passed should never be used again
 CFGStatementList *CFGStatementList_Concat(CFGStatementList *l1, CFGStatementList *l2) {
   assert(l1 != NULL);
   assert(l2 != NULL);
   assert(l1 != l2);
 
   if (CFGStatementList_Empty(l1)) {
-    // fprintf(stdout, "l1 is empty\n");
-    // CFGStatementList_Destroy(l1);
+    CFGStatementList_Destroy(l1);
     return l2;
   }
   if (CFGStatementList_Empty(l2)) {
-    // fprintf(stdout, "l2 is empty\n");
-    // CFGStatementList_Destroy(l2);
+    CFGStatementList_Destroy(l2);
     return l1;
   }
 
@@ -125,14 +124,14 @@ bool CFGStatementList_Empty(CFGStatementList *list) {
 }
 
 void CFGStatementList_Print(CFGStatementList *list, FILE *file) {
+
   if (list == NULL)
-    fprintf(file, "NULL\n\n");
+    fprintf(file, "NULL\n");
   if (CFGStatementList_Empty(list))
-    fprintf(file, "Empty list\n\n");
+    fprintf(file, "Empty list\n");
     
   FOR_EACH_CFGSTMNT(stmnt_it, list) {
     CFGStatement_Print(stmnt_it->statement, file);
     fprintf(file, "\n");
   }
-  fprintf(file, "\n");
 }
