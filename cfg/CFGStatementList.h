@@ -3,8 +3,8 @@
 #include "CFGStatement.h"
 
 #define FOR_EACH_CFGSTMNT(name, list)    \
-  for (CFGStatementList *name = list; \
-  !CFGStatementList_Empty(name);      \
+  for (CFGStatementList *name = list;    \
+  !CFGStatementList_Empty(name);         \
   name = name->next)
 
 struct CFGStatementList;
@@ -22,6 +22,8 @@ bool CFGStatementList_Empty(CFGStatementList *list);
 
 CFGStatementList *CFGStatementList_GetAt(CFGStatementList *list, size_t index);
 CFGStatementList *CFGStatementList_GetLast(CFGStatementList *list);
+
+void CFGStatementList_Print(CFGStatementList *list, FILE *file);
 
 // IMPLEMENTATION
 
@@ -45,6 +47,7 @@ CFGStatementList *CFGStatementList_Create(CFGStatement *statement) {
 }
 
 void CFGStatementList_Destroy(CFGStatementList *list) {
+  // fprintf(stdout, "starting CFGStatementList destroy\n");
   if (list == NULL)
     return;
   if (CFGStatementList_Empty(list)) {
@@ -76,7 +79,7 @@ CFGStatementList *CFGStatementList_GetLast(CFGStatementList *list) {
   if (CFGStatementList_Empty(list)) {
     return list;
   } 
-  else if (CFGStatementList_Empty(list->next)) {
+  else if (list->next == NULL) {
     return list;
   }
   return CFGStatementList_GetLast(list->next);
@@ -95,21 +98,41 @@ void CFGStatementList_Append(CFGStatementList *list, CFGStatement *statement) {
   last->next = CFGStatementList_Create(statement);
 }
 
-CFGStatementList *CFGStatementList_Concat(CFGStatementList *dest, CFGStatementList *appended_list) {
-  assert(dest != NULL);
-  assert(appended_list != NULL);
-  assert(dest != appended_list);
 
-  if (CFGStatementList_Empty(appended_list))
-    return dest;
-  if (CFGStatementList_Empty(dest))
-    return appended_list;
+CFGStatementList *CFGStatementList_Concat(CFGStatementList *l1, CFGStatementList *l2) {
+  assert(l1 != NULL);
+  assert(l2 != NULL);
+  assert(l1 != l2);
 
-  CFGStatementList *last = CFGStatementList_GetLast(dest);
-  last->next = appended_list;
-  return dest;
+  if (CFGStatementList_Empty(l1)) {
+    // fprintf(stdout, "l1 is empty\n");
+    // CFGStatementList_Destroy(l1);
+    return l2;
+  }
+  if (CFGStatementList_Empty(l2)) {
+    // fprintf(stdout, "l2 is empty\n");
+    // CFGStatementList_Destroy(l2);
+    return l1;
+  }
+
+  CFGStatementList *last = CFGStatementList_GetLast(l1);
+  last->next = l2;
+  return l1;
 }
 
 bool CFGStatementList_Empty(CFGStatementList *list) {
   return list == NULL || (list->next == NULL && list->statement == NULL); 
+}
+
+void CFGStatementList_Print(CFGStatementList *list, FILE *file) {
+  if (list == NULL)
+    fprintf(file, "NULL\n\n");
+  if (CFGStatementList_Empty(list))
+    fprintf(file, "Empty list\n\n");
+    
+  FOR_EACH_CFGSTMNT(stmnt_it, list) {
+    CFGStatement_Print(stmnt_it->statement, file);
+    fprintf(file, "\n");
+  }
+  fprintf(file, "\n");
 }

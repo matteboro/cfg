@@ -24,7 +24,14 @@ typedef struct {
 } Expression;
 
 void expr_set_real_type(Expression *expression, Type *real_type) {
+  assert(expression != NULL);
+  assert(real_type != NULL);
   expression->real_type = real_type;
+}
+
+Type *expr_get_real_type(Expression *expression) {
+  assert(expression != NULL);
+  return expression->real_type;
 }
 
 void expr_dealloc_expression(Expression *expression);

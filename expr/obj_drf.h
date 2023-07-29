@@ -9,7 +9,7 @@
   void obj_drf_dealloc_##infix##_type_deref(ObjectDeref *obj_drf) \
     { if (!obj_drf->data) return; data_type *data = (data_type *)obj_drf->data; dealloc_code; free(data); }
 
-#define OBJ_DRF_VERBOSE_PRINT_SWITCH 1
+#define OBJ_DRF_VERBOSE_PRINT_SWITCH 0
 
 typedef struct Attribute Attribute;
 

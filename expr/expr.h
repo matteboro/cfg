@@ -383,4 +383,36 @@ bool expr_is_unary_expression(Expression *expr) {
   return expr_is_of_type(expr, UNARY_EXPRESSION_EXP_TYPE);
 }
 
+bool expr_is_create_expression(Expression *expr) {
+  return expr_is_of_type(expr, CREATE_EXP_TYPE);
+}
+
+// return True if immediate children of this expression are Operand
+bool expr_children_are_operands(Expression *expr) {
+  if (expr_is_binary_expression(expr)) {
+    Expression *left_child = expr_binary_expression_get_left(expr);
+    Expression *right_child = expr_binary_expression_get_right(expr);
+    if (expr_is_operand(left_child) && expr_is_operand(right_child))
+      return True;
+  } 
+  else if(expr_is_unary_expression(expr)) {
+    Expression *child = expr_unary_expression_get_operand(expr);
+    if (expr_is_operand(child))
+      return True;
+  }
+  else if(expr_is_operand(expr)) {
+    return True;
+  }
+  else if(expr_is_create_expression(expr)) {
+    Expression *size_expr = expr_create_expression_get_size(expr);
+    if (expr_is_operand(size_expr))
+      return True;
+  } 
+  else {
+    UNREACHABLE();
+  }
+
+  return False;
+}
+
 #endif // end EXPR_HEADER

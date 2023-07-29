@@ -8,6 +8,10 @@ CFG *CFGBuilder_Build(ASTProgram *program);
 
 // IMPLEMENTATION
 
+static VariableIndex curr_var_idx = 1;
+
+#define next_var_idx() curr_var_idx++
+
 
 AccessOperation *ObjectDerefList_To_AccessOperation(ObjectDerefList *obj_derefs, GlobalVariablesTable *var_table) {
   assert(obj_derefs != NULL);
@@ -121,8 +125,9 @@ CFGOperand *Operand_To_CFGOperand(Operand *operand, GlobalVariablesTable *var_ta
   return cfg_operand;
 }
 
-CFGExpression *Expression_To_CFGExpression(Expression *expr, GlobalVariablesTable *var_table) {
+CFGExpression *BasicExpression_To_CFGExpression(Expression *expr, GlobalVariablesTable *var_table) {
 
+  assert(expr_children_are_operands(expr));
   CFGExpression *cfg_expr = NULL;
 
   if (expr_is_binary_expression(expr)) {
@@ -158,6 +163,208 @@ CFGExpression *Expression_To_CFGExpression(Expression *expr, GlobalVariablesTabl
   return cfg_expr;
 }
 
+typedef struct {
+  CFGStatementList *cfg_statements;
+  CFGOperand *cfg_operand;
+} CFGStatementList_X_CFGOperand;
+
+CFGStatementList_X_CFGOperand
+  Expression_To_CFGStatementList_X_CFGOperand(Expression *expr, GlobalVariablesTable *var_table) {
+
+  assert(expr != NULL);
+  assert(var_table != NULL);
+
+  if (expr_is_binary_expression(expr)) {
+    Expression *left_sub_expr = expr_binary_expression_get_left(expr);
+    Expression *right_sub_expr = expr_binary_expression_get_right(expr);
+
+    CFGStatementList_X_CFGOperand left_sub_pair = Expression_To_CFGStatementList_X_CFGOperand(left_sub_expr, var_table);
+    CFGStatementList_X_CFGOperand right_sub_pair = Expression_To_CFGStatementList_X_CFGOperand(right_sub_expr, var_table);
+
+    Type *expr_type = expr_get_real_type(expr); 
+    assert(expr_type != NULL);
+
+    OperationType operation = expr_binary_expression_get_operation(expr);
+
+    Variable tmp_var = GlobalVariablesTable_AddNextTempVariable(var_table, next_var_idx(), type_copy(expr_type));
+    AccessOperation *tmp_access_op = AccessOperation_Create_Variable_Access(tmp_var);
+    CFGExpression *tmp_value_expr = 
+      CFGExpression_Create_BinaryExpression(left_sub_pair.cfg_operand, right_sub_pair.cfg_operand, operation);
+    CFGStatement *tmp_assignment = CFGStatement_Create_Assignment(tmp_access_op, tmp_value_expr);
+    CFGStatement *tmp_declaration = CFGStatement_Create_Declaration(tmp_var);
+
+    fprintf(stdout, "left_sub_pair.cfg_statements (%lu):\n", (unsigned long) left_sub_pair.cfg_statements);
+    CFGStatementList_Print(left_sub_pair.cfg_statements, stdout);
+
+    fprintf(stdout, "right_sub_pair.cfg_statements (%lu):\n", (unsigned long) right_sub_pair.cfg_statements);
+    CFGStatementList_Print(right_sub_pair.cfg_statements, stdout);
+
+    // CFGStatementList *cfg_statements = left_sub_pair.cfg_statements;
+    CFGStatementList *cfg_statements = CFGStatementList_Concat(left_sub_pair.cfg_statements, right_sub_pair.cfg_statements);
+
+    // if (cfg_statements == left_sub_pair.cfg_statements) {
+    //   CFGStatementList_Destroy(right_sub_pair.cfg_statements);
+    // } else if (cfg_statements == right_sub_pair.cfg_statements) {
+    //   CFGStatementList_Destroy(left_sub_pair.cfg_statements);
+    // }
+
+    fprintf(stdout, "cfg_statements (%lu):\n", (unsigned long) cfg_statements);
+    CFGStatementList_Print(cfg_statements, stdout);
+
+    CFGStatementList_Append(cfg_statements, tmp_declaration);
+    CFGStatementList_Append(cfg_statements, tmp_assignment);
+
+    AccessOperation *tmp_future_access = AccessOperation_Create_Variable_Access(tmp_var);
+    CFGOperand *tmp_future_operand = CFGOperand_Create_AccessOperation(tmp_future_access);
+    
+    CFGStatementList_X_CFGOperand pair = {
+      .cfg_operand = tmp_future_operand,
+      .cfg_statements = cfg_statements,
+    };
+    return pair;
+  }
+  else if (expr_is_unary_expression(expr)) {
+    Expression *sub_expr = expr_unary_expression_get_operand(expr);
+
+    CFGStatementList_X_CFGOperand sub_pair = Expression_To_CFGStatementList_X_CFGOperand(sub_expr, var_table);
+
+    Type *expr_type = expr_get_real_type(expr); 
+    assert(expr_type != NULL);
+
+    OperationType operation = expr_unary_expression_get_operation(expr);
+
+    Variable tmp_var = GlobalVariablesTable_AddNextTempVariable(var_table, next_var_idx(), type_copy(expr_type));
+    AccessOperation *tmp_access_op = AccessOperation_Create_Variable_Access(tmp_var);
+    CFGExpression *tmp_value_expr = CFGExpression_Create_UnaryExpression(sub_pair.cfg_operand, operation);
+    CFGStatement *tmp_assignment = CFGStatement_Create_Assignment(tmp_access_op, tmp_value_expr);
+    CFGStatement *tmp_declaration = CFGStatement_Create_Declaration(tmp_var);
+
+    CFGStatementList *cfg_statements = sub_pair.cfg_statements;
+    CFGStatementList_Append(cfg_statements, tmp_declaration);
+    CFGStatementList_Append(cfg_statements, tmp_assignment);
+
+    AccessOperation *tmp_future_access = AccessOperation_Create_Variable_Access(tmp_var);
+    CFGOperand *tmp_future_operand = CFGOperand_Create_AccessOperation(tmp_future_access);
+    
+    CFGStatementList_X_CFGOperand pair = {
+      .cfg_operand = tmp_future_operand,
+      .cfg_statements = cfg_statements,
+    };
+    return pair;
+  }
+  else if (expr_is_operand(expr)) {
+    Operand *operand = expr_operand_expression_get_operand(expr);
+    CFGOperand *cfg_operand = Operand_To_CFGOperand(operand, var_table);
+    CFGStatementList_X_CFGOperand stmnt_oprnd_pair = {
+      .cfg_operand = cfg_operand,
+      .cfg_statements = CFGStatementList_CreateEmpty()
+    };
+    return stmnt_oprnd_pair;
+  } 
+  else if (expr_is_create_expression(expr)) {
+    TODO();
+  }
+
+  UNREACHABLE();
+  CFGStatementList_X_CFGOperand null_result = { NULL, NULL };
+  return null_result;
+}
+
+typedef struct {
+  CFGStatementList *cfg_statements;
+  CFGExpression *cfg_expression;
+} CFGStatementList_X_CFGExpression;
+
+CFGStatementList_X_CFGExpression
+  Expression_To_CFGStatementList_X_CFGExpression(Expression *expr, GlobalVariablesTable *var_table) {
+
+  // base case
+  if (expr_children_are_operands(expr)) {
+    CFGExpression *cfg_exprexssion = BasicExpression_To_CFGExpression(expr, var_table);
+    CFGStatementList_X_CFGExpression stmnt_expr_pair = {
+      .cfg_expression = cfg_exprexssion,
+      .cfg_statements = CFGStatementList_CreateEmpty()
+    };
+    return stmnt_expr_pair;
+  }
+
+  if (expr_is_binary_expression(expr)) {
+    Expression *left_sub_expr = expr_binary_expression_get_left(expr);
+    Expression *right_sub_expr = expr_binary_expression_get_right(expr);
+
+    OperationType operation = expr_binary_expression_get_operation(expr);
+
+    CFGStatementList_X_CFGOperand left_sub_pair = Expression_To_CFGStatementList_X_CFGOperand(left_sub_expr, var_table);
+    CFGStatementList_X_CFGOperand right_sub_pair = Expression_To_CFGStatementList_X_CFGOperand(right_sub_expr, var_table);
+
+    CFGExpression *cfg_expr = 
+      CFGExpression_Create_BinaryExpression(left_sub_pair.cfg_operand, right_sub_pair.cfg_operand, operation);
+
+    fprintf(stdout, "left_sub_pair.cfg_statements (%lu):\n", (unsigned long) left_sub_pair.cfg_statements);
+    CFGStatementList_Print(left_sub_pair.cfg_statements, stdout);
+
+    fprintf(stdout, "right_sub_pair.cfg_statements (%lu):\n", (unsigned long) right_sub_pair.cfg_statements);
+    CFGStatementList_Print(right_sub_pair.cfg_statements, stdout);
+
+    CFGStatementList *cfg_statements = CFGStatementList_Concat(left_sub_pair.cfg_statements, right_sub_pair.cfg_statements);
+
+    fprintf(stdout, "cfg_statements (%lu):\n", (unsigned long) cfg_statements);
+    CFGStatementList_Print(cfg_statements, stdout);
+
+    CFGStatementList_X_CFGExpression pair = { .cfg_expression = cfg_expr, .cfg_statements = cfg_statements };
+    return pair;
+  } 
+  else if(expr_is_unary_expression(expr)) {
+    Expression *sub_expr = expr_unary_expression_get_operand(expr);
+
+    OperationType operation = expr_unary_expression_get_operation(expr);
+
+    CFGStatementList_X_CFGOperand sub_pair = Expression_To_CFGStatementList_X_CFGOperand(sub_expr, var_table);
+
+    CFGExpression *cfg_expr = CFGExpression_Create_UnaryExpression(sub_pair.cfg_operand, operation);
+
+    CFGStatementList *cfg_statements = sub_pair.cfg_statements;
+
+    CFGStatementList_X_CFGExpression pair = { .cfg_expression = cfg_expr, .cfg_statements = cfg_statements };
+    return pair;
+  }
+  else if(expr_is_create_expression(expr)) {
+    assert(False);
+  } 
+  
+  UNREACHABLE();
+  CFGStatementList_X_CFGExpression null_result = { NULL, NULL };
+  return null_result;
+}
+
+CFGStatementList *AssignmentStatement_To_CFGStatementList(Statement *stmnt, GlobalVariablesTable *var_table) {
+  
+  assert(stmnt_is_assignment(stmnt));
+  assert(var_table != NULL);
+
+  // we build the left side of the assignment, which is an access operation
+  AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
+  ObjectDerefList *obj_derefs = assgnbl->obj_derefs;
+  AccessOperation *left_access = ObjectDerefList_To_AccessOperation(obj_derefs, var_table);
+
+  // we now have to build the right side, which is a cfg expression, which basically is
+  // a two operands expression. If the original expression is not a simple two operand
+  // expression we have to create temporary variables to store intermidiate results
+  Expression *value_expr = stmnt_assignment_get_value(stmnt);
+
+  CFGStatementList_X_CFGExpression pair = Expression_To_CFGStatementList_X_CFGExpression(value_expr, var_table);
+
+  CFGStatementList *cfg_statements = pair.cfg_statements;
+
+  CFGExpression *cfg_value_expr = pair.cfg_expression;
+
+  CFGStatement *cfg_assignment = CFGStatement_Create_Assignment(left_access, cfg_value_expr);
+
+  CFGStatementList_Append(cfg_statements, cfg_assignment);
+
+  return cfg_statements;
+}
+
 CFG *CFGBuilder_Build(ASTProgram *program) {
   assert(program != NULL);
   StructDeclarationList *structs = program->struct_declarations;
@@ -175,7 +382,6 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
 
   StatementList *statements = stmnt_block_get_body(global_statements);
   GlobalVariablesTable *var_table = GlobalVariablesTable_Create();
-  VariableIndex curr_var_idx = 1;
 
   CFGStatementList *cfg_statements = CFGStatementList_CreateEmpty();
 
@@ -184,17 +390,10 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
     Statement *stmnt = stmnt_it->node;
     assert(stmnt_is_assignment(stmnt) || stmnt_is_declaration(stmnt));
 
-    if (stmnt_is_assignment(stmnt_it->node)) {
-      AssignableElement *assgnbl = stmnt_assignment_get_assgnbl(stmnt);
-      ObjectDerefList *obj_derefs = assgnbl->obj_derefs;
+    if (stmnt_is_assignment(stmnt)) {
 
-      AccessOperation *access_op = ObjectDerefList_To_AccessOperation(obj_derefs, var_table);
-
-      CFGExpression *cfg_value_expr = Expression_To_CFGExpression(stmnt_assignment_get_value(stmnt), var_table);
-      assert(cfg_value_expr != NULL);
-      
-      CFGStatement *cfg_stmnt = CFGStatement_Create_Assignment(access_op, cfg_value_expr);
-      CFGStatementList_Append(cfg_statements, cfg_stmnt);
+      CFGStatementList *tmp_cfg_stmnts = AssignmentStatement_To_CFGStatementList(stmnt, var_table);
+      cfg_statements = CFGStatementList_Concat(cfg_statements, tmp_cfg_stmnts);
 
     } 
     else if (stmnt_is_declaration(stmnt_it->node)) {
@@ -205,29 +404,28 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
       assert(type_is_basic(type) || type_is_struct(type));
 
       Variable *decl_var = Variable_Create_Pointer(
-        curr_var_idx,
+        next_var_idx(),
         idf_copy_identifier(name),
         type_copy(type));
-      ++curr_var_idx;
-      
+        
       GlobalVariablesTable_Add_Variable(var_table, decl_var);
 
       CFGStatement *cfg_stmnt = CFGStatement_Create_Declaration(*decl_var);
       CFGStatementList_Append(cfg_statements, cfg_stmnt);
 
-      if (stmnt_declaration_has_init_values(stmnt)) {
-        ExpressionList *init_values = stmnt_declaration_get_init_values(stmnt);
-        assert(expr_list_size(init_values) == 1);
+      // if (stmnt_declaration_has_init_values(stmnt)) {
+      //   ExpressionList *init_values = stmnt_declaration_get_init_values(stmnt);
+      //   assert(expr_list_size(init_values) == 1);
 
-        Expression *init_value = expr_list_get_at(init_values, 0);
-        CFGExpression *cfg_init_value_expr = Expression_To_CFGExpression(init_value, var_table);
-        assert(cfg_init_value_expr != NULL);
+      //   Expression *init_value = expr_list_get_at(init_values, 0);
+      //   CFGExpression *cfg_init_value_expr = Expression_To_CFGExpression(init_value, var_table);
+      //   assert(cfg_init_value_expr != NULL);
 
-        AccessOperation *access_op = AccessOperation_Create_Variable_Access(*decl_var);
-        CFGStatement *cfg_init_assgnmt = CFGStatement_Create_Assignment(access_op, cfg_init_value_expr);
-        CFGStatementList_Append(cfg_statements, cfg_init_assgnmt);
+      //   AccessOperation *access_op = AccessOperation_Create_Variable_Access(*decl_var);
+      //   CFGStatement *cfg_init_assgnmt = CFGStatement_Create_Assignment(access_op, cfg_init_value_expr);
+      //   CFGStatementList_Append(cfg_statements, cfg_init_assgnmt);
         
-      }
+      // }
     }
 
     stmnt_print(stmnt_it->node, stdout);
@@ -239,11 +437,6 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
     CFGStatement_Print(cfgst_it->statement, stdout);
     fprintf(stdout, "\n");
   }
-
-  // FOR_EACH(CFGStatementList, cfg_stmnt_it, cfg_statements) {
-  //   CFGStatement_Print(cfg_stmnt_it->node, stdout);
-  //   fprintf(stdout, "\n");
-  // }
 
   CFGStatementList_Destroy(cfg_statements);
 
