@@ -280,6 +280,7 @@ void *type_copy_pointer_type(Type *type) {
   casted_data(PointerTypeData, type);
   PointerTypeData *data_copy = (PointerTypeData *) malloc(sizeof(PointerTypeData));
   data_copy->type = type_copy(data->type);
+  data_copy->is_strong = data->is_strong;
   return data_copy;
 }
 
@@ -388,8 +389,8 @@ Type *type_extract_ultimate_type(Type *type) {
 // TODO: have list of basic types and iterate through them
 bool type_is_basic(Type *type) {
   assert(type != NULL);
-  if (type_is_pointer(type))
-    return True;
+  // if (type_is_pointer(type))
+  //   return True;
   type = type_extract_ultimate_type(type);
   if (type_is_integer(type) || type_is_string(type))
     return True;
@@ -409,8 +410,13 @@ bool type_equal(Type *type1, Type *type2) {
   assert(type1 != NULL);
   assert(type2 != NULL);
 
+  if (type1 == type2)
+    return True;
+
   if (type1->type == type2->type) {
-    if(type_is_basic(type1))
+    if(type_is_integer(type1))
+      return True;
+    if (type_is_string(type2))
       return True;
     if(type1->type == STRUCT_TYPE) {
       return idf_equal_identifiers(type_struct_get_name(type1), type_struct_get_name(type2));
@@ -423,5 +429,6 @@ bool type_equal(Type *type1, Type *type2) {
       return type_equal(type_pointer_get_type(type1), type_pointer_get_type(type2));
     }
   }
+
   return False;
 }

@@ -77,7 +77,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
   // check type exists
   if (!type_chckr_type_exists(structs, type)) {
     STMNT_CHCKR_ERROR_HEADER("declaration");
-    fprintf(stdout, "the type of %s does not exists\n", nt_bind->name->name);
+    fprintf(stdout, "the type of %s does not exists\n\n", nt_bind->name->name);
     single_line_file_info_print_context(nt_bind->file_info, stdout); fprintf(stdout, "\n\n");
     return False;
   }
@@ -85,7 +85,7 @@ bool stmnt_chckr_check_declaration(STMNT_CHCKR_PARAMS) {
   // check name is available
   if (!avlb_vars_name_available(av_vars, nt_bind->name)) {
     STMNT_CHCKR_ERROR_HEADER("declaration");
-    fprintf(stdout, "the name %s is already taken\n", nt_bind->name->name);
+    fprintf(stdout, "the name %s is already taken\n\n", nt_bind->name->name);
     single_line_file_info_print_context(nt_bind->name->file_info, stdout); fprintf(stdout, "\n\n");
     return False;
   }

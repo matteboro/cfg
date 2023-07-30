@@ -225,3 +225,19 @@ bool obj_drf_is_name_deref(ObjectDeref* obj_drf) {
 bool obj_drf_is_single_element_deref(ObjectDeref* obj_drf) {
   return obj_drf_is_of_type(obj_drf, SINGLE_ELEMENT_PTR_DRF);
 }
+
+
+bool obj_drf_is_pointer_deref(ObjectDeref *obj_drf) {
+  assert(obj_drf != NULL);
+
+  Type *type = obj_drf_get_real_type(obj_drf);
+  assert(type != NULL);
+
+  if (type_is_pointer(type)) {
+    if (obj_drf_is_array_deref(obj_drf) || obj_drf_is_single_element_deref(obj_drf)) {
+      return True;
+    }
+    assert(obj_drf_is_name_deref(obj_drf));
+  }
+  return False;
+}

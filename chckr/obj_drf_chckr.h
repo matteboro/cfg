@@ -58,7 +58,9 @@ bool obj_drf_chckr_check_array_dereference(ObjectDeref *obj_drf,ObjectDerefList 
 }
 
 bool obj_drf_chckr_check_for_array_correspondence(Type *type, ObjectDeref *deref, ObjectDerefList *obj_derefs) {
-  if (type_is_array(type) != obj_drf_is_array_deref(deref)) {
+
+  if ((type_is_array(type) && not obj_drf_is_array_deref(deref)) ||
+      ((obj_drf_is_array_deref(deref)) && (not (type_is_array(type) || type_is_pointer(type))))) {
     OBJ_DRF_CHCKR_ERROR_HEADER(obj_derefs);
     fprintf(stdout, "object dereference: ");
     obj_drf_print(deref, stdout);
@@ -66,6 +68,7 @@ bool obj_drf_chckr_check_for_array_correspondence(Type *type, ObjectDeref *deref
     fprintf(stdout, "\n\n");
     single_line_file_info_print_context(deref->file_info, stdout);
     fprintf(stdout, "\n\n");
+    return False;
   }
   return True;
 }

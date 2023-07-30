@@ -6,20 +6,23 @@ data t {
 
 data s {
   t arr[10]:: a,
-  string :: b
+  string :: b,
+  t ptr :: t_ptr
 }
 
-# s :: v;
-# v.a[3].a[6] = 10;
-# int :: a = 0;
-# a = 10;
-# int :: b;
-# b = a + 10;
+# int ptr :: p;
+# int :: a;
 
-int :: a;
-int :: b;
+# a = 10;
+# b[5] = 4;
+# [p] = 5;
+# p[10] = 10;
+
+int arr[10] :: b;
 int :: c;
-s :: d;
-a = 2 - (d.a[7].a[2] + 10);
-a = 10;
-a = ((10 * b) + a);
+
+s :: a;
+a.a[2].b = 10;
+a.a[10].a[2] = 2;
+
+a.t_ptr[2].a[4] = 10; # b[2] * 10 + c;

@@ -21,9 +21,10 @@ int main() {
   // }
 
   ASTProgram *ast = prsr_parse(file);
-  prgrm_chckr_check(ast, False);
+  bool check_passed = prgrm_chckr_check(ast, False);
 
-  CFGBuilder_Build(ast);
+  if (check_passed)
+    CFGBuilder_Build(ast);
 
   // prgrm_print(ast, stdout); fprintf(stdout, "\n");
   // fprintf(stdout, "\n");
