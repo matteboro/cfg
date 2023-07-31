@@ -341,9 +341,9 @@ void expr_print_operand_expression(OperandExpression *expression, FILE *file) {
   EXPR_DEBUG_PRINT()
   if (expression == NULL) 
     return;
-  fprintf(file, "("); 
+  // fprintf(file, "("); 
   oprnd_print(expression->operand, file); 
-  fprintf(file, ")");
+  // fprintf(file, ")");
 }
 
 void expr_print_expression(Expression *expression, FILE *file) {

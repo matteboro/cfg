@@ -241,3 +241,8 @@ bool obj_drf_is_pointer_deref(ObjectDeref *obj_drf) {
   }
   return False;
 }
+
+bool obj_drf_have_attribute(ObjectDeref *obj_drf) {
+  assert(obj_drf != NULL);
+  return obj_drf->attribute != NULL;
+}

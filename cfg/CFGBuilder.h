@@ -55,11 +55,13 @@ CFGStatementList_X_AccessOperation
   ObjectDeref *first_drf = obj_drf_list_get_at(obj_derefs, 0);
   Identifier *name = first_drf->name;
   Variable deref_var = GlobalVariablesTable_GetFromName(var_table, name);
+  Type *var_type = deref_var.type;
   assert(!Variable_IsNull(deref_var));
+
+  CFGStatementList *cfg_statements = CFGStatementList_CreateEmpty();
 
   if (obj_drf_list_size(obj_derefs) == 1) {
 
-    Type *var_type = deref_var.type;
     AccessOperation *access_op = NULL;
 
     if (obj_drf_is_single_element_deref(first_drf)) {
@@ -68,14 +70,30 @@ CFGStatementList_X_AccessOperation
     } 
     else if (obj_drf_is_array_deref(first_drf)) {
 
-      // for the moment we only process integer indexes
-      // TODO: add handling of any expression
       Expression *index_expr = obj_drf_array_get_index(first_drf);
-      assert(expr_is_operand(index_expr));
-      Operand *index_operand = expr_operand_expression_get_operand(index_expr);
-      assert(oprnd_is_integer(index_operand));
-      size_t index = (size_t)(*oprnd_integer_get_integer(index_operand));
-      CFGOperand *op_idx = CFGOperand_Create_Literal(Literal_Create_Integer_Init(Integer_Create(index)));
+      CFGStatementList_X_CFGOperand index_expr_pair = Expression_To_CFGStatementList_X_CFGOperand(index_expr, var_table);
+      CFGOperand *op_idx = index_expr_pair.cfg_operand;
+      cfg_statements = CFGStatementList_Concat(cfg_statements, index_expr_pair.cfg_statements);
+
+      size_t struct_mult_factor = 1;
+      Type *sub_type = type_extract_ultimate_type(var_type);
+      if (type_is_struct(sub_type)) {
+        StructDeclaration *struct_decl = type_struct_get_struct_decl(sub_type);
+        struct_mult_factor = strct_decl_total_number_of_attributes(struct_decl);
+      }
+
+      if (struct_mult_factor > 1) {
+        Variable tmp_var = GlobalVariablesTable_AddNextTempVariable(var_table, next_var_idx(), type_create_generic_int_type());
+        CFGStatement *tmp_decl = CFGStatement_Create_Declaration(tmp_var);
+        AccessOperation *tmp_access = AccessOperation_Create_Variable_Access(tmp_var);
+        CFGOperand *mult_factor_operand = CFGOperand_Create_Literal(Literal_Create_Integer_Init(Integer_Create(struct_mult_factor)));
+        CFGExpression *idx_expr  = CFGExpression_Create_BinaryExpression(op_idx, mult_factor_operand, MULT_OPERATION);
+        CFGStatement *tmp_assgnmnt = CFGStatement_Create_Assignment(tmp_access, idx_expr);
+
+        CFGStatementList_Append(cfg_statements, tmp_decl);
+        CFGStatementList_Append(cfg_statements, tmp_assgnmnt);
+        op_idx = CFGOperand_Create_AccessOperation(AccessOperation_Create_Variable_Access(tmp_var));
+      }
 
       if (type_is_pointer(var_type)) {
         access_op = AccessOperation_Create_Indexed_Pointer_Access(deref_var, op_idx);
@@ -95,7 +113,7 @@ CFGStatementList_X_AccessOperation
 
     CFGStatementList_X_AccessOperation pair = {
       .access_op = access_op,
-      .cfg_statements = CFGStatementList_CreateEmpty()
+      .cfg_statements = cfg_statements
     };
     return pair;
   }
@@ -105,9 +123,9 @@ CFGStatementList_X_AccessOperation
   // ---------------------------------------------------------------------------------
 
   Variable last_var = deref_var;
-  CFGStatementList *cfg_statements = CFGStatementList_CreateEmpty();
+  
   size_t index = 0;
-  ObjectDerefList *curr_deref_it = obj_derefs->next;
+  ObjectDerefList *curr_deref_it = obj_derefs;
   ObjectDeref *curr_deref = curr_deref_it->node;
   Type *curr_deref_type = obj_drf_get_real_type(curr_deref);
 
@@ -116,22 +134,17 @@ CFGStatementList_X_AccessOperation
     index = 0;
 
     while ((not obj_drf_is_pointer_deref(curr_deref)) && (curr_deref_it != NULL)) {
-
-      Attribute *curr_attribute = obj_drf_get_attribute(curr_deref);
-      assert(attrb_relative_position_is_valid(curr_attribute));
-      size_t attribute_offset = (size_t) attrb_get_relative_position(curr_attribute);
+      
+      size_t attribute_offset = 0;
+      if (obj_drf_have_attribute(curr_deref)) {
+        Attribute *curr_attribute = obj_drf_get_attribute(curr_deref);
+        assert(attrb_relative_position_is_valid(curr_attribute));
+        attribute_offset = (size_t) attrb_get_relative_position(curr_attribute);
+      }
 
       // if it is an array non pointer offset we have to calculate the offset
       // contrinution of the index
       if (type_is_array(curr_deref_type)) {
-
-        // for the moment we only process integer indexes
-        // TODO: add handling of any expression
-        Expression *index_expr = obj_drf_array_get_index(curr_deref);
-        assert(expr_is_operand(index_expr));
-        Operand *index_operand = expr_operand_expression_get_operand(index_expr);
-        assert(oprnd_is_integer(index_operand));
-        size_t array_index = (size_t)(*oprnd_integer_get_integer(index_operand));
 
         // if sub-type is a struct we have to multiply the index by the size of the struct 
         size_t struct_mult_factor = 1;
@@ -140,6 +153,20 @@ CFGStatementList_X_AccessOperation
           StructDeclaration *struct_decl = type_struct_get_struct_decl(sub_type);
           struct_mult_factor = strct_decl_total_number_of_attributes(struct_decl);
         }
+
+        // for the moment we only process integer indexes
+        // TODO: add handling of any expression
+        Expression *index_expr = obj_drf_array_get_index(curr_deref);
+
+        // CFGStatementList_X_CFGOperand index_expr_pair = Expression_To_CFGStatementList_X_CFGOperand(index_expr, var_table);
+        // CFGOperand *op_idx = index_expr_pair.cfg_operand;
+        // cfg_statements = CFGStatementList_Concat(cfg_statements, index_expr_pair.cfg_statements);
+
+        assert(expr_is_operand(index_expr));
+        Operand *index_operand = expr_operand_expression_get_operand(index_expr);
+        assert(oprnd_is_integer(index_operand));
+        size_t array_index = (size_t)(*oprnd_integer_get_integer(index_operand));
+
 
         index += array_index * struct_mult_factor;
       } 
@@ -189,14 +216,16 @@ CFGStatementList_X_AccessOperation
 
       if (obj_drf_is_array_deref(curr_deref)) {
         
-        // for the moment we only process integer indexes
-        // TODO: add handling of any expression
         Expression *index_expr = obj_drf_array_get_index(curr_deref);
-        assert(expr_is_operand(index_expr));
-        Operand *index_operand = expr_operand_expression_get_operand(index_expr);
-        assert(oprnd_is_integer(index_operand));
-        size_t array_index = (size_t)(*oprnd_integer_get_integer(index_operand));
-        CFGOperand *array_index_oprnd = CFGOperand_Create_Literal(Literal_Create_Integer_Init(Integer_Create(array_index)));
+        CFGStatementList_X_CFGOperand index_expr_pair = Expression_To_CFGStatementList_X_CFGOperand(index_expr, var_table);
+        CFGOperand *array_index_oprnd = index_expr_pair.cfg_operand;
+        cfg_statements = CFGStatementList_Concat(cfg_statements, index_expr_pair.cfg_statements);
+
+        // assert(expr_is_operand(index_expr));
+        // Operand *index_operand = expr_operand_expression_get_operand(index_expr);
+        // assert(oprnd_is_integer(index_operand));
+        // size_t array_index = (size_t)(*oprnd_integer_get_integer(index_operand));
+        // CFGOperand *array_index_oprnd = CFGOperand_Create_Literal(Literal_Create_Integer_Init(Integer_Create(array_index)));
 
         ptr_access_op = AccessOperation_Create_Indexed_Pointer_Access(tmp1, array_index_oprnd);
       } 
@@ -242,56 +271,6 @@ CFGStatementList_X_AccessOperation
   }
 
   UNREACHABLE();
-
-  /*
-
-  last_var
-  statements = []
-  offset = 0
-
-  while (true) {
-
-    while ((is not a pointer deref) or (is not last deref)) {
-      increase offset
-    }
-
-    index_access_op = IndexedAccessOperation(last_var, offset);
-
-    if (is pointer deref) {
-    
-      tmp.1 = NextTemporaryVariable(last deref type)
-      tmp.2 = NExtTemporaryVariable(laste deref pointed type)
-      
-      statements.append(DeclareStatements(tmp.1))
-      statements.append(DeclareStatements(tmp.2))
-
-      statements.append(AssignmentStatement(tmp.1 = indexed_access_op))
-
-      ptr_access_op = NULL;
-
-      if (is array deref) {
-        obtain index offset
-        indexed_ptr_access_op = IndexedPointerAccessOperation(tmp.1, index offset);
-        ptr_access_op = indexed_ptr_access_op
-      }
-      else {
-        single_elem_ptr_access_op = PointerAccessOperation(tmp.1);
-        ptr_access_op = single_elem_ptr_access_op
-      }
-
-      statements.append(AssignmentStatement(tmp.2 = ptr_access_op))
-      last_var = tmp.2
-    } 
-
-    if (is last deref) {
-      
-      
-      
-      break;
-    }
-  }
-  
-  */
 
   CFGStatementList_X_AccessOperation pair = { NULL, NULL };
   return pair;
@@ -371,6 +350,49 @@ AccessOperation *ObjectDerefList_To_AccessOperation(ObjectDerefList *obj_derefs,
 
   CFGOperand *op_idx = CFGOperand_Create_Literal(Literal_Create_Integer_Init(Integer_Create(index)));
   return AccessOperation_Create_Indexed_Variable_Access(deref_var, op_idx);
+}
+
+CFGStatementList_X_CFGOperand Operand_To_CFGStatementList_X_CFGOperand(Operand *operand, GlobalVariablesTable *var_table) {
+  assert(operand != NULL);
+  assert(var_table != NULL);
+
+  CFGOperand *cfg_operand = NULL;
+  CFGStatementList *cfg_statements = CFGStatementList_CreateEmpty();
+
+  if (oprnd_is_integer(operand)) {
+    int value = *oprnd_integer_get_integer(operand);
+    Integer integer = Integer_Create(value);
+    Literal *literal = Literal_Create_Integer_Init(integer);
+    cfg_operand = CFGOperand_Create_Literal(literal);
+  } 
+  else if (oprnd_is_string(operand)) {
+    char* cstring = oprnd_string_get_string(operand);
+    char* cstring_copy = (char *) malloc(sizeof(char)*strlen(cstring)+1);
+    strcpy(cstring_copy, cstring);
+    String string = String_Create(cstring_copy);
+    Literal *literal = Literal_Create_String_Init(string);
+    cfg_operand = CFGOperand_Create_Literal(literal);
+  }
+  else if (oprnd_is_object_deref(operand)) {
+    ObjectDerefList *obj_derefs = oprnd_object_deref_get_derefs(operand);
+    CFGStatementList_X_AccessOperation returned_pair = ObjectDerefList_To_CFGStatementList_X_AccessOperation(obj_derefs, var_table);
+    AccessOperation *access_op = returned_pair.access_op; // ObjectDerefList_To_AccessOperation(obj_derefs, var_table);
+    cfg_statements = CFGStatementList_Concat(cfg_statements, returned_pair.cfg_statements);
+    cfg_operand = CFGOperand_Create_AccessOperation(access_op);
+  }
+  else if (oprnd_is_funccall(operand)) {
+    UNREACHABLE();
+  }
+  else {
+    UNREACHABLE();
+  }
+
+  assert(cfg_operand != NULL);
+  CFGStatementList_X_CFGOperand pair = {
+    .cfg_statements = cfg_statements,
+    .cfg_operand = cfg_operand
+  };
+  return pair;
 }
 
 CFGOperand *Operand_To_CFGOperand(Operand *operand, GlobalVariablesTable *var_table) {
@@ -515,10 +537,11 @@ CFGStatementList_X_CFGOperand
   }
   else if (expr_is_operand(expr)) {
     Operand *operand = expr_operand_expression_get_operand(expr);
-    CFGOperand *cfg_operand = Operand_To_CFGOperand(operand, var_table);
+    // CFGOperand *cfg_operand = Operand_To_CFGOperand(operand, var_table);
+    CFGStatementList_X_CFGOperand returned_pair = Operand_To_CFGStatementList_X_CFGOperand(operand, var_table);
     CFGStatementList_X_CFGOperand stmnt_oprnd_pair = {
-      .cfg_operand = cfg_operand,
-      .cfg_statements = CFGStatementList_CreateEmpty()
+      .cfg_operand = returned_pair.cfg_operand,
+      .cfg_statements = returned_pair.cfg_statements
     };
     return stmnt_oprnd_pair;
   } 
@@ -648,7 +671,7 @@ CFG *CFGBuilder_Build(ASTProgram *program) {
       Identifier *name = nt_bind->name;
       Type *type = nt_bind->type;
 
-      assert(type_is_basic(type) || type_is_struct(type));
+      // assert(type_is_basic(type) || type_is_struct(type));
 
       Variable *decl_var = Variable_Create_Pointer(
         next_var_idx(),
